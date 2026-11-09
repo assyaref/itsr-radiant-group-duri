@@ -1,0 +1,9 @@
+Initialising login role...
+DRY RUN: migrations will *not* be pushed to the database.
+Connecting to remote database...
+Would push these migrations:
+ • 20261108000100_core_schema.sql
+ • 20261108000200_security_privileges_rls.sql
+ • 20261108000300_ticket_workflow.sql
+ • 20261108000400_login_and_notifications.sql
+Finished supabase db push.

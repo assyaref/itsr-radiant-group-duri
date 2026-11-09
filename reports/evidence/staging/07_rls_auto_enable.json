@@ -1,0 +1,75 @@
+﻿{
+    "r":  {
+              "rettype":  "event_trigger",
+              "event_triggers":  [
+                                     {
+                                         "name":  "issue_graphql_placeholder",
+                                         "event":  "sql_drop",
+                                         "fn":  "set_graphql_placeholder",
+                                         "owner":  "supabase_admin",
+                                         "enabled":  "O",
+                                         "tags":  [
+                                                      "DROP EXTENSION"
+                                                  ]
+                                     },
+                                     {
+                                         "name":  "pgrst_ddl_watch",
+                                         "event":  "ddl_command_end",
+                                         "fn":  "pgrst_ddl_watch",
+                                         "owner":  "supabase_admin",
+                                         "enabled":  "O",
+                                         "tags":  null
+                                     },
+                                     {
+                                         "name":  "pgrst_drop_watch",
+                                         "event":  "sql_drop",
+                                         "fn":  "pgrst_drop_watch",
+                                         "owner":  "supabase_admin",
+                                         "enabled":  "O",
+                                         "tags":  null
+                                     },
+                                     {
+                                         "name":  "issue_pg_cron_access",
+                                         "event":  "ddl_command_end",
+                                         "fn":  "grant_pg_cron_access",
+                                         "owner":  "supabase_admin",
+                                         "enabled":  "O",
+                                         "tags":  [
+                                                      "CREATE EXTENSION"
+                                                  ]
+                                     },
+                                     {
+                                         "name":  "issue_pg_net_access",
+                                         "event":  "ddl_command_end",
+                                         "fn":  "grant_pg_net_access",
+                                         "owner":  "supabase_admin",
+                                         "enabled":  "O",
+                                         "tags":  [
+                                                      "CREATE EXTENSION"
+                                                  ]
+                                     },
+                                     {
+                                         "name":  "issue_pg_graphql_access",
+                                         "event":  "ddl_command_end",
+                                         "fn":  "grant_pg_graphql_access",
+                                         "owner":  "supabase_admin",
+                                         "enabled":  "O",
+                                         "tags":  [
+                                                      "CREATE EXTENSION"
+                                                  ]
+                                     },
+                                     {
+                                         "name":  "ensure_rls",
+                                         "event":  "ddl_command_end",
+                                         "fn":  "rls_auto_enable",
+                                         "owner":  "postgres",
+                                         "enabled":  "O",
+                                         "tags":  [
+                                                      "CREATE TABLE",
+                                                      "CREATE TABLE AS",
+                                                      "SELECT INTO"
+                                                  ]
+                                     }
+                                 ]
+          }
+}

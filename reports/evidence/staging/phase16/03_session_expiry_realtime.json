@@ -1,0 +1,56 @@
+{
+  "started_utc": "2026-11-09T01:16:19.919Z",
+  "account": "STGEMP01",
+  "steps": [
+    {
+      "name": "login",
+      "result": "PASS",
+      "detail": {
+        "status": 200,
+        "expires_in": 3600,
+        "exp_minus_iat": 3600,
+        "exp_utc": "2026-11-09T02:16:22.000Z"
+      }
+    },
+    {
+      "name": "token accepted by PostgREST before expiry",
+      "result": "PASS",
+      "detail": {
+        "status": 200,
+        "rows": 2
+      }
+    },
+    {
+      "name": "token accepted by Edge Function auth before expiry (403 = authenticated non-admin)",
+      "result": "PASS",
+      "detail": {
+        "status": 403
+      }
+    },
+    {
+      "name": "expired token rejected by PostgREST",
+      "result": "PASS",
+      "detail": {
+        "status": 401,
+        "at_utc": "2026-11-09T02:17:52.971Z"
+      }
+    },
+    {
+      "name": "expired token rejected by Edge Function",
+      "result": "PASS",
+      "detail": {
+        "status": 401
+      }
+    },
+    {
+      "name": "expired token rejected by Auth /user",
+      "result": "PASS",
+      "detail": {
+        "status": 403
+      }
+    }
+  ],
+  "wait_seconds": 3689,
+  "finished_utc": "2026-11-09T02:17:55.818Z",
+  "summary": "6/6 PASS"
+}

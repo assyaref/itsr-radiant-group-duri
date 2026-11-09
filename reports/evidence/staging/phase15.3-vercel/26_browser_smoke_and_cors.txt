@@ -1,0 +1,15 @@
+# Browser smoke test (2026-11-08T08:11Z) - headless Chrome 156.0.8078.80 (--headless=new)
+Served: hash-identical verify build (main.dart.js sha256 7d11c8e9...e7 == deployed preview) at http://127.0.0.1:58123
+Why local: preview is behind Vercel SSO; creating a 5-min share link for headless use was denied by the session permission policy, so no bypass was created.
+
+## App boot: screenshot 25_browser_smoke_login_screen.png = ITSR login screen (Employee Number / Password / Sign in)
+## Console messages during boot:
+"Injecting <script> tag. Using callback.", source: http://127.0.0.1:58123/flutter_bootstrap.js (1)
+(no errors / uncaught exceptions)
+
+## In-browser CORS enforcement from an UNAPPROVED origin (zz_cors_probe.html, fetch POST):
+origin=http://127.0.0.1:58123
+login: BLOCKED by browser CORS (TypeError)
+admin-users: BLOCKED by browser CORS (TypeError)
+send-notifications: BLOCKED by browser CORS (TypeError)
+rpc rls_auto_enable as anon: status=401 {"code":"42501","details":null,"hint":null,"message":"permission denied for function rls_a

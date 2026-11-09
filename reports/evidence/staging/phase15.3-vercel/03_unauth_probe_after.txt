@@ -1,0 +1,10 @@
+# Unauthenticated probe AFTER ssoProtection=all (2026-11-08T07:58:18Z)
+itsr-radiant-staging.vercel.app/ -> 302 redirect=vercel.com/sso-api (SSO login)
+itsr-radiant-staging.vercel.app/main.dart.js -> 200 redirect=
+itsr-radiant-staging.vercel.app/flutter_bootstrap.js -> 302 redirect=vercel.com/sso-api (SSO login)
+itsr-radiant-staging-assyaref75.vercel.app/ -> 302 redirect=vercel.com/sso-api (SSO login)
+itsr-radiant-staging-assyaref75.vercel.app/main.dart.js -> 302 redirect=vercel.com/sso-api (SSO login)
+itsr-radiant-staging-assyaref75.vercel.app/flutter_bootstrap.js -> 302 redirect=vercel.com/sso-api (SSO login)
+itsr-radiant-staging-13dyd4g5f-assyaref75.vercel.app/ -> 302 redirect=vercel.com/sso-api (SSO login)
+itsr-radiant-staging-13dyd4g5f-assyaref75.vercel.app/main.dart.js -> 302 redirect=vercel.com/sso-api (SSO login)
+itsr-radiant-staging-13dyd4g5f-assyaref75.vercel.app/flutter_bootstrap.js -> 302 redirect=vercel.com/sso-api (SSO login)

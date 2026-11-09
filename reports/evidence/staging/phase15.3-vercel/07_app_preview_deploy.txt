@@ -1,0 +1,17 @@
+app preview deploy started 2026-11-08T08:00:07Z main.dart.js sha256=7d11c8e91c45f38432fb8cc7b8dbe886d9effd715e0938cbd5c898f012d880e7
+Vercel CLI 48.10.2
+Retrieving project…
+Deploying assyaref75/itsr-radiant-staging
+Inspect: https://vercel.com/assyaref75/itsr-radiant-staging/4heKbZRDjQESJkkQiCXeXtj9ca67 [824ms]
+Preview: https://itsr-radiant-staging-2vj2mwxa8-assyaref75.vercel.app [824ms]
+https://itsr-radiant-staging-2vj2mwxa8-assyaref75.vercel.appBuilding
+Building
+Completing
+To deploy to production (itsr-radiant-staging.vercel.app), run `vercel --prod`
+
+Common next commands:
+- `vercel inspect itsr-radiant-staging-2vj2mwxa8-assyaref75.vercel.app --logs`
+- `vercel redeploy itsr-radiant-staging-2vj2mwxa8-assyaref75.vercel.app`
+- `vercel deploy --prod`
+exit=0
+ended 2026-11-08T08:00:16Z

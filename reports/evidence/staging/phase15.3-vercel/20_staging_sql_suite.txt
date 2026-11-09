@@ -1,0 +1,97 @@
+passed=96 failed=0 total=96
+PASS P01a anon cannot execute login_is_rate_limited
+PASS P01b authenticated cannot execute login_is_rate_limited
+PASS P01c service_role can execute login_is_rate_limited
+PASS P01d record_login_attempt not executable by anon/authenticated
+PASS P01e outbox RPCs not executable by anon/authenticated
+PASS P02 anon can execute zero app functions (event triggers excluded)
+PASS P03 anon has no table privileges
+PASS P04 authenticated has no access to outbox/login_attempts
+PASS P05 no client write on profiles / activity, no ticket delete
+PASS P06 every SECURITY DEFINER function pins search_path
+PASS P07 RLS enabled on every public table
+PASS P08 legacy anon-executable rate-limit functions absent
+PASS P09 anon has no usage on private schema
+PASS AN01 anon cannot read tickets
+PASS AN02 anon cannot read profiles
+PASS AN03 anon cannot call ticket_stats
+PASS AN04 anon cannot call rate limiter (Gate 3 exploit path)
+PASS E01 ticket number generated server-side
+PASS E02 new ticket is open and unassigned
+PASS E03 creation recorded in activity log by trigger
+PASS E04 employee cannot set status on insert (column privilege)
+PASS E05 unknown category rejected
+PASS E06 subject length validated
+PASS E07 spoofed reporter_id is forced to the caller
+PASS E08 ticket numbers unique across reporters
+PASS E09 employee A sees only own tickets
+PASS E10 employee A cannot read B's ticket by id
+PASS E11 employee A cannot read B's ticket history
+PASS E12 employee A cannot read B's profile
+PASS E13 employee sees own + IT staff profiles
+PASS E14 assignable_staff returns nothing for employees
+PASS E15 employee cannot read app settings
+PASS E16 employee cannot comment on another employee's ticket
+PASS E17 employee cannot read notification outbox
+PASS E18 employee cannot read login attempts
+PASS E19 employee cannot escalate own role
+PASS E20 employee cannot create categories
+PASS E21 employee cannot change ticket status directly
+PASS E22 employee can comment on own ticket
+PASS E23 employee cannot post internal comments
+PASS I01 deactivated user cannot create tickets
+PASS I02 deactivated user reads no data
+PASS T01 IT support sees all tickets
+PASS T02 assignable_staff lists active IT/admin users
+PASS T03 accept/assign moves ticket to assigned
+PASS T04 assignment recorded in history with actor
+PASS T05 status change recorded in history
+PASS T06 invalid transition in_progress->closed rejected
+PASS T07 resolve without resolution rejected
+PASS T08 cannot assign to a non-IT user
+PASS T09 reporter_id is not updatable
+PASS T10 tickets cannot be deleted
+PASS T11 clients cannot forge activity rows
+PASS T12 IT can add internal work note
+PASS T13 IT can add public comment
+PASS T14 IT can resolve with resolution
+PASS T15 resolution recorded in history
+PASS T16 IT support cannot manage categories
+PASS T17 IT support cannot read app settings
+PASS E24 employee cannot see internal work notes
+PASS E25 employee sees own + IT public comments
+PASS E26 employee can track ticket progress (history)
+PASS E27 employee can see assignee name
+PASS R01 reopen requires a reason
+PASS R02 reporter can reopen resolved ticket
+PASS R03 reopen reason recorded in history
+PASS R04 reporter cannot close an unresolved ticket
+PASS R05 other employee cannot act on ticket
+PASS R06 resolving keeps existing assignee
+PASS R07 reporter can confirm/close resolved ticket
+PASS S01 ticket_stats(mine) respects RLS
+PASS S02 employee ticket_stats(all) still limited by RLS
+PASS S03 IT ticket_stats(all) sees everything
+PASS D01 admin sees all profiles
+PASS D02 admin can create category
+PASS D03 admin can deactivate category
+PASS D04 admin can update settings
+PASS D05 settings persisted
+PASS D06 even admin cannot insert profiles directly (Edge Function only)
+PASS D07 inactive category rejected for new tickets
+PASS D08 admin can rename a category that existing tickets use
+PASS D09 rename cascades to existing tickets
+PASS D10 tickets now carry the new category name
+PASS N01 ticket_created enqueued per ticket
+PASS N02 only non-internal comments enqueue notifications
+PASS N03 status changes enqueue notifications
+PASS N04 assignment enqueues notification
+PASS N05 claim_notifications locks a batch
+PASS N06 claimed rows are not re-claimed immediately
+PASS N07 complete_notification marks rows sent
+PASS N08 notifications_enabled=false suppresses enqueue
+PASS L01 5 failures lock the account for 15 minutes
+PASS L02 colleague behind the same office IP is not locked out
+PASS L03 IP-wide brute force (30 failures) is blocked
+PASS L04 successful login clears the account failure streak
+PASS P02b anon cannot call platform event-trigger function rls_auto_enable directly

@@ -1,0 +1,10 @@
+# Phase C BEFORE (2026-11-08T08:02:39Z)
+## secret NAMES (supabase secrets list; digests omitted)
+['SUPABASE_ANON_KEY', 'SUPABASE_DB_URL', 'SUPABASE_JWKS', 'SUPABASE_PUBLISHABLE_KEYS', 'SUPABASE_SECRET_KEYS', 'SUPABASE_SERVICE_ROLE_KEY', 'SUPABASE_URL']
+## CORS preflight probes
+login Origin=https://itsr-radiant-staging-2vj2mwxa8-assyaref75.vercel.app -> 200 ACAO=*
+login Origin=https://evil.example -> 200 ACAO=*
+admin-users Origin=https://itsr-radiant-staging-2vj2mwxa8-assyaref75.vercel.app -> 200 ACAO=*
+admin-users Origin=https://evil.example -> 200 ACAO=*
+send-notifications Origin=https://itsr-radiant-staging-2vj2mwxa8-assyaref75.vercel.app -> 200 ACAO=*
+send-notifications Origin=https://evil.example -> 200 ACAO=*

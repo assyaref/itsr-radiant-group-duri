@@ -1,0 +1,9 @@
+Uploading asset (admin-users): supabase/functions/admin-users/index.ts
+Uploading asset (admin-users): supabase/functions/admin-users/validation.ts
+Uploading asset (admin-users): supabase/functions/_shared/http.ts
+Uploading asset (admin-users): supabase/functions/_shared/supabase.ts
+Deployed Functions on project yzjpttfwnvnuyxbdkidm: admin-users
+You can inspect your deployment in the Dashboard: https://supabase.com/dashboard/project/yzjpttfwnvnuyxbdkidm/functions
+login v3 ACTIVE verify_jwt=False
+admin-users v4 ACTIVE verify_jwt=False
+send-notifications v3 ACTIVE verify_jwt=False

@@ -1,0 +1,52 @@
+ nspname |        proname         | security_definer |  owner   |      proconfig       | anon_exec | auth_exec | service_exec 
+---------+------------------------+------------------+----------+----------------------+-----------+-----------+--------------
+ private | comments_after_insert  | t                | postgres | {"search_path=\"\""} | f         | f         | f
+ private | comments_before_insert | f                | postgres | {"search_path=\"\""} | f         | f         | f
+ private | current_app_role       | t                | postgres | {"search_path=\"\""} | f         | t         | t
+ private | enqueue_notification   | t                | postgres | {"search_path=\"\""} | f         | f         | f
+ private | is_active_user         | t                | postgres | {"search_path=\"\""} | f         | t         | t
+ private | is_admin               | t                | postgres | {"search_path=\"\""} | f         | t         | t
+ private | is_staff               | t                | postgres | {"search_path=\"\""} | f         | t         | t
+ private | is_valid_transition    | f                | postgres | {"search_path=\"\""} | f         | f         | f
+ private | tickets_after_insert   | t                | postgres | {"search_path=\"\""} | f         | f         | f
+ private | tickets_after_update   | t                | postgres | {"search_path=\"\""} | f         | f         | f
+ private | tickets_before_insert  | t                | postgres | {"search_path=\"\""} | f         | f         | f
+ private | tickets_before_update  | t                | postgres | {"search_path=\"\""} | f         | f         | f
+ private | touch_updated_at       | f                | postgres | {"search_path=\"\""} | f         | f         | f
+ public  | assignable_staff       | f                | postgres | {"search_path=\"\""} | f         | t         | t
+ public  | claim_notifications    | t                | postgres | {"search_path=\"\""} | f         | f         | t
+ public  | complete_notification  | t                | postgres | {"search_path=\"\""} | f         | f         | t
+ public  | login_is_rate_limited  | t                | postgres | {"search_path=\"\""} | f         | f         | t
+ public  | record_login_attempt   | t                | postgres | {"search_path=\"\""} | f         | f         | t
+ public  | reporter_ticket_action | t                | postgres | {"search_path=\"\""} | f         | t         | t
+ public  | ticket_stats           | f                | postgres | {"search_path=\"\""} | f         | t         | t
+(20 rows)
+
+ schemaname |      tablename      | rowsecurity 
+------------+---------------------+-------------
+ public     | app_settings        | t
+ public     | categories          | t
+ public     | login_attempts      | t
+ public     | notification_outbox | t
+ public     | profiles            | t
+ public     | ticket_activity_log | t
+ public     | ticket_comments     | t
+ public     | tickets             | t
+(8 rows)
+
+      tablename      |      policyname      |  cmd   |      roles      
+---------------------+----------------------+--------+-----------------
+ app_settings        | app_settings_select  | SELECT | {authenticated}
+ app_settings        | app_settings_update  | UPDATE | {authenticated}
+ categories          | categories_insert    | INSERT | {authenticated}
+ categories          | categories_select    | SELECT | {authenticated}
+ categories          | categories_update    | UPDATE | {authenticated}
+ profiles            | profiles_select      | SELECT | {authenticated}
+ ticket_activity_log | activity_select      | SELECT | {authenticated}
+ ticket_comments     | comments_insert      | INSERT | {authenticated}
+ ticket_comments     | comments_select      | SELECT | {authenticated}
+ tickets             | tickets_insert       | INSERT | {authenticated}
+ tickets             | tickets_select       | SELECT | {authenticated}
+ tickets             | tickets_update_staff | UPDATE | {authenticated}
+(12 rows)
+

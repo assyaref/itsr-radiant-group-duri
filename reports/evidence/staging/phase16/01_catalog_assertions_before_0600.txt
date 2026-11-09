@@ -1,0 +1,17 @@
+# Staging read-only catalog assertions, 2026-11-09T01:15:28Z, ref yzjpttfwnvnuyxbdkidm (BEFORE migration 0600)
+PASS | C01 every public table has RLS enabled | all on
+PASS | C02 exactly the 8 application tables exist in public | app_settings,categories,login_attempts,notification_outbox,profiles,ticket_activity_log,ticket_comments,tickets
+PASS | C03 12 RLS policies (no drift) | 12
+PASS | C04 anon has no table privileges in public | 0
+PASS | C05 anon can execute no public/private function | none
+PASS | C06 authenticated executes exactly 3 public RPCs | assignable_staff(),reporter_ticket_action(uuid,text,text),ticket_stats(text)
+PASS | C07 service-only RPCs not executable by authenticated | none
+PASS | C08 every SECURITY DEFINER function pins search_path | none
+PASS | C09 authenticated has no access to notification_outbox / login_attempts | checked SELECT/INSERT/UPDATE/DELETE
+PASS | C10 clients cannot write profiles or delete audit records | profiles I/U/D, tickets D, activity I/U/D, comments U/D
+PASS | C11 server-owned ticket columns not client-insertable | ticket_number/status/assigned_to_id insert; reporter_id/ticket_number update
+PASS | C12 anon has no USAGE on schema private | 
+PASS | C13 platform rls_auto_enable() not client-executable | present
+PASS | C14 auth.uid() is Supabase-native (not overridden) | supabase_auth_admin
+FAIL | C15 claim_notifications has retry cap (migration 0600) | 
+passed=14 total=15

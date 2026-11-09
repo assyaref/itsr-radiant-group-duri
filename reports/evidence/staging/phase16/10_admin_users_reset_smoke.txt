@@ -1,0 +1,7 @@
+# admin-users v4 reset_password validation smoke test, 2026-11-09T01:24:52.631Z
+PASS | reset_password: invalid uuid -> 400 | expected 400, got 400 {"error":"Invalid user id"}
+PASS | reset_password: empty user id -> 400 | expected 400, got 400 {"error":"Invalid user id"}
+PASS | reset_password: password > 128 chars -> 400 | expected 400, got 400 {"error":"Password must be 8–128 characters"}
+PASS | reset_password: password < 8 chars -> 400 | expected 400, got 400 {"error":"Password must be 8–128 characters"}
+PASS | reset_password: unknown user -> 404 | expected 404, got 404 {"error":"User not found"}
+PASS | reset_password as employee -> 403 | expected 403, got 403 {"error":"Administrator access required"}

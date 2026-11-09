@@ -1,0 +1,22 @@
+Check file:///D:/PROJECT - FullStack Developer/PROGRESS/ITSR RADIANT GROUP DURI/supabase/functions/tests/shared_test.ts
+running 13 tests from ./tests/shared_test.ts
+employee number normalisation ... ok (0ms)
+CORS: allow-list echoes only listed origins ... ok (0ms)
+CORS: fail-closed when ALLOWED_ORIGINS is unset, empty or wildcard ... ok (0ms)
+client IP takes first X-Forwarded-For hop ... ok (8ms)
+HTML escaping ... ok (0ms)
+new ticket -> IT staff, CC group + manager, link built ... ok (0ms)
+new ticket with no IT staff falls back to group address ... ok (0ms)
+status change -> reporter; actor not emailed about own action ... ok (0ms)
+comment by reporter -> assignee; by tech -> reporter ... ok (0ms)
+no configured addresses and no recipients -> null (nothing invented) ... ok (0ms)
+user-supplied content is escaped in HTML body ... ok (0ms)
+admin create validation ... ok (0ms)
+admin update validation ... ok (0ms)
+
+ok | 13 passed | 0 failed (24ms)
+
+--- check
+Check file:///D:/PROJECT - FullStack Developer/PROGRESS/ITSR RADIANT GROUP DURI/supabase/functions/login/index.ts
+Check file:///D:/PROJECT - FullStack Developer/PROGRESS/ITSR RADIANT GROUP DURI/supabase/functions/admin-users/index.ts
+Check file:///D:/PROJECT - FullStack Developer/PROGRESS/ITSR RADIANT GROUP DURI/supabase/functions/send-notifications/index.ts

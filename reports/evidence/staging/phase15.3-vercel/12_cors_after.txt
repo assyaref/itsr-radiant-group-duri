@@ -1,0 +1,20 @@
+# Phase C AFTER (2026-11-08T08:03:25Z); ALLOWED_ORIGINS=https://itsr-radiant-staging-2vj2mwxa8-assyaref75.vercel.app
+PASS login OPTIONS approved origin                              -> 200 ACAO=https://itsr-radiant-staging-2vj2mwxa8-assyaref75.vercel.app (expect 200 https://itsr-radiant-staging-2vj2mwxa8-assyaref75.vercel.app) ok
+PASS login OPTIONS foreign origin                               -> 200 ACAO=(none) (expect 200 (none)) ok
+PASS login OPTIONS no origin                                    -> 200 ACAO=(none) (expect 200 (none)) ok
+PASS admin-users OPTIONS approved origin                        -> 200 ACAO=https://itsr-radiant-staging-2vj2mwxa8-assyaref75.vercel.app (expect 200 https://itsr-radiant-staging-2vj2mwxa8-assyaref75.vercel.app) ok
+PASS admin-users OPTIONS foreign origin                         -> 200 ACAO=(none) (expect 200 (none)) ok
+PASS admin-users OPTIONS no origin                              -> 200 ACAO=(none) (expect 200 (none)) ok
+PASS send-notifications OPTIONS approved origin                 -> 200 ACAO=https://itsr-radiant-staging-2vj2mwxa8-assyaref75.vercel.app (expect 200 https://itsr-radiant-staging-2vj2mwxa8-assyaref75.vercel.app) ok
+PASS send-notifications OPTIONS foreign origin                  -> 200 ACAO=(none) (expect 200 (none)) ok
+PASS send-notifications OPTIONS no origin                       -> 200 ACAO=(none) (expect 200 (none)) ok
+PASS login POST short pw, approved origin (pre-DB reject)       -> 401 ACAO=https://itsr-radiant-staging-2vj2mwxa8-assyaref75.vercel.app (expect 401 https://itsr-radiant-staging-2vj2mwxa8-assyaref75.vercel.app) {"error":"Authentication failed. Please check your credentials."}
+PASS login POST short pw, foreign origin                        -> 401 ACAO=(none) (expect 401 (none)) {"error":"Authentication failed. Please check your credentials."}
+PASS login GET method guard, approved origin                    -> 405 ACAO=https://itsr-radiant-staging-2vj2mwxa8-assyaref75.vercel.app (expect 405 https://itsr-radiant-staging-2vj2mwxa8-assyaref75.vercel.app) {"error":"Method not allowed"}
+PASS admin-users POST no JWT, approved origin                   -> 401 ACAO=https://itsr-radiant-staging-2vj2mwxa8-assyaref75.vercel.app (expect 401 https://itsr-radiant-staging-2vj2mwxa8-assyaref75.vercel.app) {"error":"Not authenticated"}
+PASS admin-users POST no JWT, foreign origin                    -> 401 ACAO=(none) (expect 401 (none)) {"error":"Not authenticated"}
+PASS admin-users POST publishable key as bearer                 -> 401 ACAO=https://itsr-radiant-staging-2vj2mwxa8-assyaref75.vercel.app (expect 401 https://itsr-radiant-staging-2vj2mwxa8-assyaref75.vercel.app) {"error":"Not authenticated"}
+PASS admin-users POST forged JWT bearer                         -> 401 ACAO=https://itsr-radiant-staging-2vj2mwxa8-assyaref75.vercel.app (expect 401 https://itsr-radiant-staging-2vj2mwxa8-assyaref75.vercel.app) {"error":"Not authenticated"}
+PASS send-notifications POST no JWT, approved origin            -> 401 ACAO=https://itsr-radiant-staging-2vj2mwxa8-assyaref75.vercel.app (expect 401 https://itsr-radiant-staging-2vj2mwxa8-assyaref75.vercel.app) {"error":"Not authenticated"}
+PASS send-notifications POST wrong cron secret                  -> 401 ACAO=https://itsr-radiant-staging-2vj2mwxa8-assyaref75.vercel.app (expect 401 https://itsr-radiant-staging-2vj2mwxa8-assyaref75.vercel.app) {"error":"Not authenticated"}
+SUMMARY: 18 pass, 0 fail

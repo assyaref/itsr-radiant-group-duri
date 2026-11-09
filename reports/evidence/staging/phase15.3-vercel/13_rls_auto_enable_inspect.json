@@ -1,0 +1,53 @@
+﻿{
+    "r":  {
+              "fn":  {
+                         "signature":  "rls_auto_enable()",
+                         "owner":  "postgres",
+                         "security_definer":  true,
+                         "language":  "plpgsql",
+                         "rettype":  "event_trigger",
+                         "volatility":  "v",
+                         "proconfig":  [
+                                           "search_path=pg_catalog"
+                                       ],
+                         "proacl":  null,
+                         "exec_anon":  true,
+                         "exec_authenticated":  true,
+                         "exec_service_role":  true,
+                         "exec_public_via_default":  true,
+                         "source":  "\nDECLARE\n  cmd record;\n  tbl name;\nBEGIN\n  FOR cmd IN\n    SELECT *\n    FROM pg_event_trigger_ddl_commands()\n    WHERE command_tag IN (\u0027CREATE TABLE\u0027, \u0027CREATE TABLE AS\u0027, \u0027SELECT INTO\u0027)\n      AND object_type IN (\u0027table\u0027,\u0027partitioned table\u0027)\n  LOOP\n     IF cmd.schema_name IS NOT NULL AND cmd.schema_name IN (\u0027public\u0027) AND cmd.schema_name NOT IN (\u0027pg_catalog\u0027,\u0027information_schema\u0027) AND cmd.schema_name NOT LIKE \u0027pg_toast%\u0027 AND cmd.schema_name NOT LIKE \u0027pg_temp%\u0027 THEN\n      BEGIN\n        SELECT c.relname INTO tbl FROM pg_catalog.pg_class c WHERE c.oid = cmd.objid;\n        EXECUTE format(\u0027alter table if exists %I.%I enable row level security\u0027, cmd.schema_name, tbl);\n        RAISE LOG \u0027rls_auto_enable: enabled RLS on %\u0027, cmd.object_identity;\n      EXCEPTION\n        WHEN OTHERS THEN\n          RAISE LOG \u0027rls_auto_enable: failed to enable RLS on %\u0027, cmd.object_identity;\n      END;\n     ELSE\n        RAISE LOG \u0027rls_auto_enable: skip % (either system schema or not in enforced list: %.)\u0027, cmd.object_identity, cmd.schema_name;\n     END IF;\n  END LOOP;\nEND;\n"
+                     },
+              "event_trigger":  {
+                                    "name":  "ensure_rls",
+                                    "event":  "ddl_command_end",
+                                    "enabled":  "O",
+                                    "owner":  "postgres",
+                                    "tags":  [
+                                                 "CREATE TABLE",
+                                                 "CREATE TABLE AS",
+                                                 "SELECT INTO"
+                                             ]
+                                },
+              "default_acl_public_schema_functions":  [
+                                                          {
+                                                              "role":  "supabase_admin",
+                                                              "acl":  [
+                                                                          "postgres=X/supabase_admin",
+                                                                          "anon=X/supabase_admin",
+                                                                          "authenticated=X/supabase_admin",
+                                                                          "service_role=X/supabase_admin"
+                                                                      ]
+                                                          },
+                                                          {
+                                                              "role":  "postgres",
+                                                              "acl":  [
+                                                                          "postgres=X/postgres"
+                                                                      ]
+                                                          }
+                                                      ],
+              "exposed_via_postgrest_rpc":  {
+                                                "in_public_schema":  true,
+                                                "pgrst_db_schemas_note":  "public is in the exposed schema list by default"
+                                            }
+          }
+}

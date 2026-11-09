@@ -1,0 +1,10 @@
+# Production-untouched check 2026-11-08T08:29:41Z
+## Supabase projects visible to the CLI account
+
+  
+   LINKED | ORG ID               | REFERENCE ID         | NAME                 | REGION                     | CREATED AT (UTC)    
+  --------|----------------------|----------------------|----------------------|----------------------------|---------------------
+     ●    | hpjxlemslirksiokaagz | yzjpttfwnvnuyxbdkidm | itsr-radiant-staging | Southeast Asia (Singapore) | 2026-11-05 02:52:56 
+
+## All Supabase writes this phase used --project-ref yzjpttfwnvnuyxbdkidm or https://yzjpttfwnvnuyxbdkidm.supabase.co (hard-coded REF in harness lib)
+## Vercel: deployments list (MCP list_deployments) unchanged = 3 (dpl_4heKbZ preview, dpl_9kEkf prod placeholder, dpl_EkNj preserved); no deploy performed in Phase 15.4

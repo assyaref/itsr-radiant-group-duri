@@ -1,0 +1,4 @@
+ERROR: The remote server returned an error: (400) Bad Request.
+{"message":"Failed to run sql query: ERROR:  P0001: PROBE direct call raised: [0A000] cannot display a value of type event_trigger\nCONTEXT:  PL/pgSQL function inline_code_block line 9 at RAISE\n"}
+ERROR: The remote server returned an error: (400) Bad Request.
+{"message":"Failed to run sql query: ERROR:  P0001: PROBE perform returned without error (body ran with zero DDL commands => no-op)\nCONTEXT:  PL/pgSQL function inline_code_block line 5 at RAISE\n"}

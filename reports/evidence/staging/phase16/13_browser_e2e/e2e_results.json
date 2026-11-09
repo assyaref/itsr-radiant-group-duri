@@ -1,0 +1,199 @@
+{
+  "run": "20261109T0202",
+  "app": "http://localhost:5000",
+  "backend": "staging yzjpttfwnvnuyxbdkidm",
+  "ticket": "ITSR-00009",
+  "summary": "26/27 PASS",
+  "results": [
+    {
+      "id": "E01",
+      "name": "invalid credentials are rejected with a generic message",
+      "result": "PASS",
+      "detail": "",
+      "screenshot": "screens/01_E01.png"
+    },
+    {
+      "id": "E02",
+      "name": "employee signs in and lands on the dashboard",
+      "result": "PASS",
+      "detail": "",
+      "screenshot": "screens/02_E02.png"
+    },
+    {
+      "id": "E03",
+      "name": "session persists across a full page reload",
+      "result": "PASS",
+      "detail": "#/dashboard",
+      "screenshot": "screens/03_E03.png"
+    },
+    {
+      "id": "E04",
+      "name": "employee is redirected away from staff/admin routes",
+      "result": "PASS",
+      "detail": "#/dashboard ; #/dashboard",
+      "screenshot": "screens/04_E04.png"
+    },
+    {
+      "id": "E05",
+      "name": "employee creates a ticket (server-generated number)",
+      "result": "PASS",
+      "detail": "ITSR-00009 #/tickets/7652c18f-46aa-4ee4-b06a-b43c9a06b20d",
+      "screenshot": "screens/05_E05.png"
+    },
+    {
+      "id": "E06",
+      "name": "employee adds a comment",
+      "result": "PASS",
+      "detail": "",
+      "screenshot": "screens/06_E06.png"
+    },
+    {
+      "id": "E07",
+      "name": "employee sees the new ticket in My Tickets",
+      "result": "PASS",
+      "detail": "",
+      "screenshot": "screens/07_E07.png"
+    },
+    {
+      "id": "E08",
+      "name": "employee cannot open another user's ticket (RLS)",
+      "result": "PASS",
+      "detail": "",
+      "screenshot": "screens/08_E08.png"
+    },
+    {
+      "id": "E09",
+      "name": "employee signs out (confirmation dialog) and returns to login",
+      "result": "PASS",
+      "detail": "",
+      "screenshot": "screens/09_E09.png"
+    },
+    {
+      "id": "T01",
+      "name": "IT Support signs in; dashboard shows queue + assigned sections",
+      "result": "PASS",
+      "detail": "",
+      "screenshot": "screens/10_T01.png"
+    },
+    {
+      "id": "T02",
+      "name": "IT Support sees the employee's new ticket in the queue",
+      "result": "PASS",
+      "detail": "",
+      "screenshot": "screens/11_T02.png"
+    },
+    {
+      "id": "T03",
+      "name": "IT Support accepts the ticket",
+      "result": "PASS",
+      "detail": "",
+      "screenshot": "screens/12_T03.png"
+    },
+    {
+      "id": "T04",
+      "name": "IT Support starts work (status change with confirmation)",
+      "result": "PASS",
+      "detail": "",
+      "screenshot": "screens/13_T04.png"
+    },
+    {
+      "id": "T05",
+      "name": "IT Support adds an internal technical note",
+      "result": "PASS",
+      "detail": "",
+      "screenshot": "screens/14_T05.png"
+    },
+    {
+      "id": "T06",
+      "name": "IT Support resolves with a recorded resolution",
+      "result": "PASS",
+      "detail": "",
+      "screenshot": "screens/15_T06.png"
+    },
+    {
+      "id": "T07",
+      "name": "activity history records accept / status / resolve",
+      "result": "PASS",
+      "detail": "",
+      "screenshot": "screens/16_T07.png"
+    },
+    {
+      "id": "E10",
+      "name": "employee tracks progress: resolution visible, internal note hidden",
+      "result": "PASS",
+      "detail": "",
+      "screenshot": "screens/17_E10.png"
+    },
+    {
+      "id": "E11",
+      "name": "employee confirms and closes the resolved ticket",
+      "result": "PASS",
+      "detail": "",
+      "screenshot": "screens/18_E11.png"
+    },
+    {
+      "id": "A01",
+      "name": "administrator signs in; admin navigation visible",
+      "result": "PASS",
+      "detail": "",
+      "screenshot": "screens/19_A01.png"
+    },
+    {
+      "id": "A02",
+      "name": "administrator user management lists employees with roles",
+      "result": "PASS",
+      "detail": "",
+      "screenshot": "screens/20_A02.png"
+    },
+    {
+      "id": "A03",
+      "name": "administrator category management",
+      "result": "PASS",
+      "detail": "",
+      "screenshot": "screens/21_A03.png"
+    },
+    {
+      "id": "A04",
+      "name": "administrator application settings load",
+      "result": "PASS",
+      "detail": "",
+      "screenshot": "screens/22_A04.png"
+    },
+    {
+      "id": "A05",
+      "name": "administrator oversees all tickets incl. the closed E2E ticket",
+      "result": "PASS",
+      "detail": "",
+      "screenshot": "screens/23_A05.png"
+    },
+    {
+      "id": "M01",
+      "name": "phone: login screen fits and signs in",
+      "result": "PASS",
+      "detail": "scrollWidth=390",
+      "screenshot": "screens/24_M01.png"
+    },
+    {
+      "id": "M02",
+      "name": "phone: drawer navigation replaces the rail",
+      "result": "PASS",
+      "detail": "",
+      "screenshot": "screens/25_M02.png"
+    },
+    {
+      "id": "M03",
+      "name": "phone: ticket detail renders stacked (no horizontal scroll)",
+      "result": "FAIL",
+      "detail": "not found within 20000ms: History & comments",
+      "screenshot": "screens/26_M03_FAIL.png",
+      "semantics": "flt-semantics[]  | Open navigation menuMy TicketsReopen\nflt-semantics[]  | Open navigation menuMy TicketsReopen\nflt-semantics[]  | Open navigation menuMy TicketsReopen\nflt-semantics[]  | Open navigation menuMy Tickets\nflt-semantics[button]  | Open navigation menu\nflt-semantics[]  | Reopen\nflt-semantics[]  | Reopen\nflt-semantics[]  | Reopen\nflt-semantics[group]  | Reopen\nflt-semantics[]  | Reopen\nflt-semantics[group] ITSR-00009\nClosed\nMedium\nE2E browser test 20261109T0202\nCategory\nHardware\nPriority\nMedium\nReporter\nStaging Employee (Synthetic)\nAssigned to\nStaging Technician (Synthetic)\nCreated\n9 Nov 2026, 09:03\nLast update\n9 Nov 2026, 09:05\nResolved\n9 Nov 2026, 09:04\nClosed\n9 Nov 2026, 09:05\nDescription\nAutomated browser E2E: laptop shows a black screen after login. Synthetic staging data.\nResolution\nE2E resolution: RAM reseated, laptop boots normally. | \nflt-semantics[]  | \nflt-semantics[group] This ticket is closed. | Reopen\nflt-semantics[button]  | Reopen\nflt-semantics[]  | \ntextarea[] Add a comment\nAdd details or reply to IT Support | "
+    },
+    {
+      "id": "M04",
+      "name": "phone: create-ticket form usable",
+      "result": "PASS",
+      "detail": "",
+      "screenshot": "screens/27_M04.png"
+    }
+  ]
+}

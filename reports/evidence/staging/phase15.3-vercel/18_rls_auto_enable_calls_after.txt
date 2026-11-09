@@ -1,0 +1,2 @@
+﻿ERROR: The remote server returned an error: (400) Bad Request.
+{"message":"Failed to run sql query: ERROR:  P0001: PROBE anon:denied(42501); authenticated:denied(42501); ensure_rls on new public table (as postgres): relrowsecurity=true\nCONTEXT:  PL/pgSQL function inline_code_block line 13 at RAISE\n"}

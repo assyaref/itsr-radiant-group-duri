@@ -1,0 +1,17 @@
+# Supabase CLI project config (only the parts this project relies on).
+# project_id is the local CLI identifier; link to staging with `supabase link --project-ref <ref>`.
+project_id = "itsr-radiant"
+
+# The Flutter app uses publishable (non-JWT) keys, so gateway JWT verification is
+# disabled and EVERY function authorizes requests itself in code:
+#   login               - public by design (rate-limited, uniform errors)
+#   admin-users         - verifies caller JWT + active administrator profile
+#   send-notifications  - verifies caller JWT (active user) or x-cron-secret
+[functions.login]
+verify_jwt = false
+
+[functions.admin-users]
+verify_jwt = false
+
+[functions.send-notifications]
+verify_jwt = false

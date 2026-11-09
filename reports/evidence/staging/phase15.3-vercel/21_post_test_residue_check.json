@@ -1,0 +1,14 @@
+﻿{
+    "r":  {
+              "test_schema_exists":  false,
+              "probe_table_exists":  false,
+              "tickets":  0,
+              "profiles":  0,
+              "auth_users":  0,
+              "login_attempts":  1,
+              "ticket_number_seq":  {
+                                        "last_value":  1,
+                                        "is_called":  false
+                                    }
+          }
+}

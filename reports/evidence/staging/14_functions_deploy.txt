@@ -1,0 +1,26 @@
+deploy started 2026-11-08T07:49:09Z
+Deploying Function: login
+Uploading asset (login): supabase/functions/login/index.ts
+Uploading asset (login): supabase/functions/_shared/supabase.ts
+Uploading asset (login): supabase/functions/_shared/http.ts
+Deploying Function: admin-users
+Uploading asset (admin-users): supabase/functions/admin-users/index.ts
+Uploading asset (admin-users): supabase/functions/admin-users/validation.ts
+Uploading asset (admin-users): supabase/functions/_shared/http.ts
+Uploading asset (admin-users): supabase/functions/_shared/supabase.ts
+Deploying Function: send-notifications
+Uploading asset (send-notifications): supabase/functions/send-notifications/index.ts
+Uploading asset (send-notifications): supabase/functions/_shared/notification_rules.ts
+Uploading asset (send-notifications): supabase/functions/_shared/http.ts
+Uploading asset (send-notifications): supabase/functions/_shared/supabase.ts
+Deployed Functions on project yzjpttfwnvnuyxbdkidm: login, admin-users, send-notifications
+You can inspect your deployment in the Dashboard: https://supabase.com/dashboard/project/yzjpttfwnvnuyxbdkidm/functions
+exit=0
+
+  
+   ID                                   | NAME               | SLUG               | STATUS | VERSION | UPDATED_AT (UTC)    
+  --------------------------------------|--------------------|--------------------|--------|---------|---------------------
+   c7b1babe-25bd-4a17-91b2-6647e8a0a2a2 | login              | login              | ACTIVE | 1       | 2026-11-08 07:49:18 
+   57281cac-d937-4841-a2e9-12ec3f2e724e | admin-users        | admin-users        | ACTIVE | 1       | 2026-11-08 07:49:18 
+   1b60527b-9c26-4f6e-a1ea-b766a0cecb4c | send-notifications | send-notifications | ACTIVE | 1       | 2026-11-08 07:49:18 
+

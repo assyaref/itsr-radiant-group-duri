@@ -1,0 +1,24 @@
+{
+  "started_utc": "2026-11-08T08:25:43.724Z",
+  "steps": [
+    {
+      "name": "login for expiry test",
+      "result": "PASS",
+      "detail": {
+        "status": 200,
+        "expires_in": 3600,
+        "exp_minus_iat": 3600,
+        "exp_utc": "2026-11-08T09:25:45.000Z"
+      }
+    },
+    {
+      "name": "token valid before expiry",
+      "result": "PASS",
+      "detail": {
+        "status": 200,
+        "rows": 3
+      }
+    }
+  ],
+  "wait_seconds": 3690
+}

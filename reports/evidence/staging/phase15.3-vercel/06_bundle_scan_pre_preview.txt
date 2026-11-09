@@ -1,0 +1,19 @@
+# pre-preview bundle scan 2026-11-08T07:59:31Z
+main.dart.js sha256: 7d11c8e91c45f38432fb8cc7b8dbe886d9effd715e0938cbd5c898f012d880e7
+main.dart.js mtime: 2026-11-08T02:56:30Z
+supabase URLs embedded:
+      1 https://yzjpttfwnvnuyxbdkidm.supabase.co
+sb_secret_ occurrences: 1
+service_role occurrences: 1
+publishable key prefix (files): 1
+legacy JWT-like eyJ tokens: 0
+ENVIRONMENT define:
+      1 "staging"
+
+## Triage of the two "occurrences" above (both false positives - no secret present)
+- 'sb_secret_' match = app validation code: `if(!B.c.b6(a,"sb_")||B.c.b6(a,"sb_publishable_")||B.c.b6(a,"sb_secret_"))return` (literal prefix only, no key material)
+- 'service_role' match = app error string: 'Invalid publishable key detected. The anon key should not contain "service_role"...'
+- Embedded key: exactly 1 distinct sb_publishable_ key, len 46, sha256[:16]=fdd5d41531211314
+- Staging api-keys (supabase projects api-keys, hashes only): default publishable sha fdd5d41531211314 = MATCH;
+  secret key sha 28a078b1fd52d4d9, legacy service_role sha c6e0806b96231b09, legacy anon sha 73f3c7262f265cff - none embedded (0 eyJ JWTs, 0 sb_secret_<chars>)
+- main.dart.js mtime 02:56Z predates the 07:50Z build: Flutter build-cache artifact; content verified above regardless.

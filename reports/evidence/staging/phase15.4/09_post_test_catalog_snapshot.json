@@ -1,0 +1,194 @@
+{
+  "cleanup_user_metadata": [
+    {
+      "email": "stg.employee@example.com"
+    }
+  ],
+  "migrations": [
+    {
+      "version": "20261108000100"
+    },
+    {
+      "version": "20261108000200"
+    },
+    {
+      "version": "20261108000300"
+    },
+    {
+      "version": "20261108000400"
+    },
+    {
+      "version": "20261108000500"
+    }
+  ],
+  "tables_rls": [
+    {
+      "relname": "app_settings",
+      "rls": true,
+      "force": false
+    },
+    {
+      "relname": "categories",
+      "rls": true,
+      "force": false
+    },
+    {
+      "relname": "login_attempts",
+      "rls": true,
+      "force": false
+    },
+    {
+      "relname": "notification_outbox",
+      "rls": true,
+      "force": false
+    },
+    {
+      "relname": "profiles",
+      "rls": true,
+      "force": false
+    },
+    {
+      "relname": "ticket_activity_log",
+      "rls": true,
+      "force": false
+    },
+    {
+      "relname": "ticket_comments",
+      "rls": true,
+      "force": false
+    },
+    {
+      "relname": "tickets",
+      "rls": true,
+      "force": false
+    }
+  ],
+  "policies": [
+    {
+      "tablename": "app_settings",
+      "policyname": "app_settings_select",
+      "cmd": "SELECT",
+      "roles": "{authenticated}"
+    },
+    {
+      "tablename": "app_settings",
+      "policyname": "app_settings_update",
+      "cmd": "UPDATE",
+      "roles": "{authenticated}"
+    },
+    {
+      "tablename": "categories",
+      "policyname": "categories_insert",
+      "cmd": "INSERT",
+      "roles": "{authenticated}"
+    },
+    {
+      "tablename": "categories",
+      "policyname": "categories_select",
+      "cmd": "SELECT",
+      "roles": "{authenticated}"
+    },
+    {
+      "tablename": "categories",
+      "policyname": "categories_update",
+      "cmd": "UPDATE",
+      "roles": "{authenticated}"
+    },
+    {
+      "tablename": "profiles",
+      "policyname": "profiles_select",
+      "cmd": "SELECT",
+      "roles": "{authenticated}"
+    },
+    {
+      "tablename": "ticket_activity_log",
+      "policyname": "activity_select",
+      "cmd": "SELECT",
+      "roles": "{authenticated}"
+    },
+    {
+      "tablename": "ticket_comments",
+      "policyname": "comments_insert",
+      "cmd": "INSERT",
+      "roles": "{authenticated}"
+    },
+    {
+      "tablename": "ticket_comments",
+      "policyname": "comments_select",
+      "cmd": "SELECT",
+      "roles": "{authenticated}"
+    },
+    {
+      "tablename": "tickets",
+      "policyname": "tickets_insert",
+      "cmd": "INSERT",
+      "roles": "{authenticated}"
+    },
+    {
+      "tablename": "tickets",
+      "policyname": "tickets_select",
+      "cmd": "SELECT",
+      "roles": "{authenticated}"
+    },
+    {
+      "tablename": "tickets",
+      "policyname": "tickets_update_staff",
+      "cmd": "UPDATE",
+      "roles": "{authenticated}"
+    }
+  ],
+  "anon_table_privs": [],
+  "public_fn_exec": [
+    {
+      "proname": "assignable_staff",
+      "anon": false,
+      "authenticated": true
+    },
+    {
+      "proname": "claim_notifications",
+      "anon": false,
+      "authenticated": false
+    },
+    {
+      "proname": "complete_notification",
+      "anon": false,
+      "authenticated": false
+    },
+    {
+      "proname": "login_is_rate_limited",
+      "anon": false,
+      "authenticated": false
+    },
+    {
+      "proname": "record_login_attempt",
+      "anon": false,
+      "authenticated": false
+    },
+    {
+      "proname": "reporter_ticket_action",
+      "anon": false,
+      "authenticated": true
+    },
+    {
+      "proname": "rls_auto_enable",
+      "anon": false,
+      "authenticated": false
+    },
+    {
+      "proname": "ticket_stats",
+      "anon": false,
+      "authenticated": true
+    }
+  ],
+  "counts": [
+    {
+      "users": 3,
+      "profiles": 3,
+      "tickets": 4,
+      "comments": 3,
+      "activity": 14,
+      "categories": 7,
+      "outbox": 14
+    }
+  ]
+}

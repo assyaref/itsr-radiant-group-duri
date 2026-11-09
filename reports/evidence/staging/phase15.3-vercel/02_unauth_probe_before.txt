@@ -1,0 +1,4 @@
+# Unauthenticated probe BEFORE containment (2026-11-08T07:58:09Z)
+itsr-radiant-staging.vercel.app -> 200 redirect=
+itsr-radiant-staging-assyaref75.vercel.app -> 302 redirect=https://vercel.com/sso-api?url=https%3A%2F%2Fitsr-radiant-staging-assyaref75.vercel.app%2F&nonce=<redacted>
+itsr-radiant-staging-13dyd4g5f-assyaref75.vercel.app -> 302 redirect=https://vercel.com/sso-api?url=https%3A%2F%2Fitsr-radiant-staging-13dyd4g5f-assyaref75.vercel.app%2F&nonce=<redacted>

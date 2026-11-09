@@ -1,0 +1,15 @@
+# PostgREST probes as anon (publishable key, value redacted) 2026-11-08T07:48:21Z
+POST /rest/v1/rpc/rls_auto_enable -> 400 {"code":"0A000","details":null,"hint":null,"message":"cannot display a value of type event_trigger"}
+POST /rest/v1/rpc/login_is_rate_limited -> 404 {"code":"PGRST202","details":"Searched for the function public.login_is_rate_limited without parameters or with a single unnamed json/jsonb parameter, but no matches were found in the schema cache.","hint":null,"message"
+POST /rest/v1/rpc/claim_notifications -> 401 {"code":"42501","details":null,"hint":null,"message":"permission denied for function claim_notifications"}
+POST /rest/v1/rpc/ticket_stats -> 401 {"code":"42501","details":null,"hint":null,"message":"permission denied for function ticket_stats"}
+POST /rest/v1/rpc/assignable_staff -> 401 {"code":"42501","details":null,"hint":null,"message":"permission denied for function assignable_staff"}
+GET /rest/v1/tickets -> 401 {"code":"42501","details":null,"hint":"Grant the required privileges to the current role with: GRANT SELECT ON public.tickets TO anon;","message":"permission denied for table tickets"}
+GET /rest/v1/profiles -> 401 {"code":"42501","details":null,"hint":"Grant the required privileges to the current role with: GRANT SELECT ON public.profiles TO anon;","message":"permission denied for table profiles"}
+GET /rest/v1/app_settings -> 401 {"code":"42501","details":null,"hint":"Grant the required privileges to the current role with: GRANT SELECT ON public.app_settings TO anon;","message":"permission denied for table app_settings"}
+GET /rest/v1/categories -> 401 {"code":"42501","details":null,"hint":"Grant the required privileges to the current role with: GRANT SELECT ON public.categories TO anon;","message":"permission denied for table categories"}
+GET /rest/v1/notification_outbox -> 401 {"code":"42501","details":null,"hint":"Grant the required privileges to the current role with: GRANT SELECT ON public.notification_outbox TO anon;","message":"permission denied for table notification_
+GET /rest/v1/login_attempts -> 401 {"code":"42501","details":null,"hint":"Grant the required privileges to the current role with: GRANT SELECT ON public.login_attempts TO anon;","message":"permission denied for table login_attempts"}
+GET /rest/v1/ticket_comments -> 401 {"code":"42501","details":null,"hint":"Grant the required privileges to the current role with: GRANT SELECT ON public.ticket_comments TO anon;","message":"permission denied for table ticket_comments"}
+GET /rest/v1/ticket_activity_log -> 401 {"code":"42501","details":null,"hint":"Grant the required privileges to the current role with: GRANT SELECT ON public.ticket_activity_log TO anon;","message":"permission denied for table ticket_activi
+POST /rest/v1/tickets (anon insert) -> 401 {"code":"42501","details":null,"hint":"Grant the required privileges to the current role with: GRANT INSERT ON public.tickets TO anon;","message":"permission denied for table tickets"}

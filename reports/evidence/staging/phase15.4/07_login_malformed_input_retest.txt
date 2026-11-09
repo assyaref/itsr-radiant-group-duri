@@ -1,0 +1,7 @@
+# Re-test of AUTH-invalid-malformed / AUTH-invalid-uniform  2026-11-08T08:28:48Z
+# sb-request-id=no => request stopped at Supabase edge (Cloudflare WAF), never reached the login function
+"x' or 1=1--" 403 149ms server=cloudflare sb-request-id=no cf-ray=yes acao=null body=<!DOCTYPE html> <!--[if lt IE 7]> <html class="no-js ie6 oldie" lang="en-US"> <![endif]--> <!--[if IE 7]> <html class="no-js ie7 oldie" lang="en-US"> <![endif]--> <!--[if IE 8]> <html class="no-
+"x' or 1" 401 909ms server=cloudflare sb-request-id=yes cf-ray=yes acao=https://itsr-radiant-staging-2vj2mwxa8-assyaref75.vercel.app body={"error":"Authentication failed. Please check your credentials."}
+"abc def" 401 930ms server=cloudflare sb-request-id=yes cf-ray=yes acao=https://itsr-radiant-staging-2vj2mwxa8-assyaref75.vercel.app body={"error":"Authentication failed. Please check your credentials."}
+"STG-EMP-01" 401 881ms server=cloudflare sb-request-id=yes cf-ray=yes acao=https://itsr-radiant-staging-2vj2mwxa8-assyaref75.vercel.app body={"error":"Authentication failed. Please check your credentials."}
+"<script>" 401 865ms server=cloudflare sb-request-id=yes cf-ray=yes acao=https://itsr-radiant-staging-2vj2mwxa8-assyaref75.vercel.app body={"error":"Authentication failed. Please check your credentials."}

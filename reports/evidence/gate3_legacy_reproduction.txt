@@ -1,0 +1,10 @@
+          proname           |    rolname    | can_exec 
+----------------------------+---------------+----------
+ check_rate_limit           | anon          | t
+ check_rate_limit           | authenticated | t
+ check_rate_limit           | service_role  | t
+ cleanup_old_login_attempts | anon          | t
+ cleanup_old_login_attempts | authenticated | t
+ cleanup_old_login_attempts | service_role  | t
+(6 rows)
+

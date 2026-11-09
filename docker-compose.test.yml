@@ -1,0 +1,26 @@
+# Docker Compose untuk testing database - terisolasi dari production
+# Jangan gunakan file ini untuk produksi
+version: '3.8'
+
+services:
+  postgres-test:
+    image: postgres:15-alpine
+    container_name: itsr-radiant-postgres-test
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: itsr_radiant_test
+    ports:
+      - "5433:5432"  # Port berbeda dari production (5432)
+    volumes:
+      - postgres-test-data:/var/lib/postgresql/data
+      - ./migrations:/migrations
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  postgres-test-data:
+    name: itsr_radiant_postgres_test_data

@@ -1,0 +1,19 @@
+vercel started 2026-11-08T07:51:46Z
+- Development Command: None
+- Install Command: `yarn install`, `pnpm install`, `npm install`, or `bun install`
+- Output Directory: `public` if it exists, or `.`
+Linked to assyaref75/itsr-radiant-staging (created .vercel and added it to .gitignore)
+Uploading [====================] (4.3MB/4.3MB)
+Inspect: https://vercel.com/assyaref75/itsr-radiant-staging/EkNjNzCDe5sitjWwyVTntTJwaJyL [4s]
+Production: https://itsr-radiant-staging-13dyd4g5f-assyaref75.vercel.app [4s]
+https://itsr-radiant-staging-13dyd4g5f-assyaref75.vercel.appBuilding
+Building
+Completing
+Deployed to production. Run `vercel --prod` to overwrite later (https://vercel.link/2F).
+To change the domain or build command, go to https://vercel.com/assyaref75/itsr-radiant-staging/settings
+
+Common next commands:
+- `vercel inspect itsr-radiant-staging-13dyd4g5f-assyaref75.vercel.app --logs`
+- `vercel redeploy itsr-radiant-staging-13dyd4g5f-assyaref75.vercel.app`
+exit=0
+vercel ended 2026-11-08T07:52:05Z

@@ -1,0 +1,30 @@
+﻿{
+    "r":  {
+              "checked_at":  "2026-11-08T07:48:40.998188+00:00",
+              "test_schema_exists":  false,
+              "auth_users":  0,
+              "profiles":  0,
+              "tickets":  0,
+              "comments":  0,
+              "activity":  0,
+              "outbox":  0,
+              "login_attempts":  0,
+              "categories":  [
+                                 "Hardware",
+                                 "Software",
+                                 "Network",
+                                 "Email",
+                                 "Account Access",
+                                 "Other"
+                             ],
+              "app_settings":  {
+                                   "it_support_group_email":  null,
+                                   "manager_email":  null,
+                                   "notifications_enabled":  true
+                               },
+              "ticket_number_seq":  {
+                                        "last_value":  1,
+                                        "is_called":  false
+                                    }
+          }
+}

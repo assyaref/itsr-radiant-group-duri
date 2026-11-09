@@ -1,0 +1,18 @@
+# db push 0500 (2026-11-08T08:06:49Z) target ref yzjpttfwnvnuyxbdkidm
+migration sha256: f71879b88dd06d7c247a1bae4fea97019b448aacef2132bcb686fed4064d4ff6
+Initialising login role...
+Connecting to remote database...
+Do you want to push these migrations to the remote database?
+ • 20261108000500_restrict_rls_auto_enable_execute.sql
+
+ [Y/n] y
+Applying migration 20261108000500_restrict_rls_auto_enable_execute.sql...
+Finished supabase db push.
+exit=0
+# migration list after
+   Local          | Remote         | Time (UTC)          
+   20261108000100 | 20261108000100 | 2026-11-08 00:01:00 
+   20261108000200 | 20261108000200 | 2026-11-08 00:02:00 
+   20261108000300 | 20261108000300 | 2026-11-08 00:03:00 
+   20261108000400 | 20261108000400 | 2026-11-08 00:04:00 
+   20261108000500 | 20261108000500 | 2026-11-08 00:05:00 

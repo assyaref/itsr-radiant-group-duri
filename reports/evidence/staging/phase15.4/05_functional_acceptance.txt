@@ -1,0 +1,158 @@
+
+== Authentication
+PASS AUTH-admin-login admin login (STGADM01) {"status":200,"jwt_role":"authenticated","expires_in":3600,"acao":"https://itsr-radiant-staging-2vj2mwxa8-assyaref75.vercel.app"}
+PASS AUTH-employee-login employee login (STGEMP01) {"status":200,"jwt_role":"authenticated","expires_in":3600,"acao":"https://itsr-radiant-staging-2vj2mwxa8-assyaref75.vercel.app"}
+PASS AUTH-technician-login technician login (STGTEC01) {"status":200,"jwt_role":"authenticated","expires_in":3600,"acao":"https://itsr-radiant-staging-2vj2mwxa8-assyaref75.vercel.app"}
+PASS AUTH-admin-role admin token resolves to expected role {"status":200,"row":{"employee_number":"STGADM01","role":"administrator"}}
+PASS AUTH-employee-role employee token resolves to expected role {"status":200,"row":{"employee_number":"STGEMP01","role":"employee"}}
+PASS AUTH-technician-role technician token resolves to expected role {"status":200,"row":{"employee_number":"STGTEC01","role":"it_support"}}
+PASS AUTH-invalid-wrong-password invalid login: wrong password {"status":401,"error":"Authentication failed. Please check your credentials.","ms":940}
+PASS AUTH-invalid-unknown-employee-number invalid login: unknown employee number {"status":401,"error":"Authentication failed. Please check your credentials.","ms":1006}
+FAIL AUTH-invalid-malformed-employee-number invalid login: malformed employee number {"status":403,"ms":45}
+PASS AUTH-invalid-too-short-password invalid login: too-short password {"status":401,"error":"Authentication failed. Please check your credentials.","ms":861}
+FAIL AUTH-invalid-uniform invalid-login responses are indistinguishable (no account oracle) {"distinct_messages":["Authentication failed. Please check your credentials.",null]}
+PASS AUTH-rate-limit 6th failed attempt for one employee number is rate limited (429) {"statuses":[401,401,401,401,401,429]}
+PASS AUTH-session-lifetime access token lifetime = expires_in (session expiry configured) {"exp_minus_iat":3600,"expires_in":3600,"aal":"aal1","has_session_id":true}
+PASS AUTH-forged-token tampered JWT signature rejected by PostgREST {"status":401,"err":"PGRST301 No suitable key or wrong key type"}
+PASS AUTH-refresh refresh token rotates to a new valid session {"status":200}
+PASS AUTH-refresh-reuse already-rotated refresh token reuse (observed) {"status":200,"note":"Supabase allows a short reuse interval (default 10s); recorded as observation","err":""}
+PASS AUTH-anon-profiles anonymous read of profiles denied {"status":401,"err":"42501 permission denied for table profiles"}
+PASS AUTH-anon-tickets anonymous read of tickets denied {"status":401,"err":"42501 permission denied for table tickets"}
+PASS AUTH-anon-ticket_comments anonymous read of ticket_comments denied {"status":401,"err":"42501 permission denied for table ticket_comments"}
+PASS AUTH-anon-ticket_activity_log anonymous read of ticket_activity_log denied {"status":401,"err":"42501 permission denied for table ticket_activity_log"}
+PASS AUTH-anon-categories anonymous read of categories denied {"status":401,"err":"42501 permission denied for table categories"}
+PASS AUTH-anon-app_settings anonymous read of app_settings denied {"status":401,"err":"42501 permission denied for table app_settings"}
+PASS AUTH-anon-notification_outbox anonymous read of notification_outbox denied {"status":401,"err":"42501 permission denied for table notification_outbox"}
+PASS AUTH-anon-login_attempts anonymous read of login_attempts denied {"status":401,"err":"42501 permission denied for table login_attempts"}
+
+== Administration — categories
+PASS ADM-cat-create admin creates category {"status":201,"name":"Staging QA f0f278"}
+PASS ADM-cat-edit admin edits category {"status":200}
+PASS ADM-cat-emp-create-denied employee cannot create category {"status":403,"err":"42501 new row violates row-level security policy for table \"categories\""}
+PASS ADM-cat-tech-create-denied technician cannot create category {"status":403,"err":"42501 new row violates row-level security policy for table \"categories\""}
+PASS ADM-cat-emp-edit-denied employee category edit affects 0 rows {"status":200,"rows":0}
+PASS ADM-cat-delete-not-granted category hard-delete not granted (deactivate instead) {"status":403,"err":"42501 permission denied for table categories"}
+PASS ADM-cat-employee-read employee can read categories {"status":200,"count":7}
+
+== Ticket workflow
+PASS TKT-create employee creates ticket {"status":201,"ticket_number":"ITSR-00001","status_field":"open"}
+PASS TKT-create-spoof-reporter reporter_id spoof is overridden to the caller {"status":201,"reporter_is_employee":true}
+PASS TKT-create-server-fields client cannot set server-owned status on insert {"status":403,"err":"42501 permission denied for table tickets"}
+PASS TKT-create-bad-category unknown category rejected {"status":400,"err":"22023 Unknown or inactive category: NoSuchCategory"}
+PASS TKT-create-validation too-short subject/description rejected {"status":400,"err":"23514 new row for relation \"tickets\" violates check constraint \"tickets_description_check\""}
+PASS TKT-view-employee employee views own ticket {"status":200,"rows":1}
+PASS TKT-view-technician technician views ticket with reporter join {"status":200}
+PASS TKT-edit-employee-denied employee cannot edit ticket fields (0 rows) {"status":200,"rows":0}
+PASS TKT-edit-subject-not-granted subject is immutable for clients (column not granted) {"status":403,"err":"42501 permission denied for table tickets"}
+PASS TKT-edit-staff technician edits priority + category {"status":200}
+PASS TKT-assignable-staff assignable_staff lists admin + technician only {"status":200,"staff":["STGADM01","STGTEC01"]}
+PASS TKT-assign-to-employee-denied cannot assign ticket to a non-staff user {"status":400,"err":"22023 Tickets can only be assigned to active IT Support / Administrator users"}
+PASS TKT-assign admin assigns technician (status auto -> assigned) {"status":200,"new_status":"assigned"}
+PASS TKT-status-in-progress technician: assigned -> in_progress {"status":200}
+PASS TKT-status-invalid-transition invalid transition in_progress -> closed rejected {"status":400,"err":"22023 Invalid status transition: in_progress -> closed"}
+PASS TKT-status-pending-user technician: in_progress -> pending_user {"status":200}
+PASS TKT-status-employee-denied employee cannot change status (0 rows) {"status":200,"rows":0}
+PASS TKT-comment-employee employee comments on own ticket {"status":201}
+PASS TKT-comment-employee-internal-denied employee cannot post internal comment {"status":403,"err":"42501 new row violates row-level security policy for table \"ticket_comments\""}
+PASS TKT-comment-tech-internal technician posts internal comment {"status":201}
+PASS TKT-comment-tech-public technician public comment; author spoof overridden {"status":201,"author_is_tech":true}
+PASS TKT-comment-visibility-employee employee sees 2 public comments, no internal {"status":200,"count":2}
+PASS TKT-comment-visibility-staff technician sees all 3 comments {"status":200,"count":3}
+PASS TKT-resolve-needs-resolution resolve without resolution rejected {"status":400,"err":"23514 A resolution description is required to resolve a ticket"}
+PASS TKT-resolve technician resolves ticket (resolved_at set) {"status":200}
+PASS TKT-reopen-needs-note reporter reopen without reason rejected {"status":400,"err":"22023 Please explain why the ticket is being reopened"}
+PASS TKT-reopen reporter reopens resolved ticket {"status":204,"ticket_status":"reopened"}
+PASS TKT-resolve-again technician resolves reopened ticket {"status":200}
+PASS TKT-close-by-reporter reporter confirms & closes resolved ticket {"status":204,"ticket_status":"closed"}
+PASS TKT-activity-timeline employee sees full activity timeline (chronological) {"status":200,"actions":["created","priority_changed","category_changed","assigned","status_changed","status_changed","status_changed","resolved","reopened","resolved","closed"]}
+PASS TKT-history-integrity history records actors, transitions and reopen reason {"reopen":{"old":"resolved","new":"reopened","actor_is_employee":true}}
+PASS TKT-history-tamper-insert clients cannot write activity log {"status":403,"err":"42501 permission denied for table ticket_activity_log"}
+PASS TKT-history-tamper-delete admin cannot delete activity log {"status":403,"err":"42501 permission denied for table ticket_activity_log"}
+PASS TKT-delete-denied tickets cannot be deleted by clients (audit record) {"status":403,"err":"42501 permission denied for table tickets"}
+PASS TKT-create-technician technician files own ticket {"status":201}
+PASS TKT-create-admin admin files own ticket {"status":201}
+PASS TKT-employee-visibility employee list contains only own tickets {"status":200,"visible":2}
+PASS TKT-staff-visibility technician sees all 4 tickets {"status":200,"visible":4}
+
+== Administration — dashboard, users, roles
+PASS ADM-dashboard-all admin dashboard stats match database {"rpc":{"total":4,"open":3,"in_progress":0,"resolved":0,"closed":1,"unassigned":3},"db":{"total":4,"open":3,"in_progress":0,"resolved":0,"closed":1,"unassigned":3,"emp_total":2,"tech_assigned":1}}
+PASS ADM-dashboard-employee-scoped employee 'all' stats are limited by RLS to own tickets {"rpc_total":2,"own":2}
+PASS ADM-dashboard-tech-assigned technician 'assigned' stats {"rpc_total":1,"db":1}
+PASS ADM-users-list admin lists all users {"status":200,"users":["STGADM01:administrator","STGEMP01:employee","STGTEC01:it_support"]}
+PASS ADM-users-update admin updates user profile via admin-users {"status":200,"department":"Finance QA (Staging Test)"}
+PASS ADM-users-duplicate duplicate employee number rejected (409) {"status":409,"error":"Employee number or email already exists"}
+PASS ADM-users-validation invalid create payload rejected (400) {"status":400,"error":"Employee number must be 2–20 letters/digits"}
+PASS ADM-users-self-demote admin cannot remove own administrator access {"status":400,"error":"You cannot remove your own administrator access"}
+PASS ADM-users-reset-password admin resets password; old fails, new logs in {"reset_status":200,"old_login":401,"new_login":200}
+PASS ADM-users-employee-denied employee cannot call admin-users (403) {"status":403,"error":"Administrator access required"}
+PASS ADM-users-technician-denied technician cannot call admin-users (403) {"status":403,"error":"Administrator access required"}
+PASS ADM-settings-admin-read admin reads app settings {"status":200}
+PASS ADM-settings-employee-read-denied employee cannot read app settings {"status":200,"rows":0}
+PASS ADM-settings-employee-write-denied employee cannot change app settings {"status":200,"rows":0}
+PASS ADM-settings-technician-read-denied technician cannot read app settings {"status":200,"rows":0}
+PASS ADM-settings-technician-write-denied technician cannot change app settings {"status":200,"rows":0}
+PASS ADM-emp-assignable-staff employee gets empty staff picker {"status":200,"rows":0}
+PASS ADM-emp-profiles-scope employee sees own profile + staff only {"status":200,"visible":["STGADM01","STGTEC01","STGEMP01"]}
+
+== Security
+PASS SEC-escalate-profile-role employee cannot change own role {"status":403,"err":"42501 permission denied for table profiles","role_after":"employee"}
+PASS SEC-escalate-profile-insert employee cannot insert profiles {"status":403,"err":"42501 permission denied for table profiles"}
+PASS SEC-escalate-user-metadata editing own auth user_metadata grants nothing {"meta_update_status":200,"tickets_visible_after":2}
+PASS SEC-ticket-other-read employee cannot read admin's ticket by id {"rows":0}
+PASS SEC-ticket-other-activity employee cannot read others' ticket activity {"rows":0}
+PASS SEC-ticket-other-comment employee cannot comment on others' ticket {"status":403,"err":"42501 new row violates row-level security policy for table \"ticket_comments\""}
+PASS SEC-ticket-other-action employee cannot act on others' ticket via RPC {"status":500,"err":"P0002 Ticket not found"}
+PASS SEC-ticket-other-update employee cannot update others' ticket {"rows":0}
+PASS SEC-rpc-claim_notifications-anon anon cannot execute claim_notifications {"status":401,"err":"42501 permission denied for function claim_notifications"}
+PASS SEC-rpc-claim_notifications-employee employee cannot execute claim_notifications {"status":403,"err":"42501 permission denied for function claim_notifications"}
+PASS SEC-rpc-claim_notifications-admin admin cannot execute claim_notifications {"status":403,"err":"42501 permission denied for function claim_notifications"}
+PASS SEC-rpc-login_is_rate_limited-anon anon cannot execute login_is_rate_limited {"status":401,"err":"42501 permission denied for function login_is_rate_limited"}
+PASS SEC-rpc-login_is_rate_limited-employee employee cannot execute login_is_rate_limited {"status":403,"err":"42501 permission denied for function login_is_rate_limited"}
+PASS SEC-rpc-login_is_rate_limited-admin admin cannot execute login_is_rate_limited {"status":403,"err":"42501 permission denied for function login_is_rate_limited"}
+PASS SEC-rpc-record_login_attempt-anon anon cannot execute record_login_attempt {"status":401,"err":"42501 permission denied for function record_login_attempt"}
+PASS SEC-rpc-record_login_attempt-employee employee cannot execute record_login_attempt {"status":403,"err":"42501 permission denied for function record_login_attempt"}
+PASS SEC-rpc-record_login_attempt-admin admin cannot execute record_login_attempt {"status":403,"err":"42501 permission denied for function record_login_attempt"}
+PASS SEC-rpc-complete_notification-anon anon cannot execute complete_notification {"status":401,"err":"42501 permission denied for function complete_notification"}
+PASS SEC-rpc-complete_notification-employee employee cannot execute complete_notification {"status":403,"err":"42501 permission denied for function complete_notification"}
+PASS SEC-rpc-complete_notification-admin admin cannot execute complete_notification {"status":403,"err":"42501 permission denied for function complete_notification"}
+PASS SEC-rpc-rls_auto_enable-anon anon cannot execute rls_auto_enable {"status":401,"err":"42501 permission denied for function rls_auto_enable"}
+PASS SEC-rpc-rls_auto_enable-employee employee cannot execute rls_auto_enable {"status":403,"err":"42501 permission denied for function rls_auto_enable"}
+PASS SEC-rpc-rls_auto_enable-admin admin cannot execute rls_auto_enable {"status":403,"err":"42501 permission denied for function rls_auto_enable"}
+PASS SEC-rpc-ticket_stats-anon anon cannot execute ticket_stats {"status":401,"err":"42501 permission denied for function ticket_stats"}
+PASS SEC-rpc-assignable_staff-anon anon cannot execute assignable_staff {"status":401,"err":"42501 permission denied for function assignable_staff"}
+PASS SEC-rpc-reporter_ticket_action-anon anon cannot execute reporter_ticket_action {"status":401,"err":"42501 permission denied for function reporter_ticket_action"}
+PASS SEC-notification_outbox-admin-denied even admin clients cannot read notification_outbox {"status":403,"err":"42501 permission denied for table notification_outbox"}
+PASS SEC-login_attempts-admin-denied even admin clients cannot read login_attempts {"status":403,"err":"42501 permission denied for table login_attempts"}
+PASS SEC-anon-tickets anon publishable key reads no tickets {"status":401}
+PASS SEC-bad-apikey invalid API key rejected {"status":401}
+PASS SEC-ef-admin-users-no-token admin-users: no token -> 401 {"status":401,"error":"Not authenticated"}
+PASS SEC-ef-admin-users-publishable-key-as-bearer admin-users: publishable key as bearer -> 401 {"status":401,"error":"Not authenticated"}
+PASS SEC-ef-admin-users-forged-JWT admin-users: forged JWT -> 401 {"status":401,"error":"Not authenticated"}
+PASS SEC-ef-send-notifications-no-token send-notifications: no token -> 401 {"status":401,"error":"Not authenticated"}
+PASS SEC-ef-send-notifications-forged-JWT send-notifications: forged JWT -> 401 {"status":401,"error":"Not authenticated"}
+PASS SEC-ef-send-notifications-bad-cron send-notifications: wrong cron secret -> 401 {"status":401}
+PASS SEC-cors-login login: CORS echoes only the approved preview origin {"approved":"https://itsr-radiant-staging-2vj2mwxa8-assyaref75.vercel.app","evil":null,"no_origin":null}
+PASS SEC-cors-admin-users admin-users: CORS echoes only the approved preview origin {"approved":"https://itsr-radiant-staging-2vj2mwxa8-assyaref75.vercel.app","evil":null,"no_origin":null}
+PASS SEC-cors-send-notifications send-notifications: CORS echoes only the approved preview origin {"approved":"https://itsr-radiant-staging-2vj2mwxa8-assyaref75.vercel.app","evil":null,"no_origin":null}
+
+== Notifications
+PASS NTF-queue-populated outbox has ticket_created/assigned/status_changed/comment_added rows {"rows":[{"event_type":"comment_added","status":"pending","n":2},{"event_type":"status_changed","status":"pending","n":7},{"event_type":"ticket_assigned","status":"pending","n":1},{"event_type":"ticket_created","status":"pending","n":4}]}
+PASS NTF-internal-comment-not-queued internal comments do not enqueue notifications {"comment_added":2,"public_comments":2}
+PASS NTF-send-authz active user may kick send-notifications (auth passes) {"status":503,"error":"Email is not configured (GMAIL_USER / GMAIL_APP_PASSWORD)"}
+PASS NTF-no-loss-when-unconfigured rows stay pending when email is unconfigured {"pending_before":14,"pending_after":14}
+BLOCKED NTF-gmail-delivery
+
+== Account deactivation
+PASS ADM-deactivate admin deactivates technician {"status":200}
+PASS AUTH-deactivated-login deactivated user cannot log in {"status":401}
+PASS AUTH-deactivated-existing-token-rls deactivated user's live token sees no tickets (RLS) {"status":200,"rows":0}
+PASS AUTH-deactivated-existing-token-ef deactivated user's token rejected by Edge Function {"status":401}
+PASS ADM-deactivated-not-assignable deactivated technician removed from staff picker {"staff":["STGADM01"]}
+PASS ADM-reactivate admin reactivates technician; login works again {"update":200,"login":200}
+
+== Logout
+PASS AUTH-admin-logout admin logout revokes session (refresh token + Auth API) {"logout":204,"refresh_after":400,"auth_user_after":403}
+PASS AUTH-employee-logout employee logout revokes session (refresh token + Auth API) {"logout":204,"refresh_after":400,"auth_user_after":403}
+PASS AUTH-technician-logout technician logout {"status":204}
+
+TALLY {"PASS":139,"FAIL":2,"BLOCKED":1}

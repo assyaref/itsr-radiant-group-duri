@@ -1,0 +1,20 @@
+﻿{
+    "r":  {
+              "proacl":  [
+                             "postgres=X/postgres"
+                         ],
+              "exec_anon":  false,
+              "exec_authenticated":  false,
+              "exec_service_role":  false,
+              "exec_postgres_owner":  true,
+              "security_definer":  true,
+              "proconfig":  [
+                                "search_path=pg_catalog"
+                            ],
+              "event_trigger_enabled":  "O",
+              "public_tables_without_rls":  [
+
+                                            ],
+              "public_table_count":  8
+          }
+}

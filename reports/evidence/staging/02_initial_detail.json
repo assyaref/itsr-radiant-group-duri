@@ -1,0 +1,13 @@
+{
+  "detail": {
+    "public_functions": [
+      {
+        "name": "rls_auto_enable",
+        "args": "",
+        "owner": "postgres",
+        "lang": "plpgsql"
+      }
+    ],
+    "schema_migrations_rows": []
+  }
+}

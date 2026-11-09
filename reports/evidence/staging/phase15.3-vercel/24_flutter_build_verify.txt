@@ -1,0 +1,9 @@
+# verification release build -> scratchpad (deployed build/web untouched) 2026-11-08T08:09:31Z
+Compiling lib\main.dart for the Web...                          
+Compiling lib\main.dart for the Web...                             67.7s
+√ Built C:\Users\ASUSTU~1\AppData\Local\Temp\claude\00fc52ebda76fe2f\fbdb1864-f01b-4894-92fb-f61606b23e70\scratchpad\web_verify
+exit=0
+verify main.dart.js sha256: 7d11c8e91c45f38432fb8cc7b8dbe886d9effd715e0938cbd5c898f012d880e7
+deployed main.dart.js sha256: 7d11c8e91c45f38432fb8cc7b8dbe886d9effd715e0938cbd5c898f012d880e7
+sb_secret_<key> in verify build: 0
+JWT-like tokens: 0

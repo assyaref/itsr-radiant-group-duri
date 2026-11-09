@@ -1,0 +1,3 @@
+2026-11-09T02:10:49Z RESTORED: ALLOWED_ORIGINS = Preview origin only (digest match: True); http://localhost:5000 removed
+Origin http://localhost:5000 -> <no ACAO header>
+Origin https://itsr-radiant-staging-2vj2mwxa8-assyaref75.vercel.app -> Access-Control-Allow-Origin: https://itsr-radiant-staging-2vj2mwxa8-assyaref75.vercel.app

@@ -1,0 +1,72 @@
+{
+  "probe": {
+    "migrations": [
+      "20261108000100",
+      "20261108000200",
+      "20261108000300",
+      "20261108000400",
+      "20261108000500",
+      "20261109000600"
+    ],
+    "tables_rls": [
+      {
+        "t": "app_settings",
+        "rls": true
+      },
+      {
+        "t": "categories",
+        "rls": true
+      },
+      {
+        "t": "login_attempts",
+        "rls": true
+      },
+      {
+        "t": "notification_outbox",
+        "rls": true
+      },
+      {
+        "t": "profiles",
+        "rls": true
+      },
+      {
+        "t": "ticket_activity_log",
+        "rls": true
+      },
+      {
+        "t": "ticket_comments",
+        "rls": true
+      },
+      {
+        "t": "tickets",
+        "rls": true
+      }
+    ],
+    "policies": 12,
+    "anon_table_privs": 0,
+    "anon_exec_funcs": null,
+    "auth_exec_public_funcs": [
+      "ticket_stats(text)",
+      "reporter_ticket_action(uuid,text,text)",
+      "assignable_staff()"
+    ],
+    "definer_without_search_path": null,
+    "auth_uid_def_owner": "supabase_auth_admin",
+    "counts": {
+      "profiles": 3,
+      "tickets": 8,
+      "comments": 9,
+      "outbox_by_status": {
+        "pending": 36
+      }
+    },
+    "settings": {
+      "group_set": false,
+      "manager_set": false,
+      "enabled": true,
+      "base_url": null
+    },
+    "cron_installed": false,
+    "pg_net_installed": false
+  }
+}

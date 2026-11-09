@@ -1,0 +1,20 @@
+# migration list before 0500 (2026-11-08T08:06:36Z)
+Initialising login role...
+Connecting to remote database...
+
+  
+   Local          | Remote         | Time (UTC)          
+  ----------------|----------------|---------------------
+   20261108000100 | 20261108000100 | 2026-11-08 00:01:00 
+   20261108000200 | 20261108000200 | 2026-11-08 00:02:00 
+   20261108000300 | 20261108000300 | 2026-11-08 00:03:00 
+   20261108000400 | 20261108000400 | 2026-11-08 00:04:00 
+   20261108000500 |                | 2026-11-08 00:05:00 
+
+# db push --dry-run
+Initialising login role...
+DRY RUN: migrations will *not* be pushed to the database.
+Connecting to remote database...
+Would push these migrations:
+ • 20261108000500_restrict_rls_auto_enable_execute.sql
+Finished supabase db push.

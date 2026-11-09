@@ -1,0 +1,52 @@
+00:00 +0: loading D:/PROJECT - FullStack Developer/PROGRESS/ITSR RADIANT GROUP DURI/test/unit/models_test.dart
+00:00 +0: D:/PROJECT - FullStack Developer/PROGRESS/ITSR RADIANT GROUP DURI/test/unit/models_test.dart: TicketModel parses snake_case row with embedded reporter/assignee
+00:00 +1: D:/PROJECT - FullStack Developer/PROGRESS/ITSR RADIANT GROUP DURI/test/unit/models_test.dart: TicketModel tolerates null embedded assignee
+00:00 +2: D:/PROJECT - FullStack Developer/PROGRESS/ITSR RADIANT GROUP DURI/test/unit/router_and_providers_test.dart: appRedirect (role-based routing) loading session waits on splash and remembers target
+00:00 +3: D:/PROJECT - FullStack Developer/PROGRESS/ITSR RADIANT GROUP DURI/test/unit/router_and_providers_test.dart: appRedirect (role-based routing) loading session waits on splash and remembers target
+00:00 +4: D:/PROJECT - FullStack Developer/PROGRESS/ITSR RADIANT GROUP DURI/test/unit/router_and_providers_test.dart: appRedirect (role-based routing) loading session waits on splash and remembers target
+00:00 +5: D:/PROJECT - FullStack Developer/PROGRESS/ITSR RADIANT GROUP DURI/test/unit/router_and_providers_test.dart: appRedirect (role-based routing) loading session waits on splash and remembers target
+00:00 +6: D:/PROJECT - FullStack Developer/PROGRESS/ITSR RADIANT GROUP DURI/test/unit/router_and_providers_test.dart: appRedirect (role-based routing) signed-out users are sent to login (deep link kept)
+00:00 +7: D:/PROJECT - FullStack Developer/PROGRESS/ITSR RADIANT GROUP DURI/test/unit/router_and_providers_test.dart: appRedirect (role-based routing) signed-in users leave login for dashboard or deep link
+00:00 +8: D:/PROJECT - FullStack Developer/PROGRESS/ITSR RADIANT GROUP DURI/test/unit/router_and_providers_test.dart: appRedirect (role-based routing) employees cannot open staff or admin areas
+00:00 +9: D:/PROJECT - FullStack Developer/PROGRESS/ITSR RADIANT GROUP DURI/test/unit/router_and_providers_test.dart: appRedirect (role-based routing) IT support gets the queue but not admin
+00:00 +10: D:/PROJECT - FullStack Developer/PROGRESS/ITSR RADIANT GROUP DURI/test/unit/router_and_providers_test.dart: appRedirect (role-based routing) administrators can open everything
+00:00 +11: D:/PROJECT - FullStack Developer/PROGRESS/ITSR RADIANT GROUP DURI/test/unit/router_and_providers_test.dart: navigation items by role employee
+00:00 +12: D:/PROJECT - FullStack Developer/PROGRESS/ITSR RADIANT GROUP DURI/test/unit/router_and_providers_test.dart: navigation items by role it_support
+00:00 +13: D:/PROJECT - FullStack Developer/PROGRESS/ITSR RADIANT GROUP DURI/test/unit/router_and_providers_test.dart: navigation items by role admin
+00:00 +14: D:/PROJECT - FullStack Developer/PROGRESS/ITSR RADIANT GROUP DURI/test/unit/router_and_providers_test.dart: navigation items by role selected index prefers the longest match
+00:00 +15: D:/PROJECT - FullStack Developer/PROGRESS/ITSR RADIANT GROUP DURI/test/unit/router_and_providers_test.dart: TicketListNotifier loads first page once (no refetch loop)
+00:00 +16: D:/PROJECT - FullStack Developer/PROGRESS/ITSR RADIANT GROUP DURI/test/unit/validators_and_security_test.dart: Validators employee number is normalised and validated
+00:00 +17: D:/PROJECT - FullStack Developer/PROGRESS/ITSR RADIANT GROUP DURI/test/unit/validators_and_security_test.dart: Validators employee number is normalised and validated
+00:00 +18: D:/PROJECT - FullStack Developer/PROGRESS/ITSR RADIANT GROUP DURI/test/unit/validators_and_security_test.dart: Validators employee number is normalised and validated
+00:00 +19: D:/PROJECT - FullStack Developer/PROGRESS/ITSR RADIANT GROUP DURI/test/unit/validators_and_security_test.dart: Validators employee number is normalised and validated
+00:00 +20: D:/PROJECT - FullStack Developer/PROGRESS/ITSR RADIANT GROUP DURI/test/unit/router_and_providers_test.dart: TicketActions create/accept/resolve call the repository and kick notifications
+00:00 +21: D:/PROJECT - FullStack Developer/PROGRESS/ITSR RADIANT GROUP DURI/test/unit/router_and_providers_test.dart: TicketActions create/accept/resolve call the repository and kick notifications
+00:00 +22: D:/PROJECT - FullStack Developer/PROGRESS/ITSR RADIANT GROUP DURI/test/unit/router_and_providers_test.dart: TicketActions create/accept/resolve call the repository and kick notifications
+00:00 +23: D:/PROJECT - FullStack Developer/PROGRESS/ITSR RADIANT GROUP DURI/test/unit/router_and_providers_test.dart: TicketActions create/accept/resolve call the repository and kick notifications
+00:00 +24: D:/PROJECT - FullStack Developer/PROGRESS/ITSR RADIANT GROUP DURI/test/unit/router_and_providers_test.dart: TicketActions create/accept/resolve call the repository and kick notifications
+00:00 +25: D:/PROJECT - FullStack Developer/PROGRESS/ITSR RADIANT GROUP DURI/test/unit/router_and_providers_test.dart: TicketActions create/accept/resolve call the repository and kick notifications
+00:00 +26: D:/PROJECT - FullStack Developer/PROGRESS/ITSR RADIANT GROUP DURI/test/unit/validators_and_security_test.dart: Client key hygiene no service-role key or secret appears anywhere in lib/ or web/
+00:00 +27: D:/PROJECT - FullStack Developer/PROGRESS/ITSR RADIANT GROUP DURI/test/unit/validators_and_security_test.dart: Client key hygiene no hard-coded notification email addresses in the app
+00:00 +28: D:/PROJECT - FullStack Developer/PROGRESS/ITSR RADIANT GROUP DURI/test/unit/validators_and_security_test.dart: UI status transitions are a subset of the database transitions
+00:00 +29: D:/PROJECT - FullStack Developer/PROGRESS/ITSR RADIANT GROUP DURI/test/unit/validators_and_security_test.dart: friendlyError permission errors are explained without internals
+00:00 +30: D:/PROJECT - FullStack Developer/PROGRESS/ITSR RADIANT GROUP DURI/test/unit/validators_and_security_test.dart: friendlyError database business-rule messages pass through
+00:00 +31: D:/PROJECT - FullStack Developer/PROGRESS/ITSR RADIANT GROUP DURI/test/unit/validators_and_security_test.dart: friendlyError function errors surface the server message
+00:00 +32: D:/PROJECT - FullStack Developer/PROGRESS/ITSR RADIANT GROUP DURI/test/unit/validators_and_security_test.dart: friendlyError unknown errors become generic
+00:00 +33: D:/PROJECT - FullStack Developer/PROGRESS/ITSR RADIANT GROUP DURI/test/widget/screens_test.dart: Login validates empty form without calling the server
+00:01 +34: D:/PROJECT - FullStack Developer/PROGRESS/ITSR RADIANT GROUP DURI/test/widget/screens_test.dart: Login invalid credentials show a generic, safe message
+00:01 +35: D:/PROJECT - FullStack Developer/PROGRESS/ITSR RADIANT GROUP DURI/test/widget/screens_test.dart: Login rate limiting message is shown
+00:01 +36: D:/PROJECT - FullStack Developer/PROGRESS/ITSR RADIANT GROUP DURI/test/widget/screens_test.dart: Create ticket requires subject, category and description
+00:02 +37: D:/PROJECT - FullStack Developer/PROGRESS/ITSR RADIANT GROUP DURI/test/widget/screens_test.dart: Create ticket loads categories from the database and submits
+00:02 +38: D:/PROJECT - FullStack Developer/PROGRESS/ITSR RADIANT GROUP DURI/test/widget/screens_test.dart: Ticket detail employee: no IT actions, no internal-note option, can reopen resolved
+00:02 +39: D:/PROJECT - FullStack Developer/PROGRESS/ITSR RADIANT GROUP DURI/test/widget/screens_test.dart: Ticket detail IT support: accept, then resolve requires a resolution
+00:03 +40: D:/PROJECT - FullStack Developer/PROGRESS/ITSR RADIANT GROUP DURI/test/widget/screens_test.dart: Ticket detail server errors are shown, not crashed on
+00:03 +41: D:/PROJECT - FullStack Developer/PROGRESS/ITSR RADIANT GROUP DURI/test/widget/screens_test.dart: Lists, dashboard and responsive shell My Tickets shows empty state with call to action
+00:03 +42: D:/PROJECT - FullStack Developer/PROGRESS/ITSR RADIANT GROUP DURI/test/widget/screens_test.dart: Lists, dashboard and responsive shell My Tickets lists only own tickets
+00:03 +43: D:/PROJECT - FullStack Developer/PROGRESS/ITSR RADIANT GROUP DURI/test/widget/screens_test.dart: Lists, dashboard and responsive shell employee dashboard shows stats and no staff sections
+00:03 +44: D:/PROJECT - FullStack Developer/PROGRESS/ITSR RADIANT GROUP DURI/test/widget/screens_test.dart: Lists, dashboard and responsive shell staff dashboard adds queue + assigned sections
+00:03 +45: D:/PROJECT - FullStack Developer/PROGRESS/ITSR RADIANT GROUP DURI/test/widget/screens_test.dart: Lists, dashboard and responsive shell desktop uses a navigation rail; phone uses a drawer
+00:03 +46: D:/PROJECT - FullStack Developer/PROGRESS/ITSR RADIANT GROUP DURI/test/widget/screens_test.dart: Lists, dashboard and responsive shell no overflow on a 320px-wide phone: ticket detail
+00:03 +47: D:/PROJECT - FullStack Developer/PROGRESS/ITSR RADIANT GROUP DURI/test/widget/screens_test.dart: Lists, dashboard and responsive shell no overflow on a 320px-wide phone: dashboard
+00:04 +48: D:/PROJECT - FullStack Developer/PROGRESS/ITSR RADIANT GROUP DURI/test/widget/screens_test.dart: Lists, dashboard and responsive shell no overflow on a 320px-wide phone: create ticket
+00:04 +49: D:/PROJECT - FullStack Developer/PROGRESS/ITSR RADIANT GROUP DURI/test/widget/screens_test.dart: Lists, dashboard and responsive shell no overflow on a 320px-wide phone: my tickets
+00:04 +50: All tests passed!

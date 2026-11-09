@@ -1,0 +1,1518 @@
+{
+  "run_utc": "2026-11-08T08:28:27.882Z",
+  "target": "staging yzjpttfwnvnuyxbdkidm",
+  "tally": {
+    "PASS": 139,
+    "FAIL": 2,
+    "BLOCKED": 1
+  },
+  "tickets": {
+    "t1": "ITSR-00001",
+    "t2": "ITSR-00002",
+    "t3": "ITSR-00004",
+    "t4": "ITSR-00005"
+  },
+  "results": [
+    {
+      "id": "AUTH-admin-login",
+      "section": "Authentication",
+      "name": "admin login (STGADM01)",
+      "result": "PASS",
+      "evidence": {
+        "status": 200,
+        "jwt_role": "authenticated",
+        "sub_matches_profile": true,
+        "expires_in": 3600,
+        "acao": "https://itsr-radiant-staging-2vj2mwxa8-assyaref75.vercel.app"
+      }
+    },
+    {
+      "id": "AUTH-employee-login",
+      "section": "Authentication",
+      "name": "employee login (STGEMP01)",
+      "result": "PASS",
+      "evidence": {
+        "status": 200,
+        "jwt_role": "authenticated",
+        "sub_matches_profile": true,
+        "expires_in": 3600,
+        "acao": "https://itsr-radiant-staging-2vj2mwxa8-assyaref75.vercel.app"
+      }
+    },
+    {
+      "id": "AUTH-technician-login",
+      "section": "Authentication",
+      "name": "technician login (STGTEC01)",
+      "result": "PASS",
+      "evidence": {
+        "status": 200,
+        "jwt_role": "authenticated",
+        "sub_matches_profile": true,
+        "expires_in": 3600,
+        "acao": "https://itsr-radiant-staging-2vj2mwxa8-assyaref75.vercel.app"
+      }
+    },
+    {
+      "id": "AUTH-admin-role",
+      "section": "Authentication",
+      "name": "admin token resolves to expected role",
+      "result": "PASS",
+      "evidence": {
+        "status": 200,
+        "row": {
+          "employee_number": "STGADM01",
+          "role": "administrator"
+        }
+      }
+    },
+    {
+      "id": "AUTH-employee-role",
+      "section": "Authentication",
+      "name": "employee token resolves to expected role",
+      "result": "PASS",
+      "evidence": {
+        "status": 200,
+        "row": {
+          "employee_number": "STGEMP01",
+          "role": "employee"
+        }
+      }
+    },
+    {
+      "id": "AUTH-technician-role",
+      "section": "Authentication",
+      "name": "technician token resolves to expected role",
+      "result": "PASS",
+      "evidence": {
+        "status": 200,
+        "row": {
+          "employee_number": "STGTEC01",
+          "role": "it_support"
+        }
+      }
+    },
+    {
+      "id": "AUTH-invalid-wrong-password",
+      "section": "Authentication",
+      "name": "invalid login: wrong password",
+      "result": "PASS",
+      "evidence": {
+        "status": 401,
+        "error": "Authentication failed. Please check your credentials.",
+        "ms": 940
+      }
+    },
+    {
+      "id": "AUTH-invalid-unknown-employee-number",
+      "section": "Authentication",
+      "name": "invalid login: unknown employee number",
+      "result": "PASS",
+      "evidence": {
+        "status": 401,
+        "error": "Authentication failed. Please check your credentials.",
+        "ms": 1006
+      }
+    },
+    {
+      "id": "AUTH-invalid-malformed-employee-number",
+      "section": "Authentication",
+      "name": "invalid login: malformed employee number",
+      "result": "FAIL",
+      "evidence": {
+        "status": 403,
+        "ms": 45
+      }
+    },
+    {
+      "id": "AUTH-invalid-too-short-password",
+      "section": "Authentication",
+      "name": "invalid login: too-short password",
+      "result": "PASS",
+      "evidence": {
+        "status": 401,
+        "error": "Authentication failed. Please check your credentials.",
+        "ms": 861
+      }
+    },
+    {
+      "id": "AUTH-invalid-uniform",
+      "section": "Authentication",
+      "name": "invalid-login responses are indistinguishable (no account oracle)",
+      "result": "FAIL",
+      "evidence": {
+        "distinct_messages": [
+          "Authentication failed. Please check your credentials.",
+          null
+        ]
+      }
+    },
+    {
+      "id": "AUTH-rate-limit",
+      "section": "Authentication",
+      "name": "6th failed attempt for one employee number is rate limited (429)",
+      "result": "PASS",
+      "evidence": {
+        "statuses": [
+          401,
+          401,
+          401,
+          401,
+          401,
+          429
+        ]
+      }
+    },
+    {
+      "id": "AUTH-session-lifetime",
+      "section": "Authentication",
+      "name": "access token lifetime = expires_in (session expiry configured)",
+      "result": "PASS",
+      "evidence": {
+        "exp_minus_iat": 3600,
+        "expires_in": 3600,
+        "aal": "aal1",
+        "has_session_id": true
+      }
+    },
+    {
+      "id": "AUTH-forged-token",
+      "section": "Authentication",
+      "name": "tampered JWT signature rejected by PostgREST",
+      "result": "PASS",
+      "evidence": {
+        "status": 401,
+        "err": "PGRST301 No suitable key or wrong key type"
+      }
+    },
+    {
+      "id": "AUTH-refresh",
+      "section": "Authentication",
+      "name": "refresh token rotates to a new valid session",
+      "result": "PASS",
+      "evidence": {
+        "status": 200
+      }
+    },
+    {
+      "id": "AUTH-refresh-reuse",
+      "section": "Authentication",
+      "name": "already-rotated refresh token reuse (observed)",
+      "result": "PASS",
+      "evidence": {
+        "status": 200,
+        "note": "Supabase allows a short reuse interval (default 10s); recorded as observation",
+        "err": ""
+      }
+    },
+    {
+      "id": "AUTH-anon-profiles",
+      "section": "Authentication",
+      "name": "anonymous read of profiles denied",
+      "result": "PASS",
+      "evidence": {
+        "status": 401,
+        "err": "42501 permission denied for table profiles"
+      }
+    },
+    {
+      "id": "AUTH-anon-tickets",
+      "section": "Authentication",
+      "name": "anonymous read of tickets denied",
+      "result": "PASS",
+      "evidence": {
+        "status": 401,
+        "err": "42501 permission denied for table tickets"
+      }
+    },
+    {
+      "id": "AUTH-anon-ticket_comments",
+      "section": "Authentication",
+      "name": "anonymous read of ticket_comments denied",
+      "result": "PASS",
+      "evidence": {
+        "status": 401,
+        "err": "42501 permission denied for table ticket_comments"
+      }
+    },
+    {
+      "id": "AUTH-anon-ticket_activity_log",
+      "section": "Authentication",
+      "name": "anonymous read of ticket_activity_log denied",
+      "result": "PASS",
+      "evidence": {
+        "status": 401,
+        "err": "42501 permission denied for table ticket_activity_log"
+      }
+    },
+    {
+      "id": "AUTH-anon-categories",
+      "section": "Authentication",
+      "name": "anonymous read of categories denied",
+      "result": "PASS",
+      "evidence": {
+        "status": 401,
+        "err": "42501 permission denied for table categories"
+      }
+    },
+    {
+      "id": "AUTH-anon-app_settings",
+      "section": "Authentication",
+      "name": "anonymous read of app_settings denied",
+      "result": "PASS",
+      "evidence": {
+        "status": 401,
+        "err": "42501 permission denied for table app_settings"
+      }
+    },
+    {
+      "id": "AUTH-anon-notification_outbox",
+      "section": "Authentication",
+      "name": "anonymous read of notification_outbox denied",
+      "result": "PASS",
+      "evidence": {
+        "status": 401,
+        "err": "42501 permission denied for table notification_outbox"
+      }
+    },
+    {
+      "id": "AUTH-anon-login_attempts",
+      "section": "Authentication",
+      "name": "anonymous read of login_attempts denied",
+      "result": "PASS",
+      "evidence": {
+        "status": 401,
+        "err": "42501 permission denied for table login_attempts"
+      }
+    },
+    {
+      "id": "ADM-cat-create",
+      "section": "Administration — categories",
+      "name": "admin creates category",
+      "result": "PASS",
+      "evidence": {
+        "status": 201,
+        "name": "Staging QA f0f278"
+      }
+    },
+    {
+      "id": "ADM-cat-edit",
+      "section": "Administration — categories",
+      "name": "admin edits category",
+      "result": "PASS",
+      "evidence": {
+        "status": 200
+      }
+    },
+    {
+      "id": "ADM-cat-emp-create-denied",
+      "section": "Administration — categories",
+      "name": "employee cannot create category",
+      "result": "PASS",
+      "evidence": {
+        "status": 403,
+        "err": "42501 new row violates row-level security policy for table \"categories\""
+      }
+    },
+    {
+      "id": "ADM-cat-tech-create-denied",
+      "section": "Administration — categories",
+      "name": "technician cannot create category",
+      "result": "PASS",
+      "evidence": {
+        "status": 403,
+        "err": "42501 new row violates row-level security policy for table \"categories\""
+      }
+    },
+    {
+      "id": "ADM-cat-emp-edit-denied",
+      "section": "Administration — categories",
+      "name": "employee category edit affects 0 rows",
+      "result": "PASS",
+      "evidence": {
+        "status": 200,
+        "rows": 0
+      }
+    },
+    {
+      "id": "ADM-cat-delete-not-granted",
+      "section": "Administration — categories",
+      "name": "category hard-delete not granted (deactivate instead)",
+      "result": "PASS",
+      "evidence": {
+        "status": 403,
+        "err": "42501 permission denied for table categories"
+      }
+    },
+    {
+      "id": "ADM-cat-employee-read",
+      "section": "Administration — categories",
+      "name": "employee can read categories",
+      "result": "PASS",
+      "evidence": {
+        "status": 200,
+        "count": 7
+      }
+    },
+    {
+      "id": "TKT-create",
+      "section": "Ticket workflow",
+      "name": "employee creates ticket",
+      "result": "PASS",
+      "evidence": {
+        "status": 201,
+        "ticket_number": "ITSR-00001",
+        "status_field": "open"
+      }
+    },
+    {
+      "id": "TKT-create-spoof-reporter",
+      "section": "Ticket workflow",
+      "name": "reporter_id spoof is overridden to the caller",
+      "result": "PASS",
+      "evidence": {
+        "status": 201,
+        "reporter_is_employee": true
+      }
+    },
+    {
+      "id": "TKT-create-server-fields",
+      "section": "Ticket workflow",
+      "name": "client cannot set server-owned status on insert",
+      "result": "PASS",
+      "evidence": {
+        "status": 403,
+        "err": "42501 permission denied for table tickets"
+      }
+    },
+    {
+      "id": "TKT-create-bad-category",
+      "section": "Ticket workflow",
+      "name": "unknown category rejected",
+      "result": "PASS",
+      "evidence": {
+        "status": 400,
+        "err": "22023 Unknown or inactive category: NoSuchCategory"
+      }
+    },
+    {
+      "id": "TKT-create-validation",
+      "section": "Ticket workflow",
+      "name": "too-short subject/description rejected",
+      "result": "PASS",
+      "evidence": {
+        "status": 400,
+        "err": "23514 new row for relation \"tickets\" violates check constraint \"tickets_description_check\""
+      }
+    },
+    {
+      "id": "TKT-view-employee",
+      "section": "Ticket workflow",
+      "name": "employee views own ticket",
+      "result": "PASS",
+      "evidence": {
+        "status": 200,
+        "rows": 1
+      }
+    },
+    {
+      "id": "TKT-view-technician",
+      "section": "Ticket workflow",
+      "name": "technician views ticket with reporter join",
+      "result": "PASS",
+      "evidence": {
+        "status": 200
+      }
+    },
+    {
+      "id": "TKT-edit-employee-denied",
+      "section": "Ticket workflow",
+      "name": "employee cannot edit ticket fields (0 rows)",
+      "result": "PASS",
+      "evidence": {
+        "status": 200,
+        "rows": 0
+      }
+    },
+    {
+      "id": "TKT-edit-subject-not-granted",
+      "section": "Ticket workflow",
+      "name": "subject is immutable for clients (column not granted)",
+      "result": "PASS",
+      "evidence": {
+        "status": 403,
+        "err": "42501 permission denied for table tickets"
+      }
+    },
+    {
+      "id": "TKT-edit-staff",
+      "section": "Ticket workflow",
+      "name": "technician edits priority + category",
+      "result": "PASS",
+      "evidence": {
+        "status": 200
+      }
+    },
+    {
+      "id": "TKT-assignable-staff",
+      "section": "Ticket workflow",
+      "name": "assignable_staff lists admin + technician only",
+      "result": "PASS",
+      "evidence": {
+        "status": 200,
+        "staff": [
+          "STGADM01",
+          "STGTEC01"
+        ]
+      }
+    },
+    {
+      "id": "TKT-assign-to-employee-denied",
+      "section": "Ticket workflow",
+      "name": "cannot assign ticket to a non-staff user",
+      "result": "PASS",
+      "evidence": {
+        "status": 400,
+        "err": "22023 Tickets can only be assigned to active IT Support / Administrator users"
+      }
+    },
+    {
+      "id": "TKT-assign",
+      "section": "Ticket workflow",
+      "name": "admin assigns technician (status auto -> assigned)",
+      "result": "PASS",
+      "evidence": {
+        "status": 200,
+        "new_status": "assigned"
+      }
+    },
+    {
+      "id": "TKT-status-in-progress",
+      "section": "Ticket workflow",
+      "name": "technician: assigned -> in_progress",
+      "result": "PASS",
+      "evidence": {
+        "status": 200
+      }
+    },
+    {
+      "id": "TKT-status-invalid-transition",
+      "section": "Ticket workflow",
+      "name": "invalid transition in_progress -> closed rejected",
+      "result": "PASS",
+      "evidence": {
+        "status": 400,
+        "err": "22023 Invalid status transition: in_progress -> closed"
+      }
+    },
+    {
+      "id": "TKT-status-pending-user",
+      "section": "Ticket workflow",
+      "name": "technician: in_progress -> pending_user",
+      "result": "PASS",
+      "evidence": {
+        "status": 200
+      }
+    },
+    {
+      "id": "TKT-status-employee-denied",
+      "section": "Ticket workflow",
+      "name": "employee cannot change status (0 rows)",
+      "result": "PASS",
+      "evidence": {
+        "status": 200,
+        "rows": 0
+      }
+    },
+    {
+      "id": "TKT-comment-employee",
+      "section": "Ticket workflow",
+      "name": "employee comments on own ticket",
+      "result": "PASS",
+      "evidence": {
+        "status": 201
+      }
+    },
+    {
+      "id": "TKT-comment-employee-internal-denied",
+      "section": "Ticket workflow",
+      "name": "employee cannot post internal comment",
+      "result": "PASS",
+      "evidence": {
+        "status": 403,
+        "err": "42501 new row violates row-level security policy for table \"ticket_comments\""
+      }
+    },
+    {
+      "id": "TKT-comment-tech-internal",
+      "section": "Ticket workflow",
+      "name": "technician posts internal comment",
+      "result": "PASS",
+      "evidence": {
+        "status": 201
+      }
+    },
+    {
+      "id": "TKT-comment-tech-public",
+      "section": "Ticket workflow",
+      "name": "technician public comment; author spoof overridden",
+      "result": "PASS",
+      "evidence": {
+        "status": 201,
+        "author_is_tech": true
+      }
+    },
+    {
+      "id": "TKT-comment-visibility-employee",
+      "section": "Ticket workflow",
+      "name": "employee sees 2 public comments, no internal",
+      "result": "PASS",
+      "evidence": {
+        "status": 200,
+        "count": 2
+      }
+    },
+    {
+      "id": "TKT-comment-visibility-staff",
+      "section": "Ticket workflow",
+      "name": "technician sees all 3 comments",
+      "result": "PASS",
+      "evidence": {
+        "status": 200,
+        "count": 3
+      }
+    },
+    {
+      "id": "TKT-resolve-needs-resolution",
+      "section": "Ticket workflow",
+      "name": "resolve without resolution rejected",
+      "result": "PASS",
+      "evidence": {
+        "status": 400,
+        "err": "23514 A resolution description is required to resolve a ticket"
+      }
+    },
+    {
+      "id": "TKT-resolve",
+      "section": "Ticket workflow",
+      "name": "technician resolves ticket (resolved_at set)",
+      "result": "PASS",
+      "evidence": {
+        "status": 200
+      }
+    },
+    {
+      "id": "TKT-reopen-needs-note",
+      "section": "Ticket workflow",
+      "name": "reporter reopen without reason rejected",
+      "result": "PASS",
+      "evidence": {
+        "status": 400,
+        "err": "22023 Please explain why the ticket is being reopened"
+      }
+    },
+    {
+      "id": "TKT-reopen",
+      "section": "Ticket workflow",
+      "name": "reporter reopens resolved ticket",
+      "result": "PASS",
+      "evidence": {
+        "status": 204,
+        "ticket_status": "reopened"
+      }
+    },
+    {
+      "id": "TKT-resolve-again",
+      "section": "Ticket workflow",
+      "name": "technician resolves reopened ticket",
+      "result": "PASS",
+      "evidence": {
+        "status": 200
+      }
+    },
+    {
+      "id": "TKT-close-by-reporter",
+      "section": "Ticket workflow",
+      "name": "reporter confirms & closes resolved ticket",
+      "result": "PASS",
+      "evidence": {
+        "status": 204,
+        "ticket_status": "closed"
+      }
+    },
+    {
+      "id": "TKT-activity-timeline",
+      "section": "Ticket workflow",
+      "name": "employee sees full activity timeline (chronological)",
+      "result": "PASS",
+      "evidence": {
+        "status": 200,
+        "actions": [
+          "created",
+          "priority_changed",
+          "category_changed",
+          "assigned",
+          "status_changed",
+          "status_changed",
+          "status_changed",
+          "resolved",
+          "reopened",
+          "resolved",
+          "closed"
+        ]
+      }
+    },
+    {
+      "id": "TKT-history-integrity",
+      "section": "Ticket workflow",
+      "name": "history records actors, transitions and reopen reason",
+      "result": "PASS",
+      "evidence": {
+        "reopen": {
+          "old": "resolved",
+          "new": "reopened",
+          "actor_is_employee": true
+        }
+      }
+    },
+    {
+      "id": "TKT-history-tamper-insert",
+      "section": "Ticket workflow",
+      "name": "clients cannot write activity log",
+      "result": "PASS",
+      "evidence": {
+        "status": 403,
+        "err": "42501 permission denied for table ticket_activity_log"
+      }
+    },
+    {
+      "id": "TKT-history-tamper-delete",
+      "section": "Ticket workflow",
+      "name": "admin cannot delete activity log",
+      "result": "PASS",
+      "evidence": {
+        "status": 403,
+        "err": "42501 permission denied for table ticket_activity_log"
+      }
+    },
+    {
+      "id": "TKT-delete-denied",
+      "section": "Ticket workflow",
+      "name": "tickets cannot be deleted by clients (audit record)",
+      "result": "PASS",
+      "evidence": {
+        "status": 403,
+        "err": "42501 permission denied for table tickets"
+      }
+    },
+    {
+      "id": "TKT-create-technician",
+      "section": "Ticket workflow",
+      "name": "technician files own ticket",
+      "result": "PASS",
+      "evidence": {
+        "status": 201
+      }
+    },
+    {
+      "id": "TKT-create-admin",
+      "section": "Ticket workflow",
+      "name": "admin files own ticket",
+      "result": "PASS",
+      "evidence": {
+        "status": 201
+      }
+    },
+    {
+      "id": "TKT-employee-visibility",
+      "section": "Ticket workflow",
+      "name": "employee list contains only own tickets",
+      "result": "PASS",
+      "evidence": {
+        "status": 200,
+        "visible": 2
+      }
+    },
+    {
+      "id": "TKT-staff-visibility",
+      "section": "Ticket workflow",
+      "name": "technician sees all 4 tickets",
+      "result": "PASS",
+      "evidence": {
+        "status": 200,
+        "visible": 4
+      }
+    },
+    {
+      "id": "ADM-dashboard-all",
+      "section": "Administration — dashboard, users, roles",
+      "name": "admin dashboard stats match database",
+      "result": "PASS",
+      "evidence": {
+        "rpc": {
+          "total": 4,
+          "open": 3,
+          "in_progress": 0,
+          "resolved": 0,
+          "closed": 1,
+          "unassigned": 3
+        },
+        "db": {
+          "total": 4,
+          "open": 3,
+          "in_progress": 0,
+          "resolved": 0,
+          "closed": 1,
+          "unassigned": 3,
+          "emp_total": 2,
+          "tech_assigned": 1
+        }
+      }
+    },
+    {
+      "id": "ADM-dashboard-employee-scoped",
+      "section": "Administration — dashboard, users, roles",
+      "name": "employee 'all' stats are limited by RLS to own tickets",
+      "result": "PASS",
+      "evidence": {
+        "rpc_total": 2,
+        "own": 2
+      }
+    },
+    {
+      "id": "ADM-dashboard-tech-assigned",
+      "section": "Administration — dashboard, users, roles",
+      "name": "technician 'assigned' stats",
+      "result": "PASS",
+      "evidence": {
+        "rpc_total": 1,
+        "db": 1
+      }
+    },
+    {
+      "id": "ADM-users-list",
+      "section": "Administration — dashboard, users, roles",
+      "name": "admin lists all users",
+      "result": "PASS",
+      "evidence": {
+        "status": 200,
+        "users": [
+          "STGADM01:administrator",
+          "STGEMP01:employee",
+          "STGTEC01:it_support"
+        ]
+      }
+    },
+    {
+      "id": "ADM-users-update",
+      "section": "Administration — dashboard, users, roles",
+      "name": "admin updates user profile via admin-users",
+      "result": "PASS",
+      "evidence": {
+        "status": 200,
+        "department": "Finance QA (Staging Test)"
+      }
+    },
+    {
+      "id": "ADM-users-duplicate",
+      "section": "Administration — dashboard, users, roles",
+      "name": "duplicate employee number rejected (409)",
+      "result": "PASS",
+      "evidence": {
+        "status": 409,
+        "error": "Employee number or email already exists"
+      }
+    },
+    {
+      "id": "ADM-users-validation",
+      "section": "Administration — dashboard, users, roles",
+      "name": "invalid create payload rejected (400)",
+      "result": "PASS",
+      "evidence": {
+        "status": 400,
+        "error": "Employee number must be 2–20 letters/digits"
+      }
+    },
+    {
+      "id": "ADM-users-self-demote",
+      "section": "Administration — dashboard, users, roles",
+      "name": "admin cannot remove own administrator access",
+      "result": "PASS",
+      "evidence": {
+        "status": 400,
+        "error": "You cannot remove your own administrator access"
+      }
+    },
+    {
+      "id": "ADM-users-reset-password",
+      "section": "Administration — dashboard, users, roles",
+      "name": "admin resets password; old fails, new logs in",
+      "result": "PASS",
+      "evidence": {
+        "reset_status": 200,
+        "old_login": 401,
+        "new_login": 200
+      }
+    },
+    {
+      "id": "ADM-users-employee-denied",
+      "section": "Administration — dashboard, users, roles",
+      "name": "employee cannot call admin-users (403)",
+      "result": "PASS",
+      "evidence": {
+        "status": 403,
+        "error": "Administrator access required"
+      }
+    },
+    {
+      "id": "ADM-users-technician-denied",
+      "section": "Administration — dashboard, users, roles",
+      "name": "technician cannot call admin-users (403)",
+      "result": "PASS",
+      "evidence": {
+        "status": 403,
+        "error": "Administrator access required"
+      }
+    },
+    {
+      "id": "ADM-settings-admin-read",
+      "section": "Administration — dashboard, users, roles",
+      "name": "admin reads app settings",
+      "result": "PASS",
+      "evidence": {
+        "status": 200
+      }
+    },
+    {
+      "id": "ADM-settings-employee-read-denied",
+      "section": "Administration — dashboard, users, roles",
+      "name": "employee cannot read app settings",
+      "result": "PASS",
+      "evidence": {
+        "status": 200,
+        "rows": 0
+      }
+    },
+    {
+      "id": "ADM-settings-employee-write-denied",
+      "section": "Administration — dashboard, users, roles",
+      "name": "employee cannot change app settings",
+      "result": "PASS",
+      "evidence": {
+        "status": 200,
+        "rows": 0
+      }
+    },
+    {
+      "id": "ADM-settings-technician-read-denied",
+      "section": "Administration — dashboard, users, roles",
+      "name": "technician cannot read app settings",
+      "result": "PASS",
+      "evidence": {
+        "status": 200,
+        "rows": 0
+      }
+    },
+    {
+      "id": "ADM-settings-technician-write-denied",
+      "section": "Administration — dashboard, users, roles",
+      "name": "technician cannot change app settings",
+      "result": "PASS",
+      "evidence": {
+        "status": 200,
+        "rows": 0
+      }
+    },
+    {
+      "id": "ADM-emp-assignable-staff",
+      "section": "Administration — dashboard, users, roles",
+      "name": "employee gets empty staff picker",
+      "result": "PASS",
+      "evidence": {
+        "status": 200,
+        "rows": 0
+      }
+    },
+    {
+      "id": "ADM-emp-profiles-scope",
+      "section": "Administration — dashboard, users, roles",
+      "name": "employee sees own profile + staff only",
+      "result": "PASS",
+      "evidence": {
+        "status": 200,
+        "visible": [
+          "STGADM01",
+          "STGTEC01",
+          "STGEMP01"
+        ]
+      }
+    },
+    {
+      "id": "SEC-escalate-profile-role",
+      "section": "Security",
+      "name": "employee cannot change own role",
+      "result": "PASS",
+      "evidence": {
+        "status": 403,
+        "err": "42501 permission denied for table profiles",
+        "role_after": "employee"
+      }
+    },
+    {
+      "id": "SEC-escalate-profile-insert",
+      "section": "Security",
+      "name": "employee cannot insert profiles",
+      "result": "PASS",
+      "evidence": {
+        "status": 403,
+        "err": "42501 permission denied for table profiles"
+      }
+    },
+    {
+      "id": "SEC-escalate-user-metadata",
+      "section": "Security",
+      "name": "editing own auth user_metadata grants nothing",
+      "result": "PASS",
+      "evidence": {
+        "meta_update_status": 200,
+        "tickets_visible_after": 2
+      }
+    },
+    {
+      "id": "SEC-ticket-other-read",
+      "section": "Security",
+      "name": "employee cannot read admin's ticket by id",
+      "result": "PASS",
+      "evidence": {
+        "rows": 0
+      }
+    },
+    {
+      "id": "SEC-ticket-other-activity",
+      "section": "Security",
+      "name": "employee cannot read others' ticket activity",
+      "result": "PASS",
+      "evidence": {
+        "rows": 0
+      }
+    },
+    {
+      "id": "SEC-ticket-other-comment",
+      "section": "Security",
+      "name": "employee cannot comment on others' ticket",
+      "result": "PASS",
+      "evidence": {
+        "status": 403,
+        "err": "42501 new row violates row-level security policy for table \"ticket_comments\""
+      }
+    },
+    {
+      "id": "SEC-ticket-other-action",
+      "section": "Security",
+      "name": "employee cannot act on others' ticket via RPC",
+      "result": "PASS",
+      "evidence": {
+        "status": 500,
+        "err": "P0002 Ticket not found"
+      }
+    },
+    {
+      "id": "SEC-ticket-other-update",
+      "section": "Security",
+      "name": "employee cannot update others' ticket",
+      "result": "PASS",
+      "evidence": {
+        "rows": 0
+      }
+    },
+    {
+      "id": "SEC-rpc-claim_notifications-anon",
+      "section": "Security",
+      "name": "anon cannot execute claim_notifications",
+      "result": "PASS",
+      "evidence": {
+        "status": 401,
+        "err": "42501 permission denied for function claim_notifications"
+      }
+    },
+    {
+      "id": "SEC-rpc-claim_notifications-employee",
+      "section": "Security",
+      "name": "employee cannot execute claim_notifications",
+      "result": "PASS",
+      "evidence": {
+        "status": 403,
+        "err": "42501 permission denied for function claim_notifications"
+      }
+    },
+    {
+      "id": "SEC-rpc-claim_notifications-admin",
+      "section": "Security",
+      "name": "admin cannot execute claim_notifications",
+      "result": "PASS",
+      "evidence": {
+        "status": 403,
+        "err": "42501 permission denied for function claim_notifications"
+      }
+    },
+    {
+      "id": "SEC-rpc-login_is_rate_limited-anon",
+      "section": "Security",
+      "name": "anon cannot execute login_is_rate_limited",
+      "result": "PASS",
+      "evidence": {
+        "status": 401,
+        "err": "42501 permission denied for function login_is_rate_limited"
+      }
+    },
+    {
+      "id": "SEC-rpc-login_is_rate_limited-employee",
+      "section": "Security",
+      "name": "employee cannot execute login_is_rate_limited",
+      "result": "PASS",
+      "evidence": {
+        "status": 403,
+        "err": "42501 permission denied for function login_is_rate_limited"
+      }
+    },
+    {
+      "id": "SEC-rpc-login_is_rate_limited-admin",
+      "section": "Security",
+      "name": "admin cannot execute login_is_rate_limited",
+      "result": "PASS",
+      "evidence": {
+        "status": 403,
+        "err": "42501 permission denied for function login_is_rate_limited"
+      }
+    },
+    {
+      "id": "SEC-rpc-record_login_attempt-anon",
+      "section": "Security",
+      "name": "anon cannot execute record_login_attempt",
+      "result": "PASS",
+      "evidence": {
+        "status": 401,
+        "err": "42501 permission denied for function record_login_attempt"
+      }
+    },
+    {
+      "id": "SEC-rpc-record_login_attempt-employee",
+      "section": "Security",
+      "name": "employee cannot execute record_login_attempt",
+      "result": "PASS",
+      "evidence": {
+        "status": 403,
+        "err": "42501 permission denied for function record_login_attempt"
+      }
+    },
+    {
+      "id": "SEC-rpc-record_login_attempt-admin",
+      "section": "Security",
+      "name": "admin cannot execute record_login_attempt",
+      "result": "PASS",
+      "evidence": {
+        "status": 403,
+        "err": "42501 permission denied for function record_login_attempt"
+      }
+    },
+    {
+      "id": "SEC-rpc-complete_notification-anon",
+      "section": "Security",
+      "name": "anon cannot execute complete_notification",
+      "result": "PASS",
+      "evidence": {
+        "status": 401,
+        "err": "42501 permission denied for function complete_notification"
+      }
+    },
+    {
+      "id": "SEC-rpc-complete_notification-employee",
+      "section": "Security",
+      "name": "employee cannot execute complete_notification",
+      "result": "PASS",
+      "evidence": {
+        "status": 403,
+        "err": "42501 permission denied for function complete_notification"
+      }
+    },
+    {
+      "id": "SEC-rpc-complete_notification-admin",
+      "section": "Security",
+      "name": "admin cannot execute complete_notification",
+      "result": "PASS",
+      "evidence": {
+        "status": 403,
+        "err": "42501 permission denied for function complete_notification"
+      }
+    },
+    {
+      "id": "SEC-rpc-rls_auto_enable-anon",
+      "section": "Security",
+      "name": "anon cannot execute rls_auto_enable",
+      "result": "PASS",
+      "evidence": {
+        "status": 401,
+        "err": "42501 permission denied for function rls_auto_enable"
+      }
+    },
+    {
+      "id": "SEC-rpc-rls_auto_enable-employee",
+      "section": "Security",
+      "name": "employee cannot execute rls_auto_enable",
+      "result": "PASS",
+      "evidence": {
+        "status": 403,
+        "err": "42501 permission denied for function rls_auto_enable"
+      }
+    },
+    {
+      "id": "SEC-rpc-rls_auto_enable-admin",
+      "section": "Security",
+      "name": "admin cannot execute rls_auto_enable",
+      "result": "PASS",
+      "evidence": {
+        "status": 403,
+        "err": "42501 permission denied for function rls_auto_enable"
+      }
+    },
+    {
+      "id": "SEC-rpc-ticket_stats-anon",
+      "section": "Security",
+      "name": "anon cannot execute ticket_stats",
+      "result": "PASS",
+      "evidence": {
+        "status": 401,
+        "err": "42501 permission denied for function ticket_stats"
+      }
+    },
+    {
+      "id": "SEC-rpc-assignable_staff-anon",
+      "section": "Security",
+      "name": "anon cannot execute assignable_staff",
+      "result": "PASS",
+      "evidence": {
+        "status": 401,
+        "err": "42501 permission denied for function assignable_staff"
+      }
+    },
+    {
+      "id": "SEC-rpc-reporter_ticket_action-anon",
+      "section": "Security",
+      "name": "anon cannot execute reporter_ticket_action",
+      "result": "PASS",
+      "evidence": {
+        "status": 401,
+        "err": "42501 permission denied for function reporter_ticket_action"
+      }
+    },
+    {
+      "id": "SEC-notification_outbox-admin-denied",
+      "section": "Security",
+      "name": "even admin clients cannot read notification_outbox",
+      "result": "PASS",
+      "evidence": {
+        "status": 403,
+        "err": "42501 permission denied for table notification_outbox"
+      }
+    },
+    {
+      "id": "SEC-login_attempts-admin-denied",
+      "section": "Security",
+      "name": "even admin clients cannot read login_attempts",
+      "result": "PASS",
+      "evidence": {
+        "status": 403,
+        "err": "42501 permission denied for table login_attempts"
+      }
+    },
+    {
+      "id": "SEC-anon-tickets",
+      "section": "Security",
+      "name": "anon publishable key reads no tickets",
+      "result": "PASS",
+      "evidence": {
+        "status": 401
+      }
+    },
+    {
+      "id": "SEC-bad-apikey",
+      "section": "Security",
+      "name": "invalid API key rejected",
+      "result": "PASS",
+      "evidence": {
+        "status": 401
+      }
+    },
+    {
+      "id": "SEC-ef-admin-users-no-token",
+      "section": "Security",
+      "name": "admin-users: no token -> 401",
+      "result": "PASS",
+      "evidence": {
+        "status": 401,
+        "error": "Not authenticated"
+      }
+    },
+    {
+      "id": "SEC-ef-admin-users-publishable-key-as-bearer",
+      "section": "Security",
+      "name": "admin-users: publishable key as bearer -> 401",
+      "result": "PASS",
+      "evidence": {
+        "status": 401,
+        "error": "Not authenticated"
+      }
+    },
+    {
+      "id": "SEC-ef-admin-users-forged-JWT",
+      "section": "Security",
+      "name": "admin-users: forged JWT -> 401",
+      "result": "PASS",
+      "evidence": {
+        "status": 401,
+        "error": "Not authenticated"
+      }
+    },
+    {
+      "id": "SEC-ef-send-notifications-no-token",
+      "section": "Security",
+      "name": "send-notifications: no token -> 401",
+      "result": "PASS",
+      "evidence": {
+        "status": 401,
+        "error": "Not authenticated"
+      }
+    },
+    {
+      "id": "SEC-ef-send-notifications-forged-JWT",
+      "section": "Security",
+      "name": "send-notifications: forged JWT -> 401",
+      "result": "PASS",
+      "evidence": {
+        "status": 401,
+        "error": "Not authenticated"
+      }
+    },
+    {
+      "id": "SEC-ef-send-notifications-bad-cron",
+      "section": "Security",
+      "name": "send-notifications: wrong cron secret -> 401",
+      "result": "PASS",
+      "evidence": {
+        "status": 401
+      }
+    },
+    {
+      "id": "SEC-cors-login",
+      "section": "Security",
+      "name": "login: CORS echoes only the approved preview origin",
+      "result": "PASS",
+      "evidence": {
+        "approved": "https://itsr-radiant-staging-2vj2mwxa8-assyaref75.vercel.app",
+        "evil": null,
+        "no_origin": null
+      }
+    },
+    {
+      "id": "SEC-cors-admin-users",
+      "section": "Security",
+      "name": "admin-users: CORS echoes only the approved preview origin",
+      "result": "PASS",
+      "evidence": {
+        "approved": "https://itsr-radiant-staging-2vj2mwxa8-assyaref75.vercel.app",
+        "evil": null,
+        "no_origin": null
+      }
+    },
+    {
+      "id": "SEC-cors-send-notifications",
+      "section": "Security",
+      "name": "send-notifications: CORS echoes only the approved preview origin",
+      "result": "PASS",
+      "evidence": {
+        "approved": "https://itsr-radiant-staging-2vj2mwxa8-assyaref75.vercel.app",
+        "evil": null,
+        "no_origin": null
+      }
+    },
+    {
+      "id": "NTF-queue-populated",
+      "section": "Notifications",
+      "name": "outbox has ticket_created/assigned/status_changed/comment_added rows",
+      "result": "PASS",
+      "evidence": {
+        "rows": [
+          {
+            "event_type": "comment_added",
+            "status": "pending",
+            "n": 2
+          },
+          {
+            "event_type": "status_changed",
+            "status": "pending",
+            "n": 7
+          },
+          {
+            "event_type": "ticket_assigned",
+            "status": "pending",
+            "n": 1
+          },
+          {
+            "event_type": "ticket_created",
+            "status": "pending",
+            "n": 4
+          }
+        ]
+      }
+    },
+    {
+      "id": "NTF-internal-comment-not-queued",
+      "section": "Notifications",
+      "name": "internal comments do not enqueue notifications",
+      "result": "PASS",
+      "evidence": {
+        "comment_added": 2,
+        "public_comments": 2
+      }
+    },
+    {
+      "id": "NTF-send-authz",
+      "section": "Notifications",
+      "name": "active user may kick send-notifications (auth passes)",
+      "result": "PASS",
+      "evidence": {
+        "status": 503,
+        "error": "Email is not configured (GMAIL_USER / GMAIL_APP_PASSWORD)"
+      }
+    },
+    {
+      "id": "NTF-no-loss-when-unconfigured",
+      "section": "Notifications",
+      "name": "rows stay pending when email is unconfigured",
+      "result": "PASS",
+      "evidence": {
+        "pending_before": 14,
+        "pending_after": 14
+      }
+    },
+    {
+      "id": "NTF-gmail-delivery",
+      "section": "Notifications",
+      "name": "Gmail SMTP delivery",
+      "result": "BLOCKED",
+      "evidence": {
+        "status": 503,
+        "error": "Email is not configured (GMAIL_USER / GMAIL_APP_PASSWORD)",
+        "reason": "GMAIL_USER / GMAIL_APP_PASSWORD not configured on staging"
+      }
+    },
+    {
+      "id": "ADM-deactivate",
+      "section": "Account deactivation",
+      "name": "admin deactivates technician",
+      "result": "PASS",
+      "evidence": {
+        "status": 200
+      }
+    },
+    {
+      "id": "AUTH-deactivated-login",
+      "section": "Account deactivation",
+      "name": "deactivated user cannot log in",
+      "result": "PASS",
+      "evidence": {
+        "status": 401
+      }
+    },
+    {
+      "id": "AUTH-deactivated-existing-token-rls",
+      "section": "Account deactivation",
+      "name": "deactivated user's live token sees no tickets (RLS)",
+      "result": "PASS",
+      "evidence": {
+        "status": 200,
+        "rows": 0
+      }
+    },
+    {
+      "id": "AUTH-deactivated-existing-token-ef",
+      "section": "Account deactivation",
+      "name": "deactivated user's token rejected by Edge Function",
+      "result": "PASS",
+      "evidence": {
+        "status": 401
+      }
+    },
+    {
+      "id": "ADM-deactivated-not-assignable",
+      "section": "Account deactivation",
+      "name": "deactivated technician removed from staff picker",
+      "result": "PASS",
+      "evidence": {
+        "staff": [
+          "STGADM01"
+        ]
+      }
+    },
+    {
+      "id": "ADM-reactivate",
+      "section": "Account deactivation",
+      "name": "admin reactivates technician; login works again",
+      "result": "PASS",
+      "evidence": {
+        "update": 200,
+        "login": 200
+      }
+    },
+    {
+      "id": "AUTH-admin-logout",
+      "section": "Logout",
+      "name": "admin logout revokes session (refresh token + Auth API)",
+      "result": "PASS",
+      "evidence": {
+        "logout": 204,
+        "refresh_after": 400,
+        "auth_user_after": 403
+      }
+    },
+    {
+      "id": "AUTH-admin-logout-jwt-observation",
+      "section": "Logout",
+      "name": "admin: PostgREST with the logged-out access token (observation)",
+      "result": "PASS",
+      "evidence": {
+        "status": 200,
+        "note": "Supabase access tokens are stateless JWTs; PostgREST honours them until exp (max 3600 s). Expected platform behaviour, not a defect."
+      }
+    },
+    {
+      "id": "AUTH-employee-logout",
+      "section": "Logout",
+      "name": "employee logout revokes session (refresh token + Auth API)",
+      "result": "PASS",
+      "evidence": {
+        "logout": 204,
+        "refresh_after": 400,
+        "auth_user_after": 403
+      }
+    },
+    {
+      "id": "AUTH-employee-logout-jwt-observation",
+      "section": "Logout",
+      "name": "employee: PostgREST with the logged-out access token (observation)",
+      "result": "PASS",
+      "evidence": {
+        "status": 200,
+        "note": "Supabase access tokens are stateless JWTs; PostgREST honours them until exp (max 3600 s). Expected platform behaviour, not a defect."
+      }
+    },
+    {
+      "id": "AUTH-technician-logout",
+      "section": "Logout",
+      "name": "technician logout",
+      "result": "PASS",
+      "evidence": {
+        "status": 204
+      }
+    }
+  ]
+}

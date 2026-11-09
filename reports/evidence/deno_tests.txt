@@ -1,0 +1,16 @@
+running 12 tests from ./tests/shared_test.ts
+employee number normalisation ... ok (0ms)
+CORS: allow-list echoes only listed origins ... ok (0ms)
+client IP takes first X-Forwarded-For hop ... ok (1ms)
+HTML escaping ... ok (0ms)
+new ticket -> IT staff, CC group + manager, link built ... ok (0ms)
+new ticket with no IT staff falls back to group address ... ok (6ms)
+status change -> reporter; actor not emailed about own action ... ok (0ms)
+comment by reporter -> assignee; by tech -> reporter ... ok (0ms)
+no configured addresses and no recipients -> null (nothing invented) ... ok (0ms)
+user-supplied content is escaped in HTML body ... ok (0ms)
+admin create validation ... ok (0ms)
+admin update validation ... ok (0ms)
+
+ok | 12 passed | 0 failed (18ms)
+

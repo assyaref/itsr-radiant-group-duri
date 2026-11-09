@@ -1,0 +1,113 @@
+import { assert, assertEquals } from "jsr:@std/assert@1.0.13";
+import { clientIp, corsHeaders, escapeHtml, normalizeEmployeeNumber } from "../_shared/http.ts";
+import { buildEmail, type EventContext, type Settings } from "../_shared/notification_rules.ts";
+import { validateCreate, validateResetPassword, validateUpdate } from "../admin-users/validation.ts";
+
+Deno.test("employee number normalisation", () => {
+  assertEquals(normalizeEmployeeNumber(" emp001 "), "EMP001");
+  assertEquals(normalizeEmployeeNumber("EMP 001"), null);
+  assertEquals(normalizeEmployeeNumber("E"), null);
+  assertEquals(normalizeEmployeeNumber("emp'; drop"), null);
+  assertEquals(normalizeEmployeeNumber(42), null);
+});
+
+Deno.test("CORS: allow-list echoes only listed origins", () => {
+  assertEquals(corsHeaders("https://a.test", "https://a.test,https://b.test").get("Access-Control-Allow-Origin"), "https://a.test");
+  assertEquals(corsHeaders("https://evil.test", "https://a.test").get("Access-Control-Allow-Origin"), null);
+});
+
+Deno.test("CORS: fail-closed when ALLOWED_ORIGINS is unset, empty or wildcard", () => {
+  const acao = (o: string | null, a: string | undefined) => corsHeaders(o, a).get("Access-Control-Allow-Origin");
+  assertEquals(acao("https://x.test", undefined), null);
+  assertEquals(acao("https://x.test", ""), null);
+  assertEquals(acao("https://x.test", " , "), null);
+  assertEquals(acao("https://x.test", "*"), null);
+  assertEquals(acao("*", "*"), null);
+  assertEquals(acao(null, "https://a.test"), null);
+  assertEquals(acao("https://a.test", "*, https://a.test"), "https://a.test");
+});
+
+Deno.test("client IP takes first X-Forwarded-For hop", () => {
+  const r = new Request("http://x", { headers: { "x-forwarded-for": "203.0.113.7, 10.0.0.1" } });
+  assertEquals(clientIp(r), "203.0.113.7");
+  assertEquals(clientIp(new Request("http://x")), "unknown");
+});
+
+Deno.test("HTML escaping", () => {
+  assertEquals(escapeHtml(`<script>"x"&'y'</script>`), "&lt;script&gt;&quot;x&quot;&amp;&#39;y&#39;&lt;/script&gt;");
+});
+
+const reporter = { id: "r", full_name: "Rina Reporter", email: "rina@example.test" };
+const tech = { id: "t", full_name: "Tono Tech", email: "tono@example.test" };
+const ticket = {
+  id: "tid", ticket_number: "ITSR-00007", subject: "VPN down", description: "Cannot connect",
+  category: "Network", priority: "high", status: "open", resolution: null, reporter, assignee: null,
+};
+const settings: Settings = { it_support_group_email: "it-group@example.test", manager_email: "mgr@example.test", app_base_url: "https://itsr.example.test/" };
+const ctx = (o: Partial<EventContext>): EventContext => ({
+  event: "ticket_created", payload: {}, ticket, actor: reporter, comment: null, activeItStaff: [tech], ...o,
+});
+
+Deno.test("new ticket -> IT staff, CC group + manager, link built", () => {
+  const e = buildEmail(ctx({}), settings)!;
+  assertEquals(e.to, ["tono@example.test"]);
+  assertEquals(e.cc, ["it-group@example.test", "mgr@example.test"]);
+  assert(e.subject.startsWith("[ITSR-00007]"));
+  assert(e.text.includes("https://itsr.example.test/#/tickets/tid"));
+});
+
+Deno.test("new ticket with no IT staff falls back to group address", () => {
+  const e = buildEmail(ctx({ activeItStaff: [] }), settings)!;
+  assertEquals(e.to, ["it-group@example.test"]);
+  assertEquals(e.cc, ["mgr@example.test"]);
+});
+
+Deno.test("status change -> reporter; actor not emailed about own action", () => {
+  const e = buildEmail(ctx({ event: "status_changed", actor: tech, payload: { old_status: "open", new_status: "in_progress" },
+    ticket: { ...ticket, status: "in_progress", assignee: tech } }), settings)!;
+  assertEquals(e.to, ["rina@example.test"]);
+  assert(e.subject.includes("Open → In Progress"));
+});
+
+Deno.test("comment by reporter -> assignee; by tech -> reporter", () => {
+  const t2 = { ...ticket, assignee: tech };
+  assertEquals(buildEmail(ctx({ event: "comment_added", actor: reporter, ticket: t2, comment: { content: "hi" } }), settings)!.to, ["tono@example.test"]);
+  assertEquals(buildEmail(ctx({ event: "comment_added", actor: tech, ticket: t2, comment: { content: "hi" } }), settings)!.to, ["rina@example.test"]);
+});
+
+Deno.test("no configured addresses and no recipients -> null (nothing invented)", () => {
+  const none: Settings = { it_support_group_email: null, manager_email: null, app_base_url: null };
+  assertEquals(buildEmail(ctx({ activeItStaff: [] }), none), null);
+});
+
+Deno.test("user-supplied content is escaped in HTML body", () => {
+  const e = buildEmail(ctx({ ticket: { ...ticket, description: "<img src=x onerror=alert(1)>" } }), settings)!;
+  assert(!e.html.includes("<img"));
+});
+
+Deno.test("admin create validation", () => {
+  const ok = validateCreate({ employee_number: "emp010", full_name: "New Person", email: "New@Example.test", role: "employee", password: "longenough" });
+  assert(ok.ok && ok.value.employee_number === "EMP010" && ok.value.email === "new@example.test");
+  assert(!validateCreate({ employee_number: "EMP010", full_name: "x", email: "bad", role: "employee", password: "longenough" }).ok);
+  assert(!validateCreate({ employee_number: "EMP010", full_name: "x", email: "a@b.co", role: "superuser", password: "longenough" }).ok);
+  assert(!validateCreate({ employee_number: "EMP010", full_name: "x", email: "a@b.co", role: "employee", password: "short" }).ok);
+});
+
+Deno.test("admin update validation", () => {
+  assert(!validateUpdate({ user_id: "not-a-uuid", role: "employee" }).ok);
+  assert(!validateUpdate({ user_id: "10000000-0000-0000-0000-000000000001" }).ok);
+  const r = validateUpdate({ user_id: "10000000-0000-0000-0000-000000000001", role: "it_support", is_active: false });
+  assert(r.ok && r.value.changes.role === "it_support" && r.value.changes.is_active === false);
+  assert(!validateUpdate({ user_id: "10000000-0000-0000-0000-000000000001", is_active: "no" }).ok);
+});
+
+Deno.test("admin reset_password validation", () => {
+  const id = "10000000-0000-0000-0000-000000000001";
+  const ok = validateResetPassword({ user_id: id, password: "longenough" });
+  assert(ok.ok && ok.value.user_id === id);
+  assert(!validateResetPassword({ user_id: "", password: "longenough" }).ok);
+  assert(!validateResetPassword({ user_id: "not-a-uuid", password: "longenough" }).ok);
+  assert(!validateResetPassword({ user_id: id, password: "short" }).ok);
+  assert(!validateResetPassword({ user_id: id, password: "x".repeat(129) }).ok);
+  assert(!validateResetPassword({ user_id: id, password: 12345678 }).ok);
+});

@@ -1,0 +1,91 @@
+# Miscellaneous
+*.class
+*.log
+*.pyc
+*.swp
+.DS_Store
+.atom/
+.build/
+.buildlog/
+.history
+.svn/
+.swiftpm/
+migrate_working_dir/
+
+# IntelliJ related
+*.iml
+*.ipr
+*.iws
+.idea/
+
+# The .vscode folder contains launch configuration and tasks you configure in
+# VS Code which you may wish to be included in version control, so this line
+# is commented out by default.
+#.vscode/
+
+# Flutter/Dart/Pub related
+**/doc/api/
+**/ios/Flutter/.last_build_id
+.dart_tool/
+.flutter-plugins-dependencies
+.pub-cache/
+.pub/
+/build/
+/coverage/
+
+# Symbolication related
+app.*.symbols
+
+# Obfuscation related
+app.*.map.json
+
+# Android Studio will place build artifacts here
+/android/app/debug
+/android/app/profile
+/android/app/release
+
+# Widget Preview related
+.widget_preview/
+
+# Environment files - never commit actual secrets
+.env.staging
+.env.production
+.env.development
+# Generic .env file placeholder
+.env
+.env.*
+!.env.example
+
+# Supabase CLI local state (linked ref, pooler URL, versions)
+supabase/.temp/
+supabase/.branches/
+
+# Credentials / local secrets - never commit
+*.pem
+*.key
+*credentials*.json
+*test-accounts*.json
+**/db-password*
+**/publishable-key
+
+# Local ad-hoc debugging artifacts at the repo root (Phases 10-15.3).
+# They target only the throwaway docker test DB (localhost:5433) and are not
+# part of the application, migrations or test suites.
+/*.bat
+/*.ps1
+/*.py
+/%PYFILE%
+/%PYTHON_SCRIPT%
+/*_output.txt
+/output.txt
+/log.txt
+/status.txt
+/test_results.txt
+/test_unit_results.txt
+/db_init_complete.sql
+/init_test_db.sql
+/setup_auth_test.sql
+/setup_auth_uid.sql
+/setup_roles.sql
+/test_setup.sql
+/supabase_migrations.sql

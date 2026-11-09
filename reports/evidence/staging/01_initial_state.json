@@ -1,0 +1,24 @@
+{
+  "initial_state": {
+    "captured_at": "2026-11-08T14:43:44.588268+07:00",
+    "current_database": "postgres",
+    "server_version": "17.11",
+    "public_tables": [],
+    "public_functions": 1,
+    "public_types": 0,
+    "private_schema_exists": false,
+    "migration_history_table": true,
+    "auth_users_count": 0,
+    "non_system_schemas": [
+      "auth",
+      "extensions",
+      "graphql",
+      "graphql_public",
+      "public",
+      "realtime",
+      "storage",
+      "supabase_migrations",
+      "vault"
+    ]
+  }
+}

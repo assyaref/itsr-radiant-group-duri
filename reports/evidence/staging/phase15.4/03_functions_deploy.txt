@@ -1,0 +1,36 @@
+# deploy 2026-11-08T08:23:06Z project-ref=yzjpttfwnvnuyxbdkidm (staging)
+49986fe3c7d75ae087056779481ecb4f36eb99e5ccafabdc38a704777e696449 *supabase/functions/_shared/http.ts
+d85e2d279462bd7689551e8eb252d672a2ecf335a7c2b031bad92d8cc5efccf6 *supabase/functions/_shared/notification_rules.ts
+fe4861666b0c18fa81d564948c6d9a767fc0786dc691631b1f9abc01de2050f5 *supabase/functions/_shared/supabase.ts
+a5c2852fc1a7229bd42130a0cafbf3b5296509a07e7bc5910e45ba8ca8c8840d *supabase/functions/admin-users/index.ts
+8fb053f79ec39f9e9d943701326b9273454cf8b8bf0b04fa78ce5ea5a7c57f14 *supabase/functions/login/index.ts
+7fa3582f7f895bba8bbe8a0261dcfd9535298409c9f9ea2dc1881cc595e6c95b *supabase/functions/send-notifications/index.ts
+Deploying Function: login
+Uploading asset (login): supabase/functions/login/index.ts
+Uploading asset (login): supabase/functions/_shared/supabase.ts
+Uploading asset (login): supabase/functions/_shared/http.ts
+Deploying Function: admin-users
+Uploading asset (admin-users): supabase/functions/admin-users/index.ts
+Uploading asset (admin-users): supabase/functions/admin-users/validation.ts
+Uploading asset (admin-users): supabase/functions/_shared/http.ts
+Uploading asset (admin-users): supabase/functions/_shared/supabase.ts
+Deploying Function: send-notifications
+Uploading asset (send-notifications): supabase/functions/send-notifications/index.ts
+Uploading asset (send-notifications): supabase/functions/_shared/notification_rules.ts
+Uploading asset (send-notifications): supabase/functions/_shared/http.ts
+Uploading asset (send-notifications): supabase/functions/_shared/supabase.ts
+Deployed Functions on project yzjpttfwnvnuyxbdkidm: login, admin-users, send-notifications
+You can inspect your deployment in the Dashboard: https://supabase.com/dashboard/project/yzjpttfwnvnuyxbdkidm/functions
+A new version of Supabase CLI is available: v3.0.0 (currently installed v2.54.11)
+We recommend updating regularly for new features and bug fixes: https://supabase.com/docs/guides/cli/getting-started#updating-the-supabase-cli
+--- list
+
+  
+   ID                                   | NAME               | SLUG               | STATUS | VERSION | UPDATED_AT (UTC)    
+  --------------------------------------|--------------------|--------------------|--------|---------|---------------------
+   c7b1babe-25bd-4a17-91b2-6647e8a0a2a2 | login              | login              | ACTIVE | 3       | 2026-11-08 08:23:16 
+   57281cac-d937-4841-a2e9-12ec3f2e724e | admin-users        | admin-users        | ACTIVE | 3       | 2026-11-08 08:23:16 
+   1b60527b-9c26-4f6e-a1ea-b766a0cecb4c | send-notifications | send-notifications | ACTIVE | 3       | 2026-11-08 08:23:16 
+
+A new version of Supabase CLI is available: v3.0.0 (currently installed v2.54.11)
+We recommend updating regularly for new features and bug fixes: https://supabase.com/docs/guides/cli/getting-started#updating-the-supabase-cli

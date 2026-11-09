@@ -1,0 +1,865 @@
+{
+  "post_state": {
+    "captured_at": "2026-11-08T14:46:14.68079+07:00",
+    "tables": [
+      {
+        "table": "app_settings",
+        "rls_enabled": true,
+        "rls_forced": false,
+        "owner": "postgres"
+      },
+      {
+        "table": "categories",
+        "rls_enabled": true,
+        "rls_forced": false,
+        "owner": "postgres"
+      },
+      {
+        "table": "login_attempts",
+        "rls_enabled": true,
+        "rls_forced": false,
+        "owner": "postgres"
+      },
+      {
+        "table": "notification_outbox",
+        "rls_enabled": true,
+        "rls_forced": false,
+        "owner": "postgres"
+      },
+      {
+        "table": "profiles",
+        "rls_enabled": true,
+        "rls_forced": false,
+        "owner": "postgres"
+      },
+      {
+        "table": "ticket_activity_log",
+        "rls_enabled": true,
+        "rls_forced": false,
+        "owner": "postgres"
+      },
+      {
+        "table": "ticket_comments",
+        "rls_enabled": true,
+        "rls_forced": false,
+        "owner": "postgres"
+      },
+      {
+        "table": "tickets",
+        "rls_enabled": true,
+        "rls_forced": false,
+        "owner": "postgres"
+      }
+    ],
+    "policies": [
+      {
+        "table": "app_settings",
+        "policy": "app_settings_select",
+        "cmd": "SELECT",
+        "roles": [
+          "authenticated"
+        ],
+        "permissive": "PERMISSIVE"
+      },
+      {
+        "table": "app_settings",
+        "policy": "app_settings_update",
+        "cmd": "UPDATE",
+        "roles": [
+          "authenticated"
+        ],
+        "permissive": "PERMISSIVE"
+      },
+      {
+        "table": "categories",
+        "policy": "categories_insert",
+        "cmd": "INSERT",
+        "roles": [
+          "authenticated"
+        ],
+        "permissive": "PERMISSIVE"
+      },
+      {
+        "table": "categories",
+        "policy": "categories_select",
+        "cmd": "SELECT",
+        "roles": [
+          "authenticated"
+        ],
+        "permissive": "PERMISSIVE"
+      },
+      {
+        "table": "categories",
+        "policy": "categories_update",
+        "cmd": "UPDATE",
+        "roles": [
+          "authenticated"
+        ],
+        "permissive": "PERMISSIVE"
+      },
+      {
+        "table": "profiles",
+        "policy": "profiles_select",
+        "cmd": "SELECT",
+        "roles": [
+          "authenticated"
+        ],
+        "permissive": "PERMISSIVE"
+      },
+      {
+        "table": "ticket_activity_log",
+        "policy": "activity_select",
+        "cmd": "SELECT",
+        "roles": [
+          "authenticated"
+        ],
+        "permissive": "PERMISSIVE"
+      },
+      {
+        "table": "ticket_comments",
+        "policy": "comments_insert",
+        "cmd": "INSERT",
+        "roles": [
+          "authenticated"
+        ],
+        "permissive": "PERMISSIVE"
+      },
+      {
+        "table": "ticket_comments",
+        "policy": "comments_select",
+        "cmd": "SELECT",
+        "roles": [
+          "authenticated"
+        ],
+        "permissive": "PERMISSIVE"
+      },
+      {
+        "table": "tickets",
+        "policy": "tickets_insert",
+        "cmd": "INSERT",
+        "roles": [
+          "authenticated"
+        ],
+        "permissive": "PERMISSIVE"
+      },
+      {
+        "table": "tickets",
+        "policy": "tickets_select",
+        "cmd": "SELECT",
+        "roles": [
+          "authenticated"
+        ],
+        "permissive": "PERMISSIVE"
+      },
+      {
+        "table": "tickets",
+        "policy": "tickets_update_staff",
+        "cmd": "UPDATE",
+        "roles": [
+          "authenticated"
+        ],
+        "permissive": "PERMISSIVE"
+      }
+    ],
+    "table_privileges": [
+      {
+        "table": "app_settings",
+        "grantee": "authenticated",
+        "privs": "SELECT"
+      },
+      {
+        "table": "app_settings",
+        "grantee": "service_role",
+        "privs": "DELETE,INSERT,REFERENCES,SELECT,TRIGGER,TRUNCATE,UPDATE"
+      },
+      {
+        "table": "categories",
+        "grantee": "authenticated",
+        "privs": "SELECT"
+      },
+      {
+        "table": "categories",
+        "grantee": "service_role",
+        "privs": "DELETE,INSERT,REFERENCES,SELECT,TRIGGER,TRUNCATE,UPDATE"
+      },
+      {
+        "table": "login_attempts",
+        "grantee": "service_role",
+        "privs": "DELETE,INSERT,REFERENCES,SELECT,TRIGGER,TRUNCATE,UPDATE"
+      },
+      {
+        "table": "notification_outbox",
+        "grantee": "service_role",
+        "privs": "DELETE,INSERT,REFERENCES,SELECT,TRIGGER,TRUNCATE,UPDATE"
+      },
+      {
+        "table": "profiles",
+        "grantee": "authenticated",
+        "privs": "SELECT"
+      },
+      {
+        "table": "profiles",
+        "grantee": "service_role",
+        "privs": "DELETE,INSERT,REFERENCES,SELECT,TRIGGER,TRUNCATE,UPDATE"
+      },
+      {
+        "table": "ticket_activity_log",
+        "grantee": "authenticated",
+        "privs": "SELECT"
+      },
+      {
+        "table": "ticket_activity_log",
+        "grantee": "service_role",
+        "privs": "DELETE,INSERT,REFERENCES,SELECT,TRIGGER,TRUNCATE,UPDATE"
+      },
+      {
+        "table": "ticket_comments",
+        "grantee": "authenticated",
+        "privs": "SELECT"
+      },
+      {
+        "table": "ticket_comments",
+        "grantee": "service_role",
+        "privs": "DELETE,INSERT,REFERENCES,SELECT,TRIGGER,TRUNCATE,UPDATE"
+      },
+      {
+        "table": "tickets",
+        "grantee": "authenticated",
+        "privs": "SELECT"
+      },
+      {
+        "table": "tickets",
+        "grantee": "service_role",
+        "privs": "DELETE,INSERT,REFERENCES,SELECT,TRIGGER,TRUNCATE,UPDATE"
+      }
+    ],
+    "column_privileges_authenticated": [
+      {
+        "table": "app_settings",
+        "column": "it_support_group_email",
+        "priv": "UPDATE"
+      },
+      {
+        "table": "app_settings",
+        "column": "manager_email",
+        "priv": "UPDATE"
+      },
+      {
+        "table": "app_settings",
+        "column": "notifications_enabled",
+        "priv": "UPDATE"
+      },
+      {
+        "table": "app_settings",
+        "column": "app_base_url",
+        "priv": "UPDATE"
+      },
+      {
+        "table": "categories",
+        "column": "name",
+        "priv": "INSERT"
+      },
+      {
+        "table": "categories",
+        "column": "description",
+        "priv": "INSERT"
+      },
+      {
+        "table": "categories",
+        "column": "is_active",
+        "priv": "INSERT"
+      },
+      {
+        "table": "categories",
+        "column": "sort_order",
+        "priv": "INSERT"
+      },
+      {
+        "table": "categories",
+        "column": "name",
+        "priv": "UPDATE"
+      },
+      {
+        "table": "categories",
+        "column": "description",
+        "priv": "UPDATE"
+      },
+      {
+        "table": "categories",
+        "column": "is_active",
+        "priv": "UPDATE"
+      },
+      {
+        "table": "categories",
+        "column": "sort_order",
+        "priv": "UPDATE"
+      },
+      {
+        "table": "ticket_comments",
+        "column": "ticket_id",
+        "priv": "INSERT"
+      },
+      {
+        "table": "ticket_comments",
+        "column": "author_id",
+        "priv": "INSERT"
+      },
+      {
+        "table": "ticket_comments",
+        "column": "content",
+        "priv": "INSERT"
+      },
+      {
+        "table": "ticket_comments",
+        "column": "is_internal",
+        "priv": "INSERT"
+      },
+      {
+        "table": "tickets",
+        "column": "subject",
+        "priv": "INSERT"
+      },
+      {
+        "table": "tickets",
+        "column": "description",
+        "priv": "INSERT"
+      },
+      {
+        "table": "tickets",
+        "column": "category",
+        "priv": "INSERT"
+      },
+      {
+        "table": "tickets",
+        "column": "subcategory",
+        "priv": "INSERT"
+      },
+      {
+        "table": "tickets",
+        "column": "priority",
+        "priv": "INSERT"
+      },
+      {
+        "table": "tickets",
+        "column": "reporter_id",
+        "priv": "INSERT"
+      },
+      {
+        "table": "tickets",
+        "column": "category",
+        "priv": "UPDATE"
+      },
+      {
+        "table": "tickets",
+        "column": "subcategory",
+        "priv": "UPDATE"
+      },
+      {
+        "table": "tickets",
+        "column": "priority",
+        "priv": "UPDATE"
+      },
+      {
+        "table": "tickets",
+        "column": "status",
+        "priv": "UPDATE"
+      },
+      {
+        "table": "tickets",
+        "column": "assigned_to_id",
+        "priv": "UPDATE"
+      },
+      {
+        "table": "tickets",
+        "column": "resolution",
+        "priv": "UPDATE"
+      }
+    ],
+    "functions": [
+      {
+        "schema": "private",
+        "name": "comments_after_insert",
+        "args": "",
+        "security_definer": true,
+        "owner": "postgres",
+        "config": [
+          "search_path=\"\""
+        ],
+        "anon_exec": false,
+        "auth_exec": false,
+        "service_exec": false
+      },
+      {
+        "schema": "private",
+        "name": "comments_before_insert",
+        "args": "",
+        "security_definer": false,
+        "owner": "postgres",
+        "config": [
+          "search_path=\"\""
+        ],
+        "anon_exec": false,
+        "auth_exec": false,
+        "service_exec": false
+      },
+      {
+        "schema": "private",
+        "name": "current_app_role",
+        "args": "",
+        "security_definer": true,
+        "owner": "postgres",
+        "config": [
+          "search_path=\"\""
+        ],
+        "anon_exec": false,
+        "auth_exec": true,
+        "service_exec": true
+      },
+      {
+        "schema": "private",
+        "name": "enqueue_notification",
+        "args": "p_ticket uuid, p_event text, p_payload jsonb",
+        "security_definer": true,
+        "owner": "postgres",
+        "config": [
+          "search_path=\"\""
+        ],
+        "anon_exec": false,
+        "auth_exec": false,
+        "service_exec": false
+      },
+      {
+        "schema": "private",
+        "name": "is_active_user",
+        "args": "",
+        "security_definer": true,
+        "owner": "postgres",
+        "config": [
+          "search_path=\"\""
+        ],
+        "anon_exec": false,
+        "auth_exec": true,
+        "service_exec": true
+      },
+      {
+        "schema": "private",
+        "name": "is_admin",
+        "args": "",
+        "security_definer": true,
+        "owner": "postgres",
+        "config": [
+          "search_path=\"\""
+        ],
+        "anon_exec": false,
+        "auth_exec": true,
+        "service_exec": true
+      },
+      {
+        "schema": "private",
+        "name": "is_staff",
+        "args": "",
+        "security_definer": true,
+        "owner": "postgres",
+        "config": [
+          "search_path=\"\""
+        ],
+        "anon_exec": false,
+        "auth_exec": true,
+        "service_exec": true
+      },
+      {
+        "schema": "private",
+        "name": "is_valid_transition",
+        "args": "p_old text, p_new text",
+        "security_definer": false,
+        "owner": "postgres",
+        "config": [
+          "search_path=\"\""
+        ],
+        "anon_exec": false,
+        "auth_exec": false,
+        "service_exec": false
+      },
+      {
+        "schema": "private",
+        "name": "tickets_after_insert",
+        "args": "",
+        "security_definer": true,
+        "owner": "postgres",
+        "config": [
+          "search_path=\"\""
+        ],
+        "anon_exec": false,
+        "auth_exec": false,
+        "service_exec": false
+      },
+      {
+        "schema": "private",
+        "name": "tickets_after_update",
+        "args": "",
+        "security_definer": true,
+        "owner": "postgres",
+        "config": [
+          "search_path=\"\""
+        ],
+        "anon_exec": false,
+        "auth_exec": false,
+        "service_exec": false
+      },
+      {
+        "schema": "private",
+        "name": "tickets_before_insert",
+        "args": "",
+        "security_definer": true,
+        "owner": "postgres",
+        "config": [
+          "search_path=\"\""
+        ],
+        "anon_exec": false,
+        "auth_exec": false,
+        "service_exec": false
+      },
+      {
+        "schema": "private",
+        "name": "tickets_before_update",
+        "args": "",
+        "security_definer": true,
+        "owner": "postgres",
+        "config": [
+          "search_path=\"\""
+        ],
+        "anon_exec": false,
+        "auth_exec": false,
+        "service_exec": false
+      },
+      {
+        "schema": "private",
+        "name": "touch_updated_at",
+        "args": "",
+        "security_definer": false,
+        "owner": "postgres",
+        "config": [
+          "search_path=\"\""
+        ],
+        "anon_exec": false,
+        "auth_exec": false,
+        "service_exec": false
+      },
+      {
+        "schema": "public",
+        "name": "assignable_staff",
+        "args": "",
+        "security_definer": false,
+        "owner": "postgres",
+        "config": [
+          "search_path=\"\""
+        ],
+        "anon_exec": false,
+        "auth_exec": true,
+        "service_exec": true
+      },
+      {
+        "schema": "public",
+        "name": "claim_notifications",
+        "args": "p_limit integer",
+        "security_definer": true,
+        "owner": "postgres",
+        "config": [
+          "search_path=\"\""
+        ],
+        "anon_exec": false,
+        "auth_exec": false,
+        "service_exec": true
+      },
+      {
+        "schema": "public",
+        "name": "complete_notification",
+        "args": "p_id uuid, p_status text, p_error text, p_recipients text[], p_cc text[]",
+        "security_definer": true,
+        "owner": "postgres",
+        "config": [
+          "search_path=\"\""
+        ],
+        "anon_exec": false,
+        "auth_exec": false,
+        "service_exec": true
+      },
+      {
+        "schema": "public",
+        "name": "login_is_rate_limited",
+        "args": "p_ip_address text, p_employee_number text, p_max_per_account integer, p_max_per_ip integer, p_window_minutes integer",
+        "security_definer": true,
+        "owner": "postgres",
+        "config": [
+          "search_path=\"\""
+        ],
+        "anon_exec": false,
+        "auth_exec": false,
+        "service_exec": true
+      },
+      {
+        "schema": "public",
+        "name": "record_login_attempt",
+        "args": "p_ip_address text, p_employee_number text, p_user_id uuid, p_success boolean",
+        "security_definer": true,
+        "owner": "postgres",
+        "config": [
+          "search_path=\"\""
+        ],
+        "anon_exec": false,
+        "auth_exec": false,
+        "service_exec": true
+      },
+      {
+        "schema": "public",
+        "name": "reporter_ticket_action",
+        "args": "p_ticket_id uuid, p_action text, p_note text",
+        "security_definer": true,
+        "owner": "postgres",
+        "config": [
+          "search_path=\"\""
+        ],
+        "anon_exec": false,
+        "auth_exec": true,
+        "service_exec": true
+      },
+      {
+        "schema": "public",
+        "name": "rls_auto_enable",
+        "args": "",
+        "security_definer": true,
+        "owner": "postgres",
+        "config": [
+          "search_path=pg_catalog"
+        ],
+        "anon_exec": true,
+        "auth_exec": true,
+        "service_exec": true
+      },
+      {
+        "schema": "public",
+        "name": "ticket_stats",
+        "args": "p_scope text",
+        "security_definer": false,
+        "owner": "postgres",
+        "config": [
+          "search_path=\"\""
+        ],
+        "anon_exec": false,
+        "auth_exec": true,
+        "service_exec": true
+      }
+    ],
+    "triggers": [
+      {
+        "table": "app_settings",
+        "trigger": "app_settings_touch",
+        "function": "private.touch_updated_at",
+        "enabled": "O"
+      },
+      {
+        "table": "categories",
+        "trigger": "categories_touch",
+        "function": "private.touch_updated_at",
+        "enabled": "O"
+      },
+      {
+        "table": "profiles",
+        "trigger": "profiles_touch",
+        "function": "private.touch_updated_at",
+        "enabled": "O"
+      },
+      {
+        "table": "ticket_comments",
+        "trigger": "comments_after_insert",
+        "function": "private.comments_after_insert",
+        "enabled": "O"
+      },
+      {
+        "table": "ticket_comments",
+        "trigger": "comments_before_insert",
+        "function": "private.comments_before_insert",
+        "enabled": "O"
+      },
+      {
+        "table": "tickets",
+        "trigger": "tickets_after_insert",
+        "function": "private.tickets_after_insert",
+        "enabled": "O"
+      },
+      {
+        "table": "tickets",
+        "trigger": "tickets_after_update",
+        "function": "private.tickets_after_update",
+        "enabled": "O"
+      },
+      {
+        "table": "tickets",
+        "trigger": "tickets_before_insert",
+        "function": "private.tickets_before_insert",
+        "enabled": "O"
+      },
+      {
+        "table": "tickets",
+        "trigger": "tickets_before_update",
+        "function": "private.tickets_before_update",
+        "enabled": "O"
+      }
+    ],
+    "indexes": [
+      {
+        "table": "app_settings",
+        "index": "app_settings_pkey"
+      },
+      {
+        "table": "categories",
+        "index": "categories_name_key"
+      },
+      {
+        "table": "categories",
+        "index": "categories_pkey"
+      },
+      {
+        "table": "login_attempts",
+        "index": "login_attempts_emp_idx"
+      },
+      {
+        "table": "login_attempts",
+        "index": "login_attempts_ip_idx"
+      },
+      {
+        "table": "login_attempts",
+        "index": "login_attempts_pkey"
+      },
+      {
+        "table": "notification_outbox",
+        "index": "notification_outbox_pending_idx"
+      },
+      {
+        "table": "notification_outbox",
+        "index": "notification_outbox_pkey"
+      },
+      {
+        "table": "profiles",
+        "index": "profiles_email_key"
+      },
+      {
+        "table": "profiles",
+        "index": "profiles_employee_number_key"
+      },
+      {
+        "table": "profiles",
+        "index": "profiles_pkey"
+      },
+      {
+        "table": "ticket_activity_log",
+        "index": "ticket_activity_log_pkey"
+      },
+      {
+        "table": "ticket_activity_log",
+        "index": "ticket_activity_ticket_idx"
+      },
+      {
+        "table": "ticket_comments",
+        "index": "ticket_comments_pkey"
+      },
+      {
+        "table": "ticket_comments",
+        "index": "ticket_comments_ticket_idx"
+      },
+      {
+        "table": "tickets",
+        "index": "tickets_assignee_idx"
+      },
+      {
+        "table": "tickets",
+        "index": "tickets_created_idx"
+      },
+      {
+        "table": "tickets",
+        "index": "tickets_pkey"
+      },
+      {
+        "table": "tickets",
+        "index": "tickets_reporter_idx"
+      },
+      {
+        "table": "tickets",
+        "index": "tickets_status_idx"
+      },
+      {
+        "table": "tickets",
+        "index": "tickets_ticket_number_key"
+      }
+    ],
+    "sequences": [
+      {
+        "seq": "ticket_number_seq",
+        "anon_usage": false,
+        "auth_usage": false
+      }
+    ],
+    "schema_privileges": {
+      "anon_private_usage": false,
+      "auth_private_usage": true,
+      "anon_public_usage": true
+    },
+    "default_acl_public": [
+      {
+        "role": "supabase_admin",
+        "objtype": "S",
+        "acl": "{postgres=rwU/supabase_admin,anon=rwU/supabase_admin,authenticated=rwU/supabase_admin,service_role=rwU/supabase_admin}"
+      },
+      {
+        "role": "supabase_admin",
+        "objtype": "r",
+        "acl": "{postgres=arwdDxtm/supabase_admin,anon=arwdDxtm/supabase_admin,authenticated=arwdDxtm/supabase_admin,service_role=arwdDxtm/supabase_admin}"
+      },
+      {
+        "role": "supabase_admin",
+        "objtype": "f",
+        "acl": "{postgres=X/supabase_admin,anon=X/supabase_admin,authenticated=X/supabase_admin,service_role=X/supabase_admin}"
+      },
+      {
+        "role": "postgres",
+        "objtype": "f",
+        "acl": "{postgres=X/postgres}"
+      },
+      {
+        "role": "postgres",
+        "objtype": "r",
+        "acl": "{postgres=arwdDxtm/postgres,service_role=Dxtm/postgres}"
+      },
+      {
+        "role": "postgres",
+        "objtype": "S",
+        "acl": "{postgres=rwU/postgres}"
+      }
+    ],
+    "migration_history": [
+      {
+        "version": "20261108000100",
+        "name": "core_schema"
+      },
+      {
+        "version": "20261108000200",
+        "name": "security_privileges_rls"
+      },
+      {
+        "version": "20261108000300",
+        "name": "ticket_workflow"
+      },
+      {
+        "version": "20261108000400",
+        "name": "login_and_notifications"
+      }
+    ],
+    "seed": {
+      "categories": 6,
+      "app_settings": 1,
+      "tickets": 0,
+      "profiles": 0,
+      "outbox": 0
+    }
+  }
+}

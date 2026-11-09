@@ -1,0 +1,72 @@
+{
+  "at": "2026-11-08T08:24:51.892Z",
+  "ids": {
+    "admin": "1330cf4c-ed47-412e-83e5-9413671ec263",
+    "employee": "e4e8339a-8542-44af-aeb2-c912262f86ac",
+    "technician": "f2947695-da8f-47c4-9d0f-74a9faec9ea2"
+  },
+  "steps": [
+    {
+      "name": "bootstrap admin auth user",
+      "ok": true,
+      "detail": {
+        "status": 200,
+        "id": "1330cf4c-ed47-412e-83e5-9413671ec263"
+      }
+    },
+    {
+      "name": "bootstrap admin profile",
+      "ok": true,
+      "detail": {
+        "employee_number": "STGADM01",
+        "role": "administrator"
+      }
+    },
+    {
+      "name": "admin login via Edge Function",
+      "ok": true,
+      "detail": {
+        "status": 200
+      }
+    },
+    {
+      "name": "admin-users create employee",
+      "ok": true,
+      "detail": {
+        "status": 201,
+        "id": "e4e8339a-8542-44af-aeb2-c912262f86ac"
+      }
+    },
+    {
+      "name": "admin-users create technician",
+      "ok": true,
+      "detail": {
+        "status": 201,
+        "id": "f2947695-da8f-47c4-9d0f-74a9faec9ea2"
+      }
+    }
+  ],
+  "verification": [
+    {
+      "employee_number": "STGADM01",
+      "role": "administrator",
+      "is_active": true,
+      "email": "stg.admin@example.com",
+      "confirmed": true
+    },
+    {
+      "employee_number": "STGEMP01",
+      "role": "employee",
+      "is_active": true,
+      "email": "stg.employee@example.com",
+      "confirmed": true
+    },
+    {
+      "employee_number": "STGTEC01",
+      "role": "it_support",
+      "is_active": true,
+      "email": "stg.technician@example.com",
+      "confirmed": true
+    }
+  ]
+}

@@ -1,0 +1,8 @@
+# flutter analyze + test 2026-11-08T08:29:55Z
+Flutter 3.47.7 • channel stable • https://github.com/flutter/flutter.git
+Analyzing ITSR RADIANT GROUP DURI...                            
+No issues found! (ran in 5.7s)
+00:04 +47: D:/PROJECT - FullStack Developer/PROGRESS/ITSR RADIANT GROUP DURI/test/widget/screens_test.dart: Lists, dashboard and responsive shell no overflow on a 320px-wide phone: dashboard
+00:04 +48: D:/PROJECT - FullStack Developer/PROGRESS/ITSR RADIANT GROUP DURI/test/widget/screens_test.dart: Lists, dashboard and responsive shell no overflow on a 320px-wide phone: create ticket
+00:04 +49: D:/PROJECT - FullStack Developer/PROGRESS/ITSR RADIANT GROUP DURI/test/widget/screens_test.dart: Lists, dashboard and responsive shell no overflow on a 320px-wide phone: my tickets
+00:04 +50: All tests passed!

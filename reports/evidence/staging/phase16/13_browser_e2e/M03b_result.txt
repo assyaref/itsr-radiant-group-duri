@@ -1,0 +1,5 @@
+M03b (retest) phone ticket detail 2026-11-09T02:10:29.691Z: PASS
+  PASS no horizontal page scroll (scrollWidth=390)
+  PASS resolution visible at top of stacked layout
+  PASS History & comments reachable by scrolling
+  PASS timeline entries rendered on phone
