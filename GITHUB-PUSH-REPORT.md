@@ -19,3 +19,14 @@ No data was lost: every file was still on disk and in the index.
 - **Secret scan:** run over every staged file before committing. The result is recorded in the commit's companion evidence, `reports/evidence/staging/phase16/15_git_secret_scan.txt`.
 - **Push:** an ordinary, non-force push of `main` to an empty remote.
 - **Verification:** `git ls-remote origin refs/heads/main` must equal local `HEAD`. The result is in `reports/evidence/staging/phase16/16_git_push_verification.txt`, added in a follow-up commit, because a commit cannot contain its own hash.
+
+## 3. Result (executed 2026-11-09)
+
+| Check | Result |
+|---|---|
+| Secret scan of staged set | 249 files scanned. 1 hit, triaged as a false positive: the literal probe value `invalidtoken000`. **PASS** |
+| Commit 1 | `1c50ef5c53e1b5fa5fc8a50e58460007e8b9f9dc`: 249 files, 22,001 insertions |
+| Remote refs before push | 0 (empty repository) |
+| Push | `main -> main` (new branch), not forced |
+| Remote `refs/heads/main` equals local HEAD | **PASS** (`1c50ef5…`) |
+| Commit 2 | This report plus the verification file, pushed on top of commit 1 |
