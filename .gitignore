@@ -89,3 +89,8 @@ supabase/.branches/
 /setup_roles.sql
 /test_setup.sql
 /supabase_migrations.sql
+
+# Phase 17: local E2E dependencies / per-run inputs
+tools/e2e/node_modules/
+tools/e2e/package-lock.json
+tools/e2e/other_ticket_id.txt

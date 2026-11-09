@@ -1,0 +1,9 @@
+login | Origin=https://itsr-radiant-staging-h8c5j387u-assyaref75.vercel.app | ACAO=https://itsr-radiant-staging-h8c5j387u-assyaref75.vercel.app
+login | Origin=https://itsr-radiant-staging-2vj2mwxa8-assyaref75.vercel.app | ACAO=<none>
+login | Origin=https://evil.example | ACAO=<none>
+admin-users | Origin=https://itsr-radiant-staging-h8c5j387u-assyaref75.vercel.app | ACAO=https://itsr-radiant-staging-h8c5j387u-assyaref75.vercel.app
+admin-users | Origin=https://itsr-radiant-staging-2vj2mwxa8-assyaref75.vercel.app | ACAO=<none>
+admin-users | Origin=https://evil.example | ACAO=<none>
+send-notifications | Origin=https://itsr-radiant-staging-h8c5j387u-assyaref75.vercel.app | ACAO=https://itsr-radiant-staging-h8c5j387u-assyaref75.vercel.app
+send-notifications | Origin=https://itsr-radiant-staging-2vj2mwxa8-assyaref75.vercel.app | ACAO=<none>
+send-notifications | Origin=https://evil.example | ACAO=<none>

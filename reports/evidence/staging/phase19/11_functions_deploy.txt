@@ -1,0 +1,15 @@
+deploy 2026-11-09T06:18:30Z
+Uploading asset (send-notifications): supabase/functions/send-notifications/index.ts
+Uploading asset (send-notifications): supabase/functions/_shared/smtp_errors.ts
+Uploading asset (send-notifications): supabase/functions/_shared/notification_rules.ts
+Uploading asset (send-notifications): supabase/functions/_shared/http.ts
+Uploading asset (send-notifications): supabase/functions/_shared/supabase.ts
+Deployed Functions on project yzjpttfwnvnuyxbdkidm: send-notifications
+You can inspect your deployment in the Dashboard: https://supabase.com/dashboard/project/yzjpttfwnvnuyxbdkidm/functions
+exit=0
+Uploading asset (smtp-config): supabase/functions/smtp-config/index.ts
+Uploading asset (smtp-config): supabase/functions/_shared/supabase.ts
+Uploading asset (smtp-config): supabase/functions/_shared/http.ts
+Deployed Functions on project yzjpttfwnvnuyxbdkidm: smtp-config
+You can inspect your deployment in the Dashboard: https://supabase.com/dashboard/project/yzjpttfwnvnuyxbdkidm/functions
+exit=0

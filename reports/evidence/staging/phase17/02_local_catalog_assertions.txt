@@ -1,0 +1,18 @@
+id | passed | detail
+C01 every public table has RLS enabled | t | all on
+C02 exactly the 8 application tables exist in public | t | app_settings,categories,login_attempts,notification_outbox,profiles,ticket_activity_log,ticket_comments,tickets
+C03 12 RLS policies (no drift) | t | 12
+C04 anon has no table privileges in public | t | 0
+C05 anon can execute no public/private function | t | none
+C06 authenticated executes exactly 3 public RPCs | t | assignable_staff(),reporter_ticket_action(uuid,text,text),ticket_stats(text)
+C07 service-only RPCs not executable by authenticated | t | none
+C08 every SECURITY DEFINER function pins search_path | t | none
+C09 authenticated has no access to notification_outbox / login_attempts | t | checked SELECT/INSERT/UPDATE/DELETE
+C10 clients cannot write profiles or delete audit records | t | profiles I/U/D, tickets D, activity I/U/D, comments U/D
+C11 server-owned ticket columns not client-insertable | t | ticket_number/status/assigned_to_id insert; reporter_id/ticket_number update
+C12 anon has no USAGE on schema private | t | 
+C13 platform rls_auto_enable() not client-executable | t | absent
+C14 auth.uid() is Supabase-native (not overridden) | t | postgres (local cluster: n/a)
+C15 claim_notifications has retry cap (migration 0600) | t | 
+C16 outbox hold + permanent-failure guard (migration 0700) | t | 
+(16 rows)

@@ -1,0 +1,7 @@
+## source hashes 2026-11-09T06:18:13Z
+f14993d2488d24b29e829b8238ef53e0a3957907b482d6e5c05b841ca8b4bf23 *supabase/functions/send-notifications/index.ts
+ff10960e409d48e9dc645f049f8ff6dcd82290bd9c89bb63305044b73fb54a19 *supabase/functions/smtp-config/index.ts
+49986fe3c7d75ae087056779481ecb4f36eb99e5ccafabdc38a704777e696449 *supabase/functions/_shared/http.ts
+d85e2d279462bd7689551e8eb252d672a2ecf335a7c2b031bad92d8cc5efccf6 *supabase/functions/_shared/notification_rules.ts
+1e37bca1c6ab14d22d0cacb9db1131e89c76e5e1e8fee11d526a49a1ff9b17c2 *supabase/functions/_shared/smtp_errors.ts
+fe4861666b0c18fa81d564948c6d9a767fc0786dc691631b1f9abc01de2050f5 *supabase/functions/_shared/supabase.ts

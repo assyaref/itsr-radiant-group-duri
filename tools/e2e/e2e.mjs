@@ -1,4 +1,4 @@
-// ITSR browser E2E: real Flutter Web release build (localhost:5000) against the
+// ITSR browser E2E: real Flutter Web release build (E2E_APP, default localhost:5000) against the
 // STAGING backend, driven through Flutter's semantics tree in headless Chrome.
 // Synthetic STG* accounts only. Never prints or saves passwords/tokens.
 import { chromium } from "playwright-core";
@@ -6,7 +6,7 @@ import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { homedir } from "node:os";
 import { join } from "node:path";
 
-const APP = "http://localhost:5000";
+const APP = (process.env.E2E_APP ?? "http://localhost:5000").replace(/\/+$/, "");
 const OUT = process.argv[2];
 mkdirSync(join(OUT, "screens"), { recursive: true });
 const accts = JSON.parse(readFileSync(join(homedir(), ".itsr-staging", "test-accounts.json"), "utf8")).accounts;
@@ -174,7 +174,10 @@ let ticketHash = "", ticketNumber = "";
     const h1 = await waitHash(page, /#\/dashboard/);
     await open(page, "/admin/users");
     const h2 = await waitHash(page, /#\/dashboard/);
-    return `${h1} ; ${h2}`;
+    await open(page, "/admin/email-notifications");
+    const h3 = await waitHash(page, /#\/dashboard/);
+    await absent(page, "SMTP Configuration", 500);
+    return `${h1} ; ${h2} ; ${h3}`;
   });
   await check(page, "E05", "employee creates a ticket (server-generated number)", async () => {
     await open(page, "/tickets/new");
@@ -263,6 +266,15 @@ let ticketHash = "", ticketNumber = "";
     await waitText(page, /Ticket status Open → In Progress|Ticket status Assigned → In Progress/);
     await waitText(page, /Ticket resolved by/);
   });
+  await check(page, "T08", "IT Support is redirected away from admin + SMTP configuration routes", async () => {
+    await open(page, "/admin/email-notifications");
+    const h1 = await waitHash(page, /#\/dashboard/);
+    await absent(page, "SMTP Configuration", 500);
+    await open(page, "/admin/settings");
+    const h2 = await waitHash(page, /#\/dashboard/);
+    await absent(page, "Email & Notifications", 300);
+    return `${h1} ; ${h2}`;
+  });
   await signOut(page).catch(() => {});
   await ctx.close();
 }
@@ -323,6 +335,28 @@ let ticketHash = "", ticketNumber = "";
     await waitText(page, "IT Support actions");
     await waitText(page, /Ticket closed by/);
   });
+  // Read-only inspection: nothing is saved, tested or sent from this page.
+  await check(page, "A06", "Email & Notifications page: SMTP not configured, recipients shown, no secret", async () => {
+    // Flutter's hidden semantic <input>s do not expose .value until focused, so
+    // assert on the smtp-config response the page itself received instead.
+    const resp = page.waitForResponse((r) => r.url().includes("/functions/v1/smtp-config"), { timeout: 30000 });
+    await open(page, "/admin/email-notifications");
+    const body = await (await resp).json();
+    await waitText(page, "SMTP Configuration");
+    await waitText(page, "No SMTP credential configured");
+    await waitText(page, "Notification Recipients");
+    const leaks = Object.keys(body).filter((k) => /pass(word)?$|secret/i.test(k) && k !== "password_configured");
+    if (leaks.length) throw new Error(`secret-like fields sent to browser: ${leaks}`);
+    if (body.password_configured !== false) throw new Error("password_configured is not false");
+    if (body.it_support_group_email !== "it.support-duri@radiant-utama.com") throw new Error(`IT Support email = ${body.it_support_group_email}`);
+    if (body.manager_email !== null) throw new Error("manager email is not NULL");
+    if (body.smtp_host !== null) throw new Error("smtp_host unexpectedly set");
+    return `it=${body.it_support_group_email} manager=null smtp_host=null password_configured=false; ${Object.keys(body).length} fields, none secret`;
+  });
+  await check(page, "A07", "Email & Notifications nav entry present for administrator", async () => {
+    await open(page, "/dashboard");
+    await waitText(page, "Email & Notifications");
+  });
   await ctx.close();
 }
 
@@ -346,7 +380,14 @@ let ticketHash = "", ticketNumber = "";
   });
   await check(page, "M03", "phone: ticket detail renders stacked (no horizontal scroll)", async () => {
     await open(page, ticketHash.slice(1));
-    await waitText(page, "History & comments", 20000);
+    await waitText(page, SUBJECT, 20000);
+    // ListView only builds semantics near the viewport: scroll to the history.
+    let found = false;
+    for (let i = 0; i < 12 && !found; i++) {
+      await page.mouse.move(195, 600); await page.mouse.wheel(0, 500); await page.waitForTimeout(500);
+      found = !!(await locate(page, "History & comments"));
+    }
+    if (!found) throw new Error("History & comments not reachable by scrolling");
     const w = await page.evaluate(() => document.documentElement.scrollWidth);
     if (w > 390) throw new Error(`horizontal page scroll: ${w}px`);
     return `scrollWidth=${w}`;

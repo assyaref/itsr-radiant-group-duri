@@ -1,0 +1,2 @@
+HTTP 201
+[{"backup":{"taken_at":"2026-11-09T06:17:22.447638+00:00","migrations":["20261108000100","20261108000200","20261108000300","20261108000400","20261108000500","20261109000600","20261109000700"],"app_settings":{"id":true,"it_support_group_email":null,"manager_email":null,"notifications_enabled":true,"app_base_url":null,"updated_at":"2026-11-08T07:44:47.375155+00:00","updated_by":null},"outbox_by_status":{"held":36},"held_ids_md5":"8ce8e2fffb35cfb8631716626d26daae","tickets":8,"profiles":3,"vault_names":["itsr_functions_base_url","itsr_notifications_cron_secret"]}}]

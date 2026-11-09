@@ -1,0 +1,21 @@
+baseline: production = dpl_9kEkfGwZUvStEFBzzakNurgYBikd (static placeholder); previous preview = dpl_4heKbZRDjQESJkkQiCXeXtj9ca67
+Vercel CLI 48.10.2
+Retrieving project…
+Deploying assyaref75/itsr-radiant-staging
+Uploading [--------------------] (0.0B/3MB)
+Uploading [=====---------------] (780.8KB/3MB)
+Uploading [==========----------] (1.5MB/3MB)
+Uploading [===============-----] (2.3MB/3MB)
+Uploading [====================] (3.0MB/3MB)
+Inspect: https://vercel.com/assyaref75/itsr-radiant-staging/8yaqSUVYjLPkK2K9CxFy9RFRsMDU [4s]
+Preview: https://itsr-radiant-staging-h8c5j387u-assyaref75.vercel.app [4s]
+https://itsr-radiant-staging-h8c5j387u-assyaref75.vercel.appBuilding
+Building
+Completing
+To deploy to production (itsr-radiant-staging.vercel.app), run `vercel --prod`
+
+Common next commands:
+- `vercel inspect itsr-radiant-staging-h8c5j387u-assyaref75.vercel.app --logs`
+- `vercel redeploy itsr-radiant-staging-h8c5j387u-assyaref75.vercel.app`
+- `vercel deploy --prod`
+exit=0

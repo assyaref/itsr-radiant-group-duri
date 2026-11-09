@@ -111,3 +111,30 @@ Deno.test("admin reset_password validation", () => {
   assert(!validateResetPassword({ user_id: id, password: "x".repeat(129) }).ok);
   assert(!validateResetPassword({ user_id: id, password: 12345678 }).ok);
 });
+
+// ---- Phase 17: send-failure classification (retry vs give up) ----
+import { classifySendError, describeSendError, PermanentError } from "../_shared/smtp_errors.ts";
+
+Deno.test("send errors: SMTP 5xx recipient/message rejections are permanent", () => {
+  assertEquals(classifySendError({ code: "EENVELOPE", responseCode: 550, message: "550 5.1.1 user unknown" }), "permanent");
+  assertEquals(classifySendError({ code: "EMESSAGE", responseCode: 552 }), "permanent");
+  assertEquals(classifySendError({ code: "EENVELOPE", message: "No recipients defined" }), "permanent");
+  assertEquals(classifySendError(new PermanentError("ticket not found")), "permanent");
+});
+
+Deno.test("send errors: network, 4xx and auth problems are temporary (retried)", () => {
+  assertEquals(classifySendError({ code: "ETIMEDOUT" }), "temporary");
+  assertEquals(classifySendError({ code: "ECONNECTION", message: "connect ECONNREFUSED" }), "temporary");
+  assertEquals(classifySendError({ code: "EENVELOPE", responseCode: 451 }), "temporary");
+  assertEquals(classifySendError({ code: "EAUTH", responseCode: 535 }), "temporary");
+  assertEquals(classifySendError({ responseCode: 534 }), "temporary");
+  assertEquals(classifySendError(new Error("ticket lookup failed: timeout")), "temporary");
+  assertEquals(classifySendError("weird"), "temporary");
+  assertEquals(classifySendError(null), "temporary");
+});
+
+Deno.test("send errors: description is short and structured", () => {
+  assertEquals(describeSendError({ code: "EENVELOPE", responseCode: 550, message: "rejected" }), "EENVELOPE 550 rejected");
+  assert(describeSendError({ message: "x".repeat(2000) }).length <= 500);
+  assertEquals(describeSendError("plain"), "plain");
+});

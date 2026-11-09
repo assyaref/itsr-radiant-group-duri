@@ -1,0 +1,16 @@
+applied 2026-11-09T06:17:41Z
+Initialising login role...
+Connecting to remote database...
+Do you want to push these migrations to the remote database?
+ • 20261109000800_company_it_support_email.sql
+ • 20261109000900_smtp_configuration.sql
+ • 20261109001000_vault_smtp_password.sql
+
+ [Y/n] y
+Applying migration 20261109000800_company_it_support_email.sql...
+Applying migration 20261109000900_smtp_configuration.sql...
+Applying migration 20261109001000_vault_smtp_password.sql...
+Finished supabase db push.
+A new version of Supabase CLI is available: v3.0.0 (currently installed v2.54.11)
+We recommend updating regularly for new features and bug fixes: https://supabase.com/docs/guides/cli/getting-started#updating-the-supabase-cli
+exit=0

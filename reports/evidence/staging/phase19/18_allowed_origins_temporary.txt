@@ -1,0 +1,2 @@
+2026-11-09T06:24:31Z TEMPORARY: ALLOWED_ORIGINS += http://localhost:5000 for browser E2E of the deployed build artifact (Vercel prod is SSO-blocked); to be removed right after
+Finished supabase secrets set.

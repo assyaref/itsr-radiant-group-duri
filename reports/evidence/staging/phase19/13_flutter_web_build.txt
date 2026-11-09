@@ -1,0 +1,10 @@
+build started 2026-11-09T06:20:23Z from HEAD 4998d854d2e140d8a039737449bbf9909820df8a + working tree
+source fingerprint (lib/ web/ pubspec.*):
+4f37c0957138c0eca7bbfd07328292396a102f2b52a5540142a515e67abb5413 *-
+Compiling lib\main.dart for the Web...                          
+Font asset "CupertinoIcons.ttf" was tree-shaken, reducing it from 257628 to 1472 bytes (99.4% reduction). Tree-shaking can be disabled by providing the --no-tree-shake-icons flag when building your app.
+Font asset "MaterialIcons-Regular.otf" was tree-shaken, reducing it from 1645184 to 14812 bytes (99.1% reduction). Tree-shaking can be disabled by providing the --no-tree-shake-icons flag when building your app.
+Compiling lib\main.dart for the Web...                             88.4s
+√ Built build\web
+exit=0
+finished 2026-11-09T06:21:57Z

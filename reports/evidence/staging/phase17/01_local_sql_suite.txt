@@ -1,0 +1,124 @@
+== Static checks on supabase/migrations
+PASS static checks
+== Fresh database itsr_local_validation on 127.0.0.1:55433
+-- applying 20261108000100_core_schema.sql
+-- applying 20261108000200_security_privileges_rls.sql
+-- applying 20261108000300_ticket_workflow.sql
+-- applying 20261108000400_login_and_notifications.sql
+-- applying 20261108000500_restrict_rls_auto_enable_execute.sql
+psql:D:/PROJECT - FullStack Developer/PROGRESS/ITSR RADIANT GROUP DURI/supabase/migrations/20261108000500_restrict_rls_auto_enable_execute.sql:41: NOTICE:  public.rls_auto_enable() not present; nothing to revoke
+-- applying 20261109000600_notification_retry_cap.sql
+-- applying 20261109000700_notification_hold_and_permanent_failure.sql
+== Running acceptance tests
+psql:D:/PROJECT - FullStack Developer/PROGRESS/ITSR RADIANT GROUP DURI/supabase/tests/local/20_security_and_workflow_tests.sql:79: NOTICE:  PASS P01a anon cannot execute login_is_rate_limited
+psql:D:/PROJECT - FullStack Developer/PROGRESS/ITSR RADIANT GROUP DURI/supabase/tests/local/20_security_and_workflow_tests.sql:79: NOTICE:  PASS P01b authenticated cannot execute login_is_rate_limited
+psql:D:/PROJECT - FullStack Developer/PROGRESS/ITSR RADIANT GROUP DURI/supabase/tests/local/20_security_and_workflow_tests.sql:79: NOTICE:  PASS P01c service_role can execute login_is_rate_limited
+psql:D:/PROJECT - FullStack Developer/PROGRESS/ITSR RADIANT GROUP DURI/supabase/tests/local/20_security_and_workflow_tests.sql:79: NOTICE:  PASS P01d record_login_attempt not executable by anon/authenticated
+psql:D:/PROJECT - FullStack Developer/PROGRESS/ITSR RADIANT GROUP DURI/supabase/tests/local/20_security_and_workflow_tests.sql:79: NOTICE:  PASS P01e outbox RPCs not executable by anon/authenticated
+psql:D:/PROJECT - FullStack Developer/PROGRESS/ITSR RADIANT GROUP DURI/supabase/tests/local/20_security_and_workflow_tests.sql:79: NOTICE:  PASS P02 anon can execute zero app functions
+psql:D:/PROJECT - FullStack Developer/PROGRESS/ITSR RADIANT GROUP DURI/supabase/tests/local/20_security_and_workflow_tests.sql:79: NOTICE:  PASS P03 anon has no table privileges
+psql:D:/PROJECT - FullStack Developer/PROGRESS/ITSR RADIANT GROUP DURI/supabase/tests/local/20_security_and_workflow_tests.sql:79: NOTICE:  PASS P04 authenticated has no access to outbox/login_attempts
+psql:D:/PROJECT - FullStack Developer/PROGRESS/ITSR RADIANT GROUP DURI/supabase/tests/local/20_security_and_workflow_tests.sql:79: NOTICE:  PASS P05 no client write on profiles / activity, no ticket delete
+psql:D:/PROJECT - FullStack Developer/PROGRESS/ITSR RADIANT GROUP DURI/supabase/tests/local/20_security_and_workflow_tests.sql:79: NOTICE:  PASS P06 every SECURITY DEFINER function pins search_path
+psql:D:/PROJECT - FullStack Developer/PROGRESS/ITSR RADIANT GROUP DURI/supabase/tests/local/20_security_and_workflow_tests.sql:79: NOTICE:  PASS P07 RLS enabled on every public table
+psql:D:/PROJECT - FullStack Developer/PROGRESS/ITSR RADIANT GROUP DURI/supabase/tests/local/20_security_and_workflow_tests.sql:79: NOTICE:  PASS P08 legacy anon-executable rate-limit functions absent
+psql:D:/PROJECT - FullStack Developer/PROGRESS/ITSR RADIANT GROUP DURI/supabase/tests/local/20_security_and_workflow_tests.sql:79: NOTICE:  PASS P09 anon has no usage on private schema
+psql:D:/PROJECT - FullStack Developer/PROGRESS/ITSR RADIANT GROUP DURI/supabase/tests/local/20_security_and_workflow_tests.sql:88: NOTICE:  PASS AN01 anon cannot read tickets
+psql:D:/PROJECT - FullStack Developer/PROGRESS/ITSR RADIANT GROUP DURI/supabase/tests/local/20_security_and_workflow_tests.sql:88: NOTICE:  PASS AN02 anon cannot read profiles
+psql:D:/PROJECT - FullStack Developer/PROGRESS/ITSR RADIANT GROUP DURI/supabase/tests/local/20_security_and_workflow_tests.sql:88: NOTICE:  PASS AN03 anon cannot call ticket_stats
+psql:D:/PROJECT - FullStack Developer/PROGRESS/ITSR RADIANT GROUP DURI/supabase/tests/local/20_security_and_workflow_tests.sql:88: NOTICE:  PASS AN04 anon cannot call rate limiter (Gate 3 exploit path)
+psql:D:/PROJECT - FullStack Developer/PROGRESS/ITSR RADIANT GROUP DURI/supabase/tests/local/20_security_and_workflow_tests.sql:104: NOTICE:  PASS E01 ticket number generated server-side
+psql:D:/PROJECT - FullStack Developer/PROGRESS/ITSR RADIANT GROUP DURI/supabase/tests/local/20_security_and_workflow_tests.sql:104: NOTICE:  PASS E02 new ticket is open and unassigned
+psql:D:/PROJECT - FullStack Developer/PROGRESS/ITSR RADIANT GROUP DURI/supabase/tests/local/20_security_and_workflow_tests.sql:104: NOTICE:  PASS E03 creation recorded in activity log by trigger
+psql:D:/PROJECT - FullStack Developer/PROGRESS/ITSR RADIANT GROUP DURI/supabase/tests/local/20_security_and_workflow_tests.sql:117: NOTICE:  PASS E04 employee cannot set status on insert (column privilege)
+psql:D:/PROJECT - FullStack Developer/PROGRESS/ITSR RADIANT GROUP DURI/supabase/tests/local/20_security_and_workflow_tests.sql:117: NOTICE:  PASS E05 unknown category rejected
+psql:D:/PROJECT - FullStack Developer/PROGRESS/ITSR RADIANT GROUP DURI/supabase/tests/local/20_security_and_workflow_tests.sql:117: NOTICE:  PASS E06 subject length validated
+psql:D:/PROJECT - FullStack Developer/PROGRESS/ITSR RADIANT GROUP DURI/supabase/tests/local/20_security_and_workflow_tests.sql:129: NOTICE:  PASS E07 spoofed reporter_id is forced to the caller
+psql:D:/PROJECT - FullStack Developer/PROGRESS/ITSR RADIANT GROUP DURI/supabase/tests/local/20_security_and_workflow_tests.sql:169: NOTICE:  PASS E08 ticket numbers unique across reporters
+psql:D:/PROJECT - FullStack Developer/PROGRESS/ITSR RADIANT GROUP DURI/supabase/tests/local/20_security_and_workflow_tests.sql:169: NOTICE:  PASS E09 employee A sees only own tickets
+psql:D:/PROJECT - FullStack Developer/PROGRESS/ITSR RADIANT GROUP DURI/supabase/tests/local/20_security_and_workflow_tests.sql:169: NOTICE:  PASS E10 employee A cannot read B's ticket by id
+psql:D:/PROJECT - FullStack Developer/PROGRESS/ITSR RADIANT GROUP DURI/supabase/tests/local/20_security_and_workflow_tests.sql:169: NOTICE:  PASS E11 employee A cannot read B's ticket history
+psql:D:/PROJECT - FullStack Developer/PROGRESS/ITSR RADIANT GROUP DURI/supabase/tests/local/20_security_and_workflow_tests.sql:169: NOTICE:  PASS E12 employee A cannot read B's profile
+psql:D:/PROJECT - FullStack Developer/PROGRESS/ITSR RADIANT GROUP DURI/supabase/tests/local/20_security_and_workflow_tests.sql:169: NOTICE:  PASS E13 employee sees own + IT staff profiles
+psql:D:/PROJECT - FullStack Developer/PROGRESS/ITSR RADIANT GROUP DURI/supabase/tests/local/20_security_and_workflow_tests.sql:169: NOTICE:  PASS E14 assignable_staff returns nothing for employees
+psql:D:/PROJECT - FullStack Developer/PROGRESS/ITSR RADIANT GROUP DURI/supabase/tests/local/20_security_and_workflow_tests.sql:169: NOTICE:  PASS E15 employee cannot read app settings
+psql:D:/PROJECT - FullStack Developer/PROGRESS/ITSR RADIANT GROUP DURI/supabase/tests/local/20_security_and_workflow_tests.sql:169: NOTICE:  PASS E16 employee cannot comment on another employee's ticket
+psql:D:/PROJECT - FullStack Developer/PROGRESS/ITSR RADIANT GROUP DURI/supabase/tests/local/20_security_and_workflow_tests.sql:169: NOTICE:  PASS E17 employee cannot read notification outbox
+psql:D:/PROJECT - FullStack Developer/PROGRESS/ITSR RADIANT GROUP DURI/supabase/tests/local/20_security_and_workflow_tests.sql:169: NOTICE:  PASS E18 employee cannot read login attempts
+psql:D:/PROJECT - FullStack Developer/PROGRESS/ITSR RADIANT GROUP DURI/supabase/tests/local/20_security_and_workflow_tests.sql:169: NOTICE:  PASS E19 employee cannot escalate own role
+psql:D:/PROJECT - FullStack Developer/PROGRESS/ITSR RADIANT GROUP DURI/supabase/tests/local/20_security_and_workflow_tests.sql:169: NOTICE:  PASS E20 employee cannot create categories
+psql:D:/PROJECT - FullStack Developer/PROGRESS/ITSR RADIANT GROUP DURI/supabase/tests/local/20_security_and_workflow_tests.sql:184: NOTICE:  PASS E21 employee cannot change ticket status directly
+psql:D:/PROJECT - FullStack Developer/PROGRESS/ITSR RADIANT GROUP DURI/supabase/tests/local/20_security_and_workflow_tests.sql:184: NOTICE:  PASS E22 employee can comment on own ticket
+psql:D:/PROJECT - FullStack Developer/PROGRESS/ITSR RADIANT GROUP DURI/supabase/tests/local/20_security_and_workflow_tests.sql:184: NOTICE:  PASS E23 employee cannot post internal comments
+psql:D:/PROJECT - FullStack Developer/PROGRESS/ITSR RADIANT GROUP DURI/supabase/tests/local/20_security_and_workflow_tests.sql:196: NOTICE:  PASS I01 deactivated user cannot create tickets
+psql:D:/PROJECT - FullStack Developer/PROGRESS/ITSR RADIANT GROUP DURI/supabase/tests/local/20_security_and_workflow_tests.sql:196: NOTICE:  PASS I02 deactivated user reads no data
+psql:D:/PROJECT - FullStack Developer/PROGRESS/ITSR RADIANT GROUP DURI/supabase/tests/local/20_security_and_workflow_tests.sql:243: NOTICE:  PASS T01 IT support sees all tickets
+psql:D:/PROJECT - FullStack Developer/PROGRESS/ITSR RADIANT GROUP DURI/supabase/tests/local/20_security_and_workflow_tests.sql:243: NOTICE:  PASS T02 assignable_staff lists active IT/admin users
+psql:D:/PROJECT - FullStack Developer/PROGRESS/ITSR RADIANT GROUP DURI/supabase/tests/local/20_security_and_workflow_tests.sql:243: NOTICE:  PASS T03 accept/assign moves ticket to assigned
+psql:D:/PROJECT - FullStack Developer/PROGRESS/ITSR RADIANT GROUP DURI/supabase/tests/local/20_security_and_workflow_tests.sql:243: NOTICE:  PASS T04 assignment recorded in history with actor
+psql:D:/PROJECT - FullStack Developer/PROGRESS/ITSR RADIANT GROUP DURI/supabase/tests/local/20_security_and_workflow_tests.sql:243: NOTICE:  PASS T05 status change recorded in history
+psql:D:/PROJECT - FullStack Developer/PROGRESS/ITSR RADIANT GROUP DURI/supabase/tests/local/20_security_and_workflow_tests.sql:243: NOTICE:  PASS T06 invalid transition in_progress->closed rejected
+psql:D:/PROJECT - FullStack Developer/PROGRESS/ITSR RADIANT GROUP DURI/supabase/tests/local/20_security_and_workflow_tests.sql:243: NOTICE:  PASS T07 resolve without resolution rejected
+psql:D:/PROJECT - FullStack Developer/PROGRESS/ITSR RADIANT GROUP DURI/supabase/tests/local/20_security_and_workflow_tests.sql:243: NOTICE:  PASS T08 cannot assign to a non-IT user
+psql:D:/PROJECT - FullStack Developer/PROGRESS/ITSR RADIANT GROUP DURI/supabase/tests/local/20_security_and_workflow_tests.sql:243: NOTICE:  PASS T09 reporter_id is not updatable
+psql:D:/PROJECT - FullStack Developer/PROGRESS/ITSR RADIANT GROUP DURI/supabase/tests/local/20_security_and_workflow_tests.sql:243: NOTICE:  PASS T10 tickets cannot be deleted
+psql:D:/PROJECT - FullStack Developer/PROGRESS/ITSR RADIANT GROUP DURI/supabase/tests/local/20_security_and_workflow_tests.sql:243: NOTICE:  PASS T11 clients cannot forge activity rows
+psql:D:/PROJECT - FullStack Developer/PROGRESS/ITSR RADIANT GROUP DURI/supabase/tests/local/20_security_and_workflow_tests.sql:243: NOTICE:  PASS T12 IT can add internal work note
+psql:D:/PROJECT - FullStack Developer/PROGRESS/ITSR RADIANT GROUP DURI/supabase/tests/local/20_security_and_workflow_tests.sql:243: NOTICE:  PASS T13 IT can add public comment
+psql:D:/PROJECT - FullStack Developer/PROGRESS/ITSR RADIANT GROUP DURI/supabase/tests/local/20_security_and_workflow_tests.sql:243: NOTICE:  PASS T14 IT can resolve with resolution
+psql:D:/PROJECT - FullStack Developer/PROGRESS/ITSR RADIANT GROUP DURI/supabase/tests/local/20_security_and_workflow_tests.sql:243: NOTICE:  PASS T15 resolution recorded in history
+psql:D:/PROJECT - FullStack Developer/PROGRESS/ITSR RADIANT GROUP DURI/supabase/tests/local/20_security_and_workflow_tests.sql:243: NOTICE:  PASS T16 IT support cannot manage categories
+psql:D:/PROJECT - FullStack Developer/PROGRESS/ITSR RADIANT GROUP DURI/supabase/tests/local/20_security_and_workflow_tests.sql:243: NOTICE:  PASS T17 IT support cannot read app settings
+psql:D:/PROJECT - FullStack Developer/PROGRESS/ITSR RADIANT GROUP DURI/supabase/tests/local/20_security_and_workflow_tests.sql:259: NOTICE:  PASS E24 employee cannot see internal work notes
+psql:D:/PROJECT - FullStack Developer/PROGRESS/ITSR RADIANT GROUP DURI/supabase/tests/local/20_security_and_workflow_tests.sql:259: NOTICE:  PASS E25 employee sees own + IT public comments
+psql:D:/PROJECT - FullStack Developer/PROGRESS/ITSR RADIANT GROUP DURI/supabase/tests/local/20_security_and_workflow_tests.sql:259: NOTICE:  PASS E26 employee can track ticket progress (history)
+psql:D:/PROJECT - FullStack Developer/PROGRESS/ITSR RADIANT GROUP DURI/supabase/tests/local/20_security_and_workflow_tests.sql:259: NOTICE:  PASS E27 employee can see assignee name
+psql:D:/PROJECT - FullStack Developer/PROGRESS/ITSR RADIANT GROUP DURI/supabase/tests/local/20_security_and_workflow_tests.sql:287: NOTICE:  PASS R01 reopen requires a reason
+psql:D:/PROJECT - FullStack Developer/PROGRESS/ITSR RADIANT GROUP DURI/supabase/tests/local/20_security_and_workflow_tests.sql:287: NOTICE:  PASS R02 reporter can reopen resolved ticket
+psql:D:/PROJECT - FullStack Developer/PROGRESS/ITSR RADIANT GROUP DURI/supabase/tests/local/20_security_and_workflow_tests.sql:287: NOTICE:  PASS R03 reopen reason recorded in history
+psql:D:/PROJECT - FullStack Developer/PROGRESS/ITSR RADIANT GROUP DURI/supabase/tests/local/20_security_and_workflow_tests.sql:287: NOTICE:  PASS R04 reporter cannot close an unresolved ticket
+psql:D:/PROJECT - FullStack Developer/PROGRESS/ITSR RADIANT GROUP DURI/supabase/tests/local/20_security_and_workflow_tests.sql:287: NOTICE:  PASS R05 other employee cannot act on ticket
+psql:D:/PROJECT - FullStack Developer/PROGRESS/ITSR RADIANT GROUP DURI/supabase/tests/local/20_security_and_workflow_tests.sql:287: NOTICE:  PASS R06 resolving keeps existing assignee
+psql:D:/PROJECT - FullStack Developer/PROGRESS/ITSR RADIANT GROUP DURI/supabase/tests/local/20_security_and_workflow_tests.sql:287: NOTICE:  PASS R07 reporter can confirm/close resolved ticket
+psql:D:/PROJECT - FullStack Developer/PROGRESS/ITSR RADIANT GROUP DURI/supabase/tests/local/20_security_and_workflow_tests.sql:301: NOTICE:  PASS S01 ticket_stats(mine) respects RLS
+psql:D:/PROJECT - FullStack Developer/PROGRESS/ITSR RADIANT GROUP DURI/supabase/tests/local/20_security_and_workflow_tests.sql:301: NOTICE:  PASS S02 employee ticket_stats(all) still limited by RLS
+psql:D:/PROJECT - FullStack Developer/PROGRESS/ITSR RADIANT GROUP DURI/supabase/tests/local/20_security_and_workflow_tests.sql:301: NOTICE:  PASS S03 IT ticket_stats(all) sees everything
+psql:D:/PROJECT - FullStack Developer/PROGRESS/ITSR RADIANT GROUP DURI/supabase/tests/local/20_security_and_workflow_tests.sql:322: NOTICE:  PASS D01 admin sees all profiles
+psql:D:/PROJECT - FullStack Developer/PROGRESS/ITSR RADIANT GROUP DURI/supabase/tests/local/20_security_and_workflow_tests.sql:322: NOTICE:  PASS D02 admin can create category
+psql:D:/PROJECT - FullStack Developer/PROGRESS/ITSR RADIANT GROUP DURI/supabase/tests/local/20_security_and_workflow_tests.sql:322: NOTICE:  PASS D03 admin can deactivate category
+psql:D:/PROJECT - FullStack Developer/PROGRESS/ITSR RADIANT GROUP DURI/supabase/tests/local/20_security_and_workflow_tests.sql:322: NOTICE:  PASS D04 admin can update settings
+psql:D:/PROJECT - FullStack Developer/PROGRESS/ITSR RADIANT GROUP DURI/supabase/tests/local/20_security_and_workflow_tests.sql:322: NOTICE:  PASS D05 settings persisted
+psql:D:/PROJECT - FullStack Developer/PROGRESS/ITSR RADIANT GROUP DURI/supabase/tests/local/20_security_and_workflow_tests.sql:322: NOTICE:  PASS D06 even admin cannot insert profiles directly (Edge Function only)
+psql:D:/PROJECT - FullStack Developer/PROGRESS/ITSR RADIANT GROUP DURI/supabase/tests/local/20_security_and_workflow_tests.sql:322: NOTICE:  PASS D07 inactive category rejected for new tickets
+psql:D:/PROJECT - FullStack Developer/PROGRESS/ITSR RADIANT GROUP DURI/supabase/tests/local/20_security_and_workflow_tests.sql:336: NOTICE:  PASS D08 admin can rename a category that existing tickets use
+psql:D:/PROJECT - FullStack Developer/PROGRESS/ITSR RADIANT GROUP DURI/supabase/tests/local/20_security_and_workflow_tests.sql:336: NOTICE:  PASS D09 rename cascades to existing tickets
+psql:D:/PROJECT - FullStack Developer/PROGRESS/ITSR RADIANT GROUP DURI/supabase/tests/local/20_security_and_workflow_tests.sql:336: NOTICE:  PASS D10 tickets now carry the new category name
+psql:D:/PROJECT - FullStack Developer/PROGRESS/ITSR RADIANT GROUP DURI/supabase/tests/local/20_security_and_workflow_tests.sql:362: NOTICE:  PASS N01 ticket_created enqueued per ticket
+psql:D:/PROJECT - FullStack Developer/PROGRESS/ITSR RADIANT GROUP DURI/supabase/tests/local/20_security_and_workflow_tests.sql:362: NOTICE:  PASS N02 only non-internal comments enqueue notifications
+psql:D:/PROJECT - FullStack Developer/PROGRESS/ITSR RADIANT GROUP DURI/supabase/tests/local/20_security_and_workflow_tests.sql:362: NOTICE:  PASS N03 status changes enqueue notifications
+psql:D:/PROJECT - FullStack Developer/PROGRESS/ITSR RADIANT GROUP DURI/supabase/tests/local/20_security_and_workflow_tests.sql:362: NOTICE:  PASS N04 assignment enqueues notification
+psql:D:/PROJECT - FullStack Developer/PROGRESS/ITSR RADIANT GROUP DURI/supabase/tests/local/20_security_and_workflow_tests.sql:362: NOTICE:  PASS N05 claim_notifications locks a batch
+psql:D:/PROJECT - FullStack Developer/PROGRESS/ITSR RADIANT GROUP DURI/supabase/tests/local/20_security_and_workflow_tests.sql:362: NOTICE:  PASS N06 claimed rows are not re-claimed immediately
+psql:D:/PROJECT - FullStack Developer/PROGRESS/ITSR RADIANT GROUP DURI/supabase/tests/local/20_security_and_workflow_tests.sql:362: NOTICE:  PASS N07 complete_notification marks rows sent
+psql:D:/PROJECT - FullStack Developer/PROGRESS/ITSR RADIANT GROUP DURI/supabase/tests/local/20_security_and_workflow_tests.sql:375: NOTICE:  PASS N08 notifications_enabled=false suppresses enqueue
+psql:D:/PROJECT - FullStack Developer/PROGRESS/ITSR RADIANT GROUP DURI/supabase/tests/local/20_security_and_workflow_tests.sql:403: NOTICE:  PASS N09 stale processing row under the cap is re-claimed
+psql:D:/PROJECT - FullStack Developer/PROGRESS/ITSR RADIANT GROUP DURI/supabase/tests/local/20_security_and_workflow_tests.sql:403: NOTICE:  PASS N10 stale processing row at the attempt cap is abandoned as failed
+psql:D:/PROJECT - FullStack Developer/PROGRESS/ITSR RADIANT GROUP DURI/supabase/tests/local/20_security_and_workflow_tests.sql:403: NOTICE:  PASS N11 abandoned row is never claimed again
+psql:D:/PROJECT - FullStack Developer/PROGRESS/ITSR RADIANT GROUP DURI/supabase/tests/local/20_security_and_workflow_tests.sql:403: NOTICE:  PASS N12 claim_notifications still service_role only after 0600
+psql:D:/PROJECT - FullStack Developer/PROGRESS/ITSR RADIANT GROUP DURI/supabase/tests/local/20_security_and_workflow_tests.sql:446: NOTICE:  PASS N13 held row is not claimed
+psql:D:/PROJECT - FullStack Developer/PROGRESS/ITSR RADIANT GROUP DURI/supabase/tests/local/20_security_and_workflow_tests.sql:446: NOTICE:  PASS N14 held row is kept unchanged (not deleted)
+psql:D:/PROJECT - FullStack Developer/PROGRESS/ITSR RADIANT GROUP DURI/supabase/tests/local/20_security_and_workflow_tests.sql:446: NOTICE:  PASS N15 permanent failure recorded after 1 attempt
+psql:D:/PROJECT - FullStack Developer/PROGRESS/ITSR RADIANT GROUP DURI/supabase/tests/local/20_security_and_workflow_tests.sql:446: NOTICE:  PASS N16 permanent failure is never retried
+psql:D:/PROJECT - FullStack Developer/PROGRESS/ITSR RADIANT GROUP DURI/supabase/tests/local/20_security_and_workflow_tests.sql:446: NOTICE:  PASS N17 temporary failure is retried (attempt 2)
+psql:D:/PROJECT - FullStack Developer/PROGRESS/ITSR RADIANT GROUP DURI/supabase/tests/local/20_security_and_workflow_tests.sql:446: NOTICE:  PASS N18 temporary failure capped at 5 attempts
+psql:D:/PROJECT - FullStack Developer/PROGRESS/ITSR RADIANT GROUP DURI/supabase/tests/local/20_security_and_workflow_tests.sql:446: NOTICE:  PASS N19 fail_notification_permanently is service_role only
+psql:D:/PROJECT - FullStack Developer/PROGRESS/ITSR RADIANT GROUP DURI/supabase/tests/local/20_security_and_workflow_tests.sql:468: NOTICE:  PASS L01 5 failures lock the account for 15 minutes
+psql:D:/PROJECT - FullStack Developer/PROGRESS/ITSR RADIANT GROUP DURI/supabase/tests/local/20_security_and_workflow_tests.sql:468: NOTICE:  PASS L02 colleague behind the same office IP is not locked out
+psql:D:/PROJECT - FullStack Developer/PROGRESS/ITSR RADIANT GROUP DURI/supabase/tests/local/20_security_and_workflow_tests.sql:468: NOTICE:  PASS L03 IP-wide brute force (30 failures) is blocked
+psql:D:/PROJECT - FullStack Developer/PROGRESS/ITSR RADIANT GROUP DURI/supabase/tests/local/20_security_and_workflow_tests.sql:468: NOTICE:  PASS L04 successful login clears the account failure streak
+ passed | failed | total 
+--------+--------+-------
+    106 |      0 |   106
+(1 row)
+
+== RESULT: total=106 failed=0 unexpected_errors=0 static_fail=0

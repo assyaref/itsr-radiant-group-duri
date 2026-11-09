@@ -1,0 +1,17 @@
+2026-11-09T06:23:58Z preflight OPTIONS against staging functions
+login | https://itsr-radiant-staging.vercel.app -> Access-Control-Allow-Origin: https://itsr-radiant-staging.vercel.app
+login | https://itsr-radiant-staging-h8c5j387u-assyaref75.vercel.app -> Access-Control-Allow-Origin: https://itsr-radiant-staging-h8c5j387u-assyaref75.vercel.app
+login | http://localhost:5000 -> <no ACAO header>
+login | https://evil.example.com -> <no ACAO header>
+smtp-config | https://itsr-radiant-staging.vercel.app -> Access-Control-Allow-Origin: https://itsr-radiant-staging.vercel.app
+smtp-config | https://itsr-radiant-staging-h8c5j387u-assyaref75.vercel.app -> Access-Control-Allow-Origin: https://itsr-radiant-staging-h8c5j387u-assyaref75.vercel.app
+smtp-config | http://localhost:5000 -> <no ACAO header>
+smtp-config | https://evil.example.com -> <no ACAO header>
+send-notifications | https://itsr-radiant-staging.vercel.app -> Access-Control-Allow-Origin: https://itsr-radiant-staging.vercel.app
+send-notifications | https://itsr-radiant-staging-h8c5j387u-assyaref75.vercel.app -> Access-Control-Allow-Origin: https://itsr-radiant-staging-h8c5j387u-assyaref75.vercel.app
+send-notifications | http://localhost:5000 -> <no ACAO header>
+send-notifications | https://evil.example.com -> <no ACAO header>
+admin-users | https://itsr-radiant-staging.vercel.app -> Access-Control-Allow-Origin: https://itsr-radiant-staging.vercel.app
+admin-users | https://itsr-radiant-staging-h8c5j387u-assyaref75.vercel.app -> Access-Control-Allow-Origin: https://itsr-radiant-staging-h8c5j387u-assyaref75.vercel.app
+admin-users | http://localhost:5000 -> <no ACAO header>
+admin-users | https://evil.example.com -> <no ACAO header>

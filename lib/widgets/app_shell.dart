@@ -29,6 +29,12 @@ List<NavItem> navItemsFor(UserModel? user) => [
         NavItem('/admin/users', 'Users', Icons.people_outline, Icons.people),
         NavItem('/admin/categories', 'Categories', Icons.category_outlined, Icons.category),
         NavItem('/admin/settings', 'Settings', Icons.settings_outlined, Icons.settings),
+        NavItem(
+          '/admin/email-notifications',
+          'Email & Notifications',
+          Icons.email_outlined,
+          Icons.email,
+        ),
       ],
     ];
 

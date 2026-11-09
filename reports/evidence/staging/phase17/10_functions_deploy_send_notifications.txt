@@ -1,0 +1,9 @@
+Uploading asset (send-notifications): supabase/functions/send-notifications/index.ts
+Uploading asset (send-notifications): supabase/functions/_shared/smtp_errors.ts
+Uploading asset (send-notifications): supabase/functions/_shared/notification_rules.ts
+Uploading asset (send-notifications): supabase/functions/_shared/http.ts
+Uploading asset (send-notifications): supabase/functions/_shared/supabase.ts
+Deployed Functions on project yzjpttfwnvnuyxbdkidm: send-notifications
+You can inspect your deployment in the Dashboard: https://supabase.com/dashboard/project/yzjpttfwnvnuyxbdkidm/functions
+A new version of Supabase CLI is available: v3.0.0 (currently installed v2.54.11)
+We recommend updating regularly for new features and bug fixes: https://supabase.com/docs/guides/cli/getting-started#updating-the-supabase-cli

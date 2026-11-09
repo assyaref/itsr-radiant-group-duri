@@ -1,0 +1,5 @@
+2026-11-09T06:39:17Z RESTORED: ALLOWED_ORIGINS = https://itsr-radiant-staging.vercel.app,https://itsr-radiant-staging-h8c5j387u-assyaref75.vercel.app (http://localhost:5000 removed)
+Finished supabase secrets set.
+digest match: True (re-checked via PowerShell; first attempt hit a local DNS error, not a mismatch)
+Origin http://localhost:5000 -> <no ACAO header>
+Origin https://itsr-radiant-staging.vercel.app -> Access-Control-Allow-Origin: https://itsr-radiant-staging.vercel.app

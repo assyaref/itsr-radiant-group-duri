@@ -57,7 +57,8 @@ union all
   where sig in ('login_is_rate_limited(text,text,integer,integer,integer)',
                 'record_login_attempt(text,text,uuid,boolean)',
                 'claim_notifications(integer)',
-                'complete_notification(uuid,text,text,text[],text[])')
+                'complete_notification(uuid,text,text,text[],text[])',
+                'fail_notification_permanently(uuid,text)')
     and has_function_privilege('authenticated', oid, 'EXECUTE')
 union all
   select 'C08 every SECURITY DEFINER function pins search_path',
@@ -111,6 +112,24 @@ union all
   select 'C15 claim_notifications has retry cap (migration 0600)',
          (select pg_get_functiondef(oid) like '%x.attempts < 5%and x.locked_at < now() - interval ''10 minutes''%'
           from fns where sig = 'claim_notifications(integer)'),
+         ''
+union all
+  select 'C16 outbox hold + permanent-failure guard (migration 0700)',
+         (select pg_get_functiondef(oid) like '%not x.permanent_failure%'
+          from fns where sig = 'claim_notifications(integer)')
+         and to_regprocedure('public.fail_notification_permanently(uuid,text)') is not null
+         and exists (select 1 from pg_constraint where conname = 'notification_outbox_status_check'
+                     and pg_get_constraintdef(oid) like '%held%'),
+         ''
+union all
+  select 'C17 SMTP password functions are service_role-only, no password column (0900/1000)',
+         (select bool_and(not has_function_privilege('authenticated', oid, 'EXECUTE')
+                          and not has_function_privilege('anon', oid, 'EXECUTE'))
+          from fns where sig in ('set_smtp_password(text)', 'get_smtp_password()', 'remove_smtp_password()'))
+         and (select count(*) from fns where sig in ('set_smtp_password(text)', 'get_smtp_password()',
+                                                     'remove_smtp_password()')) = 3
+         and not exists (select 1 from information_schema.columns where table_schema = 'public'
+                         and table_name = 'app_settings' and column_name ilike '%password%'),
          ''
 )
 select id, passed, detail from checks order by id;

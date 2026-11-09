@@ -1,0 +1,22 @@
+[0m[32mCheck[0m file:///D:/PROJECT - FullStack Developer/PROGRESS/ITSR RADIANT GROUP DURI/supabase/functions/tests/shared_test.ts
+[0m[38;5;245mrunning 17 tests from ./tests/shared_test.ts[0m
+employee number normalisation ... [0m[32mok[0m [0m[38;5;245m(0ms)[0m
+CORS: allow-list echoes only listed origins ... [0m[32mok[0m [0m[38;5;245m(0ms)[0m
+CORS: fail-closed when ALLOWED_ORIGINS is unset, empty or wildcard ... [0m[32mok[0m [0m[38;5;245m(0ms)[0m
+client IP takes first X-Forwarded-For hop ... [0m[32mok[0m [0m[38;5;245m(9ms)[0m
+HTML escaping ... [0m[32mok[0m [0m[38;5;245m(0ms)[0m
+new ticket -> IT staff, CC group + manager, link built ... [0m[32mok[0m [0m[38;5;245m(0ms)[0m
+new ticket with no IT staff falls back to group address ... [0m[32mok[0m [0m[38;5;245m(0ms)[0m
+status change -> reporter; actor not emailed about own action ... [0m[32mok[0m [0m[38;5;245m(0ms)[0m
+comment by reporter -> assignee; by tech -> reporter ... [0m[32mok[0m [0m[38;5;245m(0ms)[0m
+no configured addresses and no recipients -> null (nothing invented) ... [0m[32mok[0m [0m[38;5;245m(0ms)[0m
+user-supplied content is escaped in HTML body ... [0m[32mok[0m [0m[38;5;245m(0ms)[0m
+admin create validation ... [0m[32mok[0m [0m[38;5;245m(0ms)[0m
+admin update validation ... [0m[32mok[0m [0m[38;5;245m(0ms)[0m
+admin reset_password validation ... [0m[32mok[0m [0m[38;5;245m(0ms)[0m
+send errors: SMTP 5xx recipient/message rejections are permanent ... [0m[32mok[0m [0m[38;5;245m(0ms)[0m
+send errors: network, 4xx and auth problems are temporary (retried) ... [0m[32mok[0m [0m[38;5;245m(0ms)[0m
+send errors: description is short and structured ... [0m[32mok[0m [0m[38;5;245m(0ms)[0m
+
+[0m[32mok[0m | 17 passed | 0 failed [0m[38;5;245m(23ms)[0m
+

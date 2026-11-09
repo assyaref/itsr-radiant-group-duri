@@ -1,0 +1,674 @@
+{
+  "backup": {
+    "taken_at": "2026-11-09T09:51:34.228647+07:00",
+    "notification_outbox": [
+      {
+        "id": "becee886-328a-4766-9f66-c1f7e1ea5288",
+        "ticket_id": "718d5e96-0ae2-41b7-851b-8a45d120bc42",
+        "event_type": "ticket_created",
+        "payload": {
+          "actor_id": "e4e8339a-8542-44af-aeb2-c912262f86ac"
+        },
+        "status": "pending",
+        "attempts": 0,
+        "last_error": null,
+        "recipients": null,
+        "cc": null,
+        "created_at": "2026-11-08T15:28:12.477451+07:00",
+        "locked_at": null,
+        "sent_at": null
+      },
+      {
+        "id": "222369e9-b105-4017-aeba-8c195215dacc",
+        "ticket_id": "7728569e-64b0-4dc9-97d3-d94c6c815293",
+        "event_type": "ticket_created",
+        "payload": {
+          "actor_id": "e4e8339a-8542-44af-aeb2-c912262f86ac"
+        },
+        "status": "pending",
+        "attempts": 0,
+        "last_error": null,
+        "recipients": null,
+        "cc": null,
+        "created_at": "2026-11-08T15:28:12.555516+07:00",
+        "locked_at": null,
+        "sent_at": null
+      },
+      {
+        "id": "3290bcb0-2dd2-424f-8844-e0c93997ed17",
+        "ticket_id": "718d5e96-0ae2-41b7-851b-8a45d120bc42",
+        "event_type": "ticket_assigned",
+        "payload": {
+          "actor_id": "1330cf4c-ed47-412e-83e5-9413671ec263",
+          "assignee_id": "f2947695-da8f-47c4-9d0f-74a9faec9ea2"
+        },
+        "status": "pending",
+        "attempts": 0,
+        "last_error": null,
+        "recipients": null,
+        "cc": null,
+        "created_at": "2026-11-08T15:28:13.185198+07:00",
+        "locked_at": null,
+        "sent_at": null
+      },
+      {
+        "id": "3996aca2-9f6b-493a-a9f9-34df09949858",
+        "ticket_id": "718d5e96-0ae2-41b7-851b-8a45d120bc42",
+        "event_type": "status_changed",
+        "payload": {
+          "actor_id": "1330cf4c-ed47-412e-83e5-9413671ec263",
+          "new_status": "assigned",
+          "old_status": "open"
+        },
+        "status": "pending",
+        "attempts": 0,
+        "last_error": null,
+        "recipients": null,
+        "cc": null,
+        "created_at": "2026-11-08T15:28:13.185198+07:00",
+        "locked_at": null,
+        "sent_at": null
+      },
+      {
+        "id": "08698e38-a45d-45bb-b0a3-c29b3a8b7aa3",
+        "ticket_id": "718d5e96-0ae2-41b7-851b-8a45d120bc42",
+        "event_type": "status_changed",
+        "payload": {
+          "actor_id": "f2947695-da8f-47c4-9d0f-74a9faec9ea2",
+          "new_status": "in_progress",
+          "old_status": "assigned"
+        },
+        "status": "pending",
+        "attempts": 0,
+        "last_error": null,
+        "recipients": null,
+        "cc": null,
+        "created_at": "2026-11-08T15:28:13.22856+07:00",
+        "locked_at": null,
+        "sent_at": null
+      },
+      {
+        "id": "9ff5ca2b-34c4-44a8-9de8-64c10b1fa4ff",
+        "ticket_id": "718d5e96-0ae2-41b7-851b-8a45d120bc42",
+        "event_type": "status_changed",
+        "payload": {
+          "actor_id": "f2947695-da8f-47c4-9d0f-74a9faec9ea2",
+          "new_status": "pending_user",
+          "old_status": "in_progress"
+        },
+        "status": "pending",
+        "attempts": 0,
+        "last_error": null,
+        "recipients": null,
+        "cc": null,
+        "created_at": "2026-11-08T15:28:13.337929+07:00",
+        "locked_at": null,
+        "sent_at": null
+      },
+      {
+        "id": "0b3768ac-bb07-45bb-b0d1-1e94237abc26",
+        "ticket_id": "718d5e96-0ae2-41b7-851b-8a45d120bc42",
+        "event_type": "comment_added",
+        "payload": {
+          "actor_id": "e4e8339a-8542-44af-aeb2-c912262f86ac",
+          "comment_id": "d06aa6d0-8fe0-4b9c-9ae1-5e82351dcae3"
+        },
+        "status": "pending",
+        "attempts": 0,
+        "last_error": null,
+        "recipients": null,
+        "cc": null,
+        "created_at": "2026-11-08T15:28:13.459042+07:00",
+        "locked_at": null,
+        "sent_at": null
+      },
+      {
+        "id": "aa0d4690-7b6f-42e1-a736-5d3c2b615e37",
+        "ticket_id": "718d5e96-0ae2-41b7-851b-8a45d120bc42",
+        "event_type": "comment_added",
+        "payload": {
+          "actor_id": "f2947695-da8f-47c4-9d0f-74a9faec9ea2",
+          "comment_id": "5daabe94-65fd-4e88-9e8b-5eecf3522c97"
+        },
+        "status": "pending",
+        "attempts": 0,
+        "last_error": null,
+        "recipients": null,
+        "cc": null,
+        "created_at": "2026-11-08T15:28:13.618026+07:00",
+        "locked_at": null,
+        "sent_at": null
+      },
+      {
+        "id": "5e0d89eb-412f-47eb-a1a2-63cd23b95b5c",
+        "ticket_id": "718d5e96-0ae2-41b7-851b-8a45d120bc42",
+        "event_type": "status_changed",
+        "payload": {
+          "actor_id": "f2947695-da8f-47c4-9d0f-74a9faec9ea2",
+          "new_status": "resolved",
+          "old_status": "pending_user"
+        },
+        "status": "pending",
+        "attempts": 0,
+        "last_error": null,
+        "recipients": null,
+        "cc": null,
+        "created_at": "2026-11-08T15:28:13.848543+07:00",
+        "locked_at": null,
+        "sent_at": null
+      },
+      {
+        "id": "795b5026-8ad6-42d5-9ef3-6a3a81cc1ae8",
+        "ticket_id": "718d5e96-0ae2-41b7-851b-8a45d120bc42",
+        "event_type": "status_changed",
+        "payload": {
+          "actor_id": "e4e8339a-8542-44af-aeb2-c912262f86ac",
+          "new_status": "reopened",
+          "old_status": "resolved"
+        },
+        "status": "pending",
+        "attempts": 0,
+        "last_error": null,
+        "recipients": null,
+        "cc": null,
+        "created_at": "2026-11-08T15:28:13.941297+07:00",
+        "locked_at": null,
+        "sent_at": null
+      },
+      {
+        "id": "ed8887a8-96ff-4a3f-8013-5407f1ccf777",
+        "ticket_id": "718d5e96-0ae2-41b7-851b-8a45d120bc42",
+        "event_type": "status_changed",
+        "payload": {
+          "actor_id": "f2947695-da8f-47c4-9d0f-74a9faec9ea2",
+          "new_status": "resolved",
+          "old_status": "reopened"
+        },
+        "status": "pending",
+        "attempts": 0,
+        "last_error": null,
+        "recipients": null,
+        "cc": null,
+        "created_at": "2026-11-08T15:28:14.035892+07:00",
+        "locked_at": null,
+        "sent_at": null
+      },
+      {
+        "id": "8716d644-e006-42be-ae9a-41681241dbb6",
+        "ticket_id": "718d5e96-0ae2-41b7-851b-8a45d120bc42",
+        "event_type": "status_changed",
+        "payload": {
+          "actor_id": "e4e8339a-8542-44af-aeb2-c912262f86ac",
+          "new_status": "closed",
+          "old_status": "resolved"
+        },
+        "status": "pending",
+        "attempts": 0,
+        "last_error": null,
+        "recipients": null,
+        "cc": null,
+        "created_at": "2026-11-08T15:28:14.080565+07:00",
+        "locked_at": null,
+        "sent_at": null
+      },
+      {
+        "id": "35113ed7-e1d3-4504-8a6f-584837ecb5eb",
+        "ticket_id": "5d020729-4960-43b2-8f4a-4076e3092e20",
+        "event_type": "ticket_created",
+        "payload": {
+          "actor_id": "f2947695-da8f-47c4-9d0f-74a9faec9ea2"
+        },
+        "status": "pending",
+        "attempts": 0,
+        "last_error": null,
+        "recipients": null,
+        "cc": null,
+        "created_at": "2026-11-08T15:28:14.394344+07:00",
+        "locked_at": null,
+        "sent_at": null
+      },
+      {
+        "id": "0f30f16c-31cc-4836-b93e-c0b1de393a17",
+        "ticket_id": "2e6283d0-04b9-4ada-b6dd-9c015810977d",
+        "event_type": "ticket_created",
+        "payload": {
+          "actor_id": "1330cf4c-ed47-412e-83e5-9413671ec263"
+        },
+        "status": "pending",
+        "attempts": 0,
+        "last_error": null,
+        "recipients": null,
+        "cc": null,
+        "created_at": "2026-11-08T15:28:14.440023+07:00",
+        "locked_at": null,
+        "sent_at": null
+      },
+      {
+        "id": "c3da34fa-ea4e-40f4-87b7-d872a3dedcdf",
+        "ticket_id": "7a74434a-6b0e-4969-aebe-a49fa5988fb9",
+        "event_type": "ticket_created",
+        "payload": {
+          "actor_id": "e4e8339a-8542-44af-aeb2-c912262f86ac"
+        },
+        "status": "pending",
+        "attempts": 0,
+        "last_error": null,
+        "recipients": null,
+        "cc": null,
+        "created_at": "2026-11-09T08:43:00.008907+07:00",
+        "locked_at": null,
+        "sent_at": null
+      },
+      {
+        "id": "800fea00-aa63-470b-acab-a37e3cebdeff",
+        "ticket_id": "7a74434a-6b0e-4969-aebe-a49fa5988fb9",
+        "event_type": "ticket_assigned",
+        "payload": {
+          "actor_id": "f2947695-da8f-47c4-9d0f-74a9faec9ea2",
+          "assignee_id": "f2947695-da8f-47c4-9d0f-74a9faec9ea2"
+        },
+        "status": "pending",
+        "attempts": 0,
+        "last_error": null,
+        "recipients": null,
+        "cc": null,
+        "created_at": "2026-11-09T08:45:38.229048+07:00",
+        "locked_at": null,
+        "sent_at": null
+      },
+      {
+        "id": "44873380-5aaa-4323-90b5-2010c611840a",
+        "ticket_id": "7a74434a-6b0e-4969-aebe-a49fa5988fb9",
+        "event_type": "status_changed",
+        "payload": {
+          "actor_id": "f2947695-da8f-47c4-9d0f-74a9faec9ea2",
+          "new_status": "in_progress",
+          "old_status": "open"
+        },
+        "status": "pending",
+        "attempts": 0,
+        "last_error": null,
+        "recipients": null,
+        "cc": null,
+        "created_at": "2026-11-09T08:45:38.229048+07:00",
+        "locked_at": null,
+        "sent_at": null
+      },
+      {
+        "id": "116d0802-18bd-4672-a836-0e89b7c2d21d",
+        "ticket_id": "b52f1886-d64f-4a1e-9419-dcab42064c53",
+        "event_type": "ticket_created",
+        "payload": {
+          "actor_id": "e4e8339a-8542-44af-aeb2-c912262f86ac"
+        },
+        "status": "pending",
+        "attempts": 0,
+        "last_error": null,
+        "recipients": null,
+        "cc": null,
+        "created_at": "2026-11-09T08:45:46.713391+07:00",
+        "locked_at": null,
+        "sent_at": null
+      },
+      {
+        "id": "e022fac1-64bd-4364-95ff-0638015cb124",
+        "ticket_id": "b52f1886-d64f-4a1e-9419-dcab42064c53",
+        "event_type": "comment_added",
+        "payload": {
+          "actor_id": "e4e8339a-8542-44af-aeb2-c912262f86ac",
+          "comment_id": "4b93a154-6af5-4cae-bbb8-f1d0ae273da2"
+        },
+        "status": "pending",
+        "attempts": 0,
+        "last_error": null,
+        "recipients": null,
+        "cc": null,
+        "created_at": "2026-11-09T08:46:08.241893+07:00",
+        "locked_at": null,
+        "sent_at": null
+      },
+      {
+        "id": "f663e856-3049-4e12-b6a6-ab8415ee2fc9",
+        "ticket_id": "b52f1886-d64f-4a1e-9419-dcab42064c53",
+        "event_type": "ticket_assigned",
+        "payload": {
+          "actor_id": "f2947695-da8f-47c4-9d0f-74a9faec9ea2",
+          "assignee_id": "f2947695-da8f-47c4-9d0f-74a9faec9ea2"
+        },
+        "status": "pending",
+        "attempts": 0,
+        "last_error": null,
+        "recipients": null,
+        "cc": null,
+        "created_at": "2026-11-09T08:47:59.191859+07:00",
+        "locked_at": null,
+        "sent_at": null
+      },
+      {
+        "id": "893c8894-4e4a-4711-a9a1-1dfcbb18dbd1",
+        "ticket_id": "b52f1886-d64f-4a1e-9419-dcab42064c53",
+        "event_type": "status_changed",
+        "payload": {
+          "actor_id": "f2947695-da8f-47c4-9d0f-74a9faec9ea2",
+          "new_status": "in_progress",
+          "old_status": "open"
+        },
+        "status": "pending",
+        "attempts": 0,
+        "last_error": null,
+        "recipients": null,
+        "cc": null,
+        "created_at": "2026-11-09T08:47:59.191859+07:00",
+        "locked_at": null,
+        "sent_at": null
+      },
+      {
+        "id": "07965c31-9cec-4771-a9b9-339fe8298435",
+        "ticket_id": "b52f1886-d64f-4a1e-9419-dcab42064c53",
+        "event_type": "status_changed",
+        "payload": {
+          "actor_id": "f2947695-da8f-47c4-9d0f-74a9faec9ea2",
+          "new_status": "resolved",
+          "old_status": "in_progress"
+        },
+        "status": "pending",
+        "attempts": 0,
+        "last_error": null,
+        "recipients": null,
+        "cc": null,
+        "created_at": "2026-11-09T08:48:03.926904+07:00",
+        "locked_at": null,
+        "sent_at": null
+      },
+      {
+        "id": "da2b9238-fed3-4a61-b207-ae44f38a9bb7",
+        "ticket_id": "b52f1886-d64f-4a1e-9419-dcab42064c53",
+        "event_type": "status_changed",
+        "payload": {
+          "actor_id": "e4e8339a-8542-44af-aeb2-c912262f86ac",
+          "new_status": "closed",
+          "old_status": "resolved"
+        },
+        "status": "pending",
+        "attempts": 0,
+        "last_error": null,
+        "recipients": null,
+        "cc": null,
+        "created_at": "2026-11-09T08:48:46.786859+07:00",
+        "locked_at": null,
+        "sent_at": null
+      },
+      {
+        "id": "311c666c-b83c-4ab0-a2c4-c6175018dd6f",
+        "ticket_id": "92eef79e-daa1-465b-8a8f-99efe03fee7e",
+        "event_type": "ticket_created",
+        "payload": {
+          "actor_id": "e4e8339a-8542-44af-aeb2-c912262f86ac"
+        },
+        "status": "pending",
+        "attempts": 0,
+        "last_error": null,
+        "recipients": null,
+        "cc": null,
+        "created_at": "2026-11-09T08:51:50.176013+07:00",
+        "locked_at": null,
+        "sent_at": null
+      },
+      {
+        "id": "29118f08-75e7-47f4-8d3c-3b71f8c2459d",
+        "ticket_id": "92eef79e-daa1-465b-8a8f-99efe03fee7e",
+        "event_type": "comment_added",
+        "payload": {
+          "actor_id": "e4e8339a-8542-44af-aeb2-c912262f86ac",
+          "comment_id": "ca148e64-ff49-45a4-bcc1-7097cc417e56"
+        },
+        "status": "pending",
+        "attempts": 0,
+        "last_error": null,
+        "recipients": null,
+        "cc": null,
+        "created_at": "2026-11-09T08:51:51.941353+07:00",
+        "locked_at": null,
+        "sent_at": null
+      },
+      {
+        "id": "0ce85726-5150-4bd1-878c-8158faadfaf9",
+        "ticket_id": "92eef79e-daa1-465b-8a8f-99efe03fee7e",
+        "event_type": "ticket_assigned",
+        "payload": {
+          "actor_id": "f2947695-da8f-47c4-9d0f-74a9faec9ea2",
+          "assignee_id": "f2947695-da8f-47c4-9d0f-74a9faec9ea2"
+        },
+        "status": "pending",
+        "attempts": 0,
+        "last_error": null,
+        "recipients": null,
+        "cc": null,
+        "created_at": "2026-11-09T08:53:40.877162+07:00",
+        "locked_at": null,
+        "sent_at": null
+      },
+      {
+        "id": "4f3096e7-a29c-4943-af14-f5f848459e42",
+        "ticket_id": "92eef79e-daa1-465b-8a8f-99efe03fee7e",
+        "event_type": "status_changed",
+        "payload": {
+          "actor_id": "f2947695-da8f-47c4-9d0f-74a9faec9ea2",
+          "new_status": "in_progress",
+          "old_status": "open"
+        },
+        "status": "pending",
+        "attempts": 0,
+        "last_error": null,
+        "recipients": null,
+        "cc": null,
+        "created_at": "2026-11-09T08:53:40.877162+07:00",
+        "locked_at": null,
+        "sent_at": null
+      },
+      {
+        "id": "25459af3-b9a5-4d08-b72a-11af9aaaa055",
+        "ticket_id": "92eef79e-daa1-465b-8a8f-99efe03fee7e",
+        "event_type": "status_changed",
+        "payload": {
+          "actor_id": "f2947695-da8f-47c4-9d0f-74a9faec9ea2",
+          "new_status": "resolved",
+          "old_status": "in_progress"
+        },
+        "status": "pending",
+        "attempts": 0,
+        "last_error": null,
+        "recipients": null,
+        "cc": null,
+        "created_at": "2026-11-09T08:53:45.97067+07:00",
+        "locked_at": null,
+        "sent_at": null
+      },
+      {
+        "id": "0334f2ed-0eff-497b-94fb-bab1b6fdf9c4",
+        "ticket_id": "92eef79e-daa1-465b-8a8f-99efe03fee7e",
+        "event_type": "status_changed",
+        "payload": {
+          "actor_id": "e4e8339a-8542-44af-aeb2-c912262f86ac",
+          "new_status": "closed",
+          "old_status": "resolved"
+        },
+        "status": "pending",
+        "attempts": 0,
+        "last_error": null,
+        "recipients": null,
+        "cc": null,
+        "created_at": "2026-11-09T08:54:29.491445+07:00",
+        "locked_at": null,
+        "sent_at": null
+      },
+      {
+        "id": "2f1bd77d-7cc5-40d1-bcb1-b76d7baa47ac",
+        "ticket_id": "7652c18f-46aa-4ee4-b06a-b43c9a06b20d",
+        "event_type": "ticket_created",
+        "payload": {
+          "actor_id": "e4e8339a-8542-44af-aeb2-c912262f86ac"
+        },
+        "status": "pending",
+        "attempts": 0,
+        "last_error": null,
+        "recipients": null,
+        "cc": null,
+        "created_at": "2026-11-09T09:03:24.708551+07:00",
+        "locked_at": null,
+        "sent_at": null
+      },
+      {
+        "id": "1f33a587-89f3-4baf-bb72-17fb7914a2fb",
+        "ticket_id": "7652c18f-46aa-4ee4-b06a-b43c9a06b20d",
+        "event_type": "comment_added",
+        "payload": {
+          "actor_id": "e4e8339a-8542-44af-aeb2-c912262f86ac",
+          "comment_id": "a085a9d4-3860-4712-bfef-88692245076f"
+        },
+        "status": "pending",
+        "attempts": 0,
+        "last_error": null,
+        "recipients": null,
+        "cc": null,
+        "created_at": "2026-11-09T09:03:27.716847+07:00",
+        "locked_at": null,
+        "sent_at": null
+      },
+      {
+        "id": "51eb2970-40d4-4aa7-b010-11361c472877",
+        "ticket_id": "7652c18f-46aa-4ee4-b06a-b43c9a06b20d",
+        "event_type": "ticket_assigned",
+        "payload": {
+          "actor_id": "f2947695-da8f-47c4-9d0f-74a9faec9ea2",
+          "assignee_id": "f2947695-da8f-47c4-9d0f-74a9faec9ea2"
+        },
+        "status": "pending",
+        "attempts": 0,
+        "last_error": null,
+        "recipients": null,
+        "cc": null,
+        "created_at": "2026-11-09T09:04:50.803158+07:00",
+        "locked_at": null,
+        "sent_at": null
+      },
+      {
+        "id": "cb02d822-0ae5-40e2-a9eb-525053b7e8a4",
+        "ticket_id": "7652c18f-46aa-4ee4-b06a-b43c9a06b20d",
+        "event_type": "status_changed",
+        "payload": {
+          "actor_id": "f2947695-da8f-47c4-9d0f-74a9faec9ea2",
+          "new_status": "assigned",
+          "old_status": "open"
+        },
+        "status": "pending",
+        "attempts": 0,
+        "last_error": null,
+        "recipients": null,
+        "cc": null,
+        "created_at": "2026-11-09T09:04:50.803158+07:00",
+        "locked_at": null,
+        "sent_at": null
+      },
+      {
+        "id": "446ded2d-6ffd-4354-be69-c8311b85065c",
+        "ticket_id": "7652c18f-46aa-4ee4-b06a-b43c9a06b20d",
+        "event_type": "status_changed",
+        "payload": {
+          "actor_id": "f2947695-da8f-47c4-9d0f-74a9faec9ea2",
+          "new_status": "in_progress",
+          "old_status": "assigned"
+        },
+        "status": "pending",
+        "attempts": 0,
+        "last_error": null,
+        "recipients": null,
+        "cc": null,
+        "created_at": "2026-11-09T09:04:53.093241+07:00",
+        "locked_at": null,
+        "sent_at": null
+      },
+      {
+        "id": "a2643fe9-bb2c-4826-aef9-f12ff15c03c3",
+        "ticket_id": "7652c18f-46aa-4ee4-b06a-b43c9a06b20d",
+        "event_type": "status_changed",
+        "payload": {
+          "actor_id": "f2947695-da8f-47c4-9d0f-74a9faec9ea2",
+          "new_status": "resolved",
+          "old_status": "in_progress"
+        },
+        "status": "pending",
+        "attempts": 0,
+        "last_error": null,
+        "recipients": null,
+        "cc": null,
+        "created_at": "2026-11-09T09:04:59.78495+07:00",
+        "locked_at": null,
+        "sent_at": null
+      },
+      {
+        "id": "7bbe34e4-72a1-4e78-85f5-3579f5fae650",
+        "ticket_id": "7652c18f-46aa-4ee4-b06a-b43c9a06b20d",
+        "event_type": "status_changed",
+        "payload": {
+          "actor_id": "e4e8339a-8542-44af-aeb2-c912262f86ac",
+          "new_status": "closed",
+          "old_status": "resolved"
+        },
+        "status": "pending",
+        "attempts": 0,
+        "last_error": null,
+        "recipients": null,
+        "cc": null,
+        "created_at": "2026-11-09T09:05:43.176916+07:00",
+        "locked_at": null,
+        "sent_at": null
+      }
+    ],
+    "app_settings": [
+      {
+        "id": true,
+        "it_support_group_email": null,
+        "manager_email": null,
+        "notifications_enabled": true,
+        "app_base_url": null,
+        "updated_at": "2026-11-08T14:44:47.375155+07:00",
+        "updated_by": null
+      }
+    ],
+    "profiles": [
+      {
+        "id": "1330cf4c-ed47-412e-83e5-9413671ec263",
+        "employee_number": "STGADM01",
+        "full_name": "Staging Admin (Synthetic)",
+        "email": "stg.admin@example.com",
+        "role": "administrator",
+        "is_active": true
+      },
+      {
+        "id": "e4e8339a-8542-44af-aeb2-c912262f86ac",
+        "employee_number": "STGEMP01",
+        "full_name": "Staging Employee (Synthetic)",
+        "email": "stg.employee@example.com",
+        "role": "employee",
+        "is_active": true
+      },
+      {
+        "id": "f2947695-da8f-47c4-9d0f-74a9faec9ea2",
+        "employee_number": "STGTEC01",
+        "full_name": "Staging Technician (Synthetic)",
+        "email": "stg.technician@example.com",
+        "role": "it_support",
+        "is_active": true
+      }
+    ],
+    "claim_notifications_def": "CREATE OR REPLACE FUNCTION public.claim_notifications(p_limit integer DEFAULT 20)\n RETURNS SETOF notification_outbox\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO ''\nAS $function$\nbegin\n  -- Give up on rows that crashed the sender 5 times; keep them for inspection.\n  update public.notification_outbox o\n     set status = 'failed',\n         last_error = left(coalesce(o.last_error || ' | ', '') ||\n                           'abandoned: still processing after ' || o.attempts || ' attempts', 2000)\n   where o.status = 'processing'\n     and o.locked_at < now() - interval '10 minutes'\n     and o.attempts >= 5;\n\n  return query\n  update public.notification_outbox o\n     set status = 'processing', locked_at = now(), attempts = o.attempts + 1\n   where o.id in (\n     select x.id from public.notification_outbox x\n      where (x.status = 'pending'\n             or (x.status = 'processing' and x.attempts < 5\n                 and x.locked_at < now() - interval '10 minutes')\n             or (x.status = 'failed' and x.attempts < 5\n                 and x.locked_at < now() - interval '5 minutes'))\n      order by x.created_at\n      limit greatest(1, least(p_limit, 100))\n      for update skip locked\n   )\n  returning o.*;\nend;\n$function$\n",
+    "status_check": "CHECK ((status = ANY (ARRAY['pending'::text, 'processing'::text, 'sent'::text, 'failed'::text, 'skipped'::text])))",
+    "counts": {
+      "tickets": 8,
+      "comments": 9,
+      "activity": 33,
+      "outbox": 36
+    }
+  }
+}

@@ -1,0 +1,181 @@
+{
+  "run": "2026-11-09T06:20:09.620Z",
+  "backend": "staging yzjpttfwnvnuyxbdkidm",
+  "summary": "29/29 PASS",
+  "results": [
+    {
+      "id": "R01-anonymous",
+      "name": "anonymous cannot read SMTP status",
+      "result": "PASS",
+      "detail": "HTTP 403"
+    },
+    {
+      "id": "R02-anonymous",
+      "name": "anonymous cannot save SMTP configuration",
+      "result": "PASS",
+      "detail": "HTTP 403"
+    },
+    {
+      "id": "R03-anonymous",
+      "name": "anonymous cannot remove SMTP credential",
+      "result": "PASS",
+      "detail": "HTTP 403"
+    },
+    {
+      "id": "R01-employee",
+      "name": "employee cannot read SMTP status",
+      "result": "PASS",
+      "detail": "HTTP 403"
+    },
+    {
+      "id": "R02-employee",
+      "name": "employee cannot save SMTP configuration",
+      "result": "PASS",
+      "detail": "HTTP 403"
+    },
+    {
+      "id": "R03-employee",
+      "name": "employee cannot remove SMTP credential",
+      "result": "PASS",
+      "detail": "HTTP 403"
+    },
+    {
+      "id": "R01-it_support",
+      "name": "it_support cannot read SMTP status",
+      "result": "PASS",
+      "detail": "HTTP 403"
+    },
+    {
+      "id": "R02-it_support",
+      "name": "it_support cannot save SMTP configuration",
+      "result": "PASS",
+      "detail": "HTTP 403"
+    },
+    {
+      "id": "R03-it_support",
+      "name": "it_support cannot remove SMTP credential",
+      "result": "PASS",
+      "detail": "HTTP 403"
+    },
+    {
+      "id": "R04",
+      "name": "administrator reads SMTP status; response has no password/secret field",
+      "result": "PASS",
+      "detail": "HTTP 200 password_configured=false smtp_host=null it_support=it.support-duri@radiant-utama.com manager=null keys=16"
+    },
+    {
+      "id": "R05-get_smtp_password-anonymous",
+      "name": "anonymous cannot execute get_smtp_password()",
+      "result": "PASS",
+      "detail": "HTTP 401"
+    },
+    {
+      "id": "R05-get_smtp_password-employee",
+      "name": "employee cannot execute get_smtp_password()",
+      "result": "PASS",
+      "detail": "HTTP 403"
+    },
+    {
+      "id": "R05-get_smtp_password-admin",
+      "name": "admin cannot execute get_smtp_password()",
+      "result": "PASS",
+      "detail": "HTTP 403"
+    },
+    {
+      "id": "R05-remove_smtp_password-anonymous",
+      "name": "anonymous cannot execute remove_smtp_password()",
+      "result": "PASS",
+      "detail": "HTTP 401"
+    },
+    {
+      "id": "R05-remove_smtp_password-employee",
+      "name": "employee cannot execute remove_smtp_password()",
+      "result": "PASS",
+      "detail": "HTTP 403"
+    },
+    {
+      "id": "R05-remove_smtp_password-admin",
+      "name": "admin cannot execute remove_smtp_password()",
+      "result": "PASS",
+      "detail": "HTTP 403"
+    },
+    {
+      "id": "R06",
+      "name": "administrator cannot execute set_smtp_password() directly",
+      "result": "PASS",
+      "detail": "HTTP 403"
+    },
+    {
+      "id": "R07-employee",
+      "name": "employee sees no app_settings rows (RLS)",
+      "result": "PASS",
+      "detail": "HTTP 200 rows=0"
+    },
+    {
+      "id": "R08-employee",
+      "name": "employee cannot change app_settings",
+      "result": "PASS",
+      "detail": "PATCH HTTP 204; smtp_host after = null"
+    },
+    {
+      "id": "R07-it_support",
+      "name": "it_support sees no app_settings rows (RLS)",
+      "result": "PASS",
+      "detail": "HTTP 200 rows=0"
+    },
+    {
+      "id": "R08-it_support",
+      "name": "it_support cannot change app_settings",
+      "result": "PASS",
+      "detail": "PATCH HTTP 204; smtp_host after = null"
+    },
+    {
+      "id": "R09-employee",
+      "name": "employee cannot read notification_outbox",
+      "result": "PASS",
+      "detail": "HTTP 403"
+    },
+    {
+      "id": "R09-admin",
+      "name": "admin cannot read notification_outbox",
+      "result": "PASS",
+      "detail": "HTTP 403"
+    },
+    {
+      "id": "R10-employee",
+      "name": "employee cannot call admin-users",
+      "result": "PASS",
+      "detail": "HTTP 403"
+    },
+    {
+      "id": "R10-it_support",
+      "name": "it_support cannot call admin-users",
+      "result": "PASS",
+      "detail": "HTTP 403"
+    },
+    {
+      "id": "R11",
+      "name": "employee sees only own tickets (RLS)",
+      "result": "PASS",
+      "detail": "rows=6 foreign=0"
+    },
+    {
+      "id": "R12",
+      "name": "IT Support sees the full ticket queue",
+      "result": "PASS",
+      "detail": "rows=8"
+    },
+    {
+      "id": "R13",
+      "name": "send-notifications rejects unauthenticated callers",
+      "result": "PASS",
+      "detail": "HTTP 401"
+    },
+    {
+      "id": "R14",
+      "name": "send-notifications refuses to send while SMTP is not configured (nothing claimed)",
+      "result": "PASS",
+      "detail": "HTTP 503 {\"error\":\"Email is not configured (SMTP settings incomplete)\"}"
+    }
+  ]
+}

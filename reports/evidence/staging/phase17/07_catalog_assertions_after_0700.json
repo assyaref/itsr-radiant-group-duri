@@ -1,0 +1,82 @@
+[
+  {
+    "id": "C01 every public table has RLS enabled",
+    "passed": true,
+    "detail": "all on"
+  },
+  {
+    "id": "C02 exactly the 8 application tables exist in public",
+    "passed": true,
+    "detail": "app_settings,categories,login_attempts,notification_outbox,profiles,ticket_activity_log,ticket_comments,tickets"
+  },
+  {
+    "id": "C03 12 RLS policies (no drift)",
+    "passed": true,
+    "detail": "12"
+  },
+  {
+    "id": "C04 anon has no table privileges in public",
+    "passed": true,
+    "detail": "0"
+  },
+  {
+    "id": "C05 anon can execute no public/private function",
+    "passed": true,
+    "detail": "none"
+  },
+  {
+    "id": "C06 authenticated executes exactly 3 public RPCs",
+    "passed": true,
+    "detail": "assignable_staff(),reporter_ticket_action(uuid,text,text),ticket_stats(text)"
+  },
+  {
+    "id": "C07 service-only RPCs not executable by authenticated",
+    "passed": true,
+    "detail": "none"
+  },
+  {
+    "id": "C08 every SECURITY DEFINER function pins search_path",
+    "passed": true,
+    "detail": "none"
+  },
+  {
+    "id": "C09 authenticated has no access to notification_outbox / login_attempts",
+    "passed": true,
+    "detail": "checked SELECT/INSERT/UPDATE/DELETE"
+  },
+  {
+    "id": "C10 clients cannot write profiles or delete audit records",
+    "passed": true,
+    "detail": "profiles I/U/D, tickets D, activity I/U/D, comments U/D"
+  },
+  {
+    "id": "C11 server-owned ticket columns not client-insertable",
+    "passed": true,
+    "detail": "ticket_number/status/assigned_to_id insert; reporter_id/ticket_number update"
+  },
+  {
+    "id": "C12 anon has no USAGE on schema private",
+    "passed": true,
+    "detail": ""
+  },
+  {
+    "id": "C13 platform rls_auto_enable() not client-executable",
+    "passed": true,
+    "detail": "present"
+  },
+  {
+    "id": "C14 auth.uid() is Supabase-native (not overridden)",
+    "passed": true,
+    "detail": "supabase_auth_admin"
+  },
+  {
+    "id": "C15 claim_notifications has retry cap (migration 0600)",
+    "passed": true,
+    "detail": ""
+  },
+  {
+    "id": "C16 outbox hold + permanent-failure guard (migration 0700)",
+    "passed": true,
+    "detail": ""
+  }
+]

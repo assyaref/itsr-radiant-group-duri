@@ -1,0 +1,27 @@
+{
+  "r": {
+    "runs": [
+      {
+        "runid": 1,
+        "status": "succeeded",
+        "return_message": "1 row",
+        "start_time": "2026-11-09T09:54:00.111435+07:00"
+      }
+    ],
+    "http": [
+      {
+        "id": 1,
+        "status_code": 503,
+        "content": "{\"error\":\"Email is not configured (GMAIL_USER / GMAIL_APP_PASSWORD)\"}",
+        "error_msg": null,
+        "created": "2026-11-09T09:54:00.135387+07:00"
+      }
+    ],
+    "outbox": [
+      {
+        "status": "held",
+        "n": 36
+      }
+    ]
+  }
+}

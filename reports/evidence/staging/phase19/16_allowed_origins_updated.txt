@@ -1,0 +1,4 @@
+2026-11-09T06:23:35Z previous ALLOWED_ORIGINS digest e95aa9bf... = Preview origin + http://localhost:5000 (Phase 17 temporary, never restored)
+Finished supabase secrets set.
+new value (public origins, not secret): https://itsr-radiant-staging.vercel.app,https://itsr-radiant-staging-h8c5j387u-assyaref75.vercel.app
+expected digest: 5e59ce1a1527582f198d8f29525f37f801d09250027564561bba5908685e8f06

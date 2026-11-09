@@ -402,6 +402,69 @@ begin
                   'N12 claim_notifications still service_role only after 0600');
 end $$;
 
+-- Migration 0700: 'held' rows are never claimed; permanent failures never retried
+do $$
+declare v_held uuid; v_perm uuid; v_temp uuid; c int; st text; pf boolean; err text; att int;
+begin
+  perform test.act_as('service');
+  select id into v_held from public.notification_outbox order by created_at limit 1;
+  select id into v_perm from public.notification_outbox where id <> v_held order by created_at limit 1;
+  select id into v_temp from public.notification_outbox where id not in (v_held, v_perm) order by created_at limit 1;
+  update public.notification_outbox set status = 'sent' where id not in (v_held, v_perm, v_temp);
+  update public.notification_outbox set status = 'held', attempts = 0, locked_at = null where id = v_held;
+  update public.notification_outbox set status = 'pending', attempts = 0, permanent_failure = false where id in (v_perm, v_temp);
+
+  select count(*) into c from public.claim_notifications(100) r where r.id = v_held;
+  perform test.ok(c = 0, 'N13 held row is not claimed', c::text);
+  select count(*) into c from public.notification_outbox where id = v_held and status = 'held';
+  perform test.ok(c = 1, 'N14 held row is kept unchanged (not deleted)', c::text);
+
+  -- both other rows were just claimed (attempt 1); fail one permanently, one temporarily
+  perform public.fail_notification_permanently(v_perm, 'EENVELOPE 550 user unknown');
+  perform public.complete_notification(v_temp, 'failed', 'ETIMEDOUT');
+  select status, permanent_failure, last_error, attempts into st, pf, err, att from public.notification_outbox where id = v_perm;
+  perform test.ok(st = 'failed' and pf and err like 'permanent: %' and att = 1,
+                  'N15 permanent failure recorded after 1 attempt', st || '/' || pf || '/' || att);
+
+  update public.notification_outbox set locked_at = now() - interval '1 hour' where id in (v_perm, v_temp);
+  select count(*) into c from public.claim_notifications(100) r where r.id = v_perm;
+  perform test.ok(c = 0, 'N16 permanent failure is never retried', c::text);
+  select count(*) into c from public.notification_outbox where id = v_temp and status = 'processing' and attempts = 2;
+  perform test.ok(c = 1, 'N17 temporary failure is retried (attempt 2)', c::text);
+
+  -- temporary failures stop at 5 attempts in total
+  for i in 1..10 loop
+    perform public.complete_notification(v_temp, 'failed', 'ETIMEDOUT');
+    update public.notification_outbox set locked_at = now() - interval '1 hour' where id = v_temp;
+    perform public.claim_notifications(100);
+  end loop;
+  select status, attempts into st, att from public.notification_outbox where id = v_temp;
+  perform test.ok(att = 5, 'N18 temporary failure capped at 5 attempts', st || '/' || att);
+  perform test.ok(not has_function_privilege('authenticated', 'public.fail_notification_permanently(uuid,text)', 'EXECUTE')
+                  and not has_function_privilege('anon', 'public.fail_notification_permanently(uuid,text)', 'EXECUTE'),
+                  'N19 fail_notification_permanently is service_role only');
+end $$;
+
+-- Migrations 0800-1000: company IT Support recipient + SMTP config / Vault password
+do $$
+declare f text;
+begin
+  foreach f in array array['public.set_smtp_password(text)', 'public.get_smtp_password()',
+                           'public.remove_smtp_password()'] loop
+    perform test.ok(not has_function_privilege('authenticated', f, 'EXECUTE')
+                    and not has_function_privilege('anon', f, 'EXECUTE')
+                    and has_function_privilege('service_role', f, 'EXECUTE'),
+                    'E01 ' || f || ' is service_role only');
+    perform test.ok((select prosecdef and proconfig @> array['search_path=""']
+                     from pg_proc where oid = f::regprocedure),
+                    'E02 ' || f || ' is SECURITY DEFINER with pinned empty search_path');
+  end loop;
+  perform test.ok(not exists (select 1 from information_schema.columns
+                              where table_schema = 'public' and table_name = 'app_settings'
+                                and column_name ilike '%password%'),
+                  'E03 no password column in app_settings (password lives in Vault only)');
+end $$;
+
 -- ------------------------------------------------------- rate limiting ------
 do $$
 declare limited boolean;
