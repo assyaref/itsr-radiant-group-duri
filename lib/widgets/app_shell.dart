@@ -1,8 +1,9 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../constants/app_constants.dart';
+import '../constants/app_theme.dart';
 import '../models/user_model.dart';
 import '../providers/auth_provider.dart';
 import '../utils/formatters.dart';
@@ -48,12 +49,14 @@ int selectedNavIndex(List<NavItem> items, String location) {
       bestLen = p.length;
     }
   }
-  // Ticket detail pages belong to "My Tickets" unless a longer match exists.
   if (best == -1 && location.startsWith('/tickets/')) {
     best = items.indexWhere((e) => e.path == '/tickets');
   }
   return best < 0 ? 0 : best;
 }
+
+const Color _sidebarDark = Color(0xFF0F172A);
+const Color _sidebarItemBg = Color(0xFF1E293B);
 
 class AppShell extends ConsumerWidget {
   const AppShell({super.key, required this.child, required this.location});
@@ -74,13 +77,46 @@ class AppShell extends ConsumerWidget {
     final desktop = isDesktop(context);
     final title = items[selected].label;
 
-    final userHeader = ListTile(
-      leading: CircleAvatar(
-        child: Text((user?.fullName.isNotEmpty ?? false) ? user!.fullName[0].toUpperCase() : '?'),
+    final userHeader = Padding(
+      padding: const EdgeInsets.fromLTRB(20, 20, 20, 16),
+      child: Column(
+        children: [
+          Container(
+            width: 48,
+            height: 48,
+            decoration: BoxDecoration(
+              color: AppTheme.primary.withValues(alpha: 0.15),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: const Icon(Icons.support_agent, color: AppTheme.primary, size: 26),
+          ),
+          const SizedBox(height: 12),
+          Text(AppConstants.appShortName,
+              style: const TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.w800,
+                color: Colors.white,
+              )),
+          const SizedBox(height: 4),
+          Text('IT Support Cabang Duri',
+              style: TextStyle(fontSize: 12, color: Colors.white.withValues(alpha: 0.7))),
+          const SizedBox(height: 20),
+          ListTile(
+            contentPadding: EdgeInsets.zero,
+            leading: CircleAvatar(
+              child: Text((user?.fullName.isNotEmpty ?? false)
+                  ? user!.fullName[0].toUpperCase()
+                  : '?'),
+            ),
+            title: Text(user?.fullName ?? '',
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(fontWeight: FontWeight.w600, color: Colors.white)),
+            subtitle: Text('${user?.employeeNumber ?? ''} â€¢ ${Fmt.role(user?.role)}',
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(color: Colors.white.withValues(alpha: 0.7), fontSize: 12)),
+          ),
+        ],
       ),
-      title: Text(user?.fullName ?? '', overflow: TextOverflow.ellipsis),
-      subtitle: Text('${user?.employeeNumber ?? ''} • ${Fmt.role(user?.role)}',
-          overflow: TextOverflow.ellipsis),
     );
 
     if (desktop) {
@@ -88,47 +124,31 @@ class AppShell extends ConsumerWidget {
         body: Row(
           children: [
             SizedBox(
-              width: 240,
+              width: 250,
               child: Material(
-                color: Theme.of(context).colorScheme.surface,
-                elevation: 1,
+                color: _sidebarDark,
                 child: SafeArea(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
-                      Padding(
-                        padding: const EdgeInsets.fromLTRB(20, 20, 20, 8),
-                        child: Row(children: [
-                          Icon(Icons.support_agent, color: Theme.of(context).colorScheme.primary),
-                          const SizedBox(width: 8),
-                          Expanded(
-                            child: Text(AppConstants.appShortName,
-                                style: Theme.of(context).textTheme.titleLarge),
-                          ),
-                        ]),
-                      ),
                       userHeader,
-                      const Divider(),
                       Expanded(
-                        child: NavigationRail(
-                          extended: true,
-                          minExtendedWidth: 240,
-                          selectedIndex: selected,
-                          onDestinationSelected: (i) => context.go(items[i].path),
-                          destinations: [
-                            for (final it in items)
-                              NavigationRailDestination(
-                                icon: Icon(it.icon),
-                                selectedIcon: Icon(it.selectedIcon),
-                                label: Text(it.label),
+                        child: ListView(
+                          children: [
+                            for (var i = 0; i < items.length; i++)
+                              _NavTile(
+                                item: items[i],
+                                selected: i == selected,
+                                onTap: () => context.go(items[i].path),
                               ),
                           ],
                         ),
                       ),
-                      const Divider(height: 1),
+                      const Divider(height: 1, color: Color(0xFF334155)),
                       ListTile(
-                        leading: const Icon(Icons.logout),
-                        title: const Text('Sign out'),
+                        leading: const Icon(Icons.logout, color: Colors.white70),
+                        title: const Text('Sign out',
+                            style: TextStyle(color: Colors.white)),
                         onTap: () => _signOut(context, ref),
                       ),
                     ],
@@ -137,14 +157,16 @@ class AppShell extends ConsumerWidget {
               ),
             ),
             Expanded(
-              // Own semantics container: the nested (ShellRoute) Navigator paints
-              // a ModalBarrier whose BlockSemantics would otherwise drop the
-              // sidebar (navigation + Sign out) from the accessibility tree.
               child: Semantics(
                 container: true,
                 explicitChildNodes: true,
                 child: Scaffold(
-                  appBar: AppBar(title: Text(title)),
+                  appBar: AppBar(
+                    title: Text(title),
+                    backgroundColor: Colors.white,
+                    foregroundColor: AppTheme.ink,
+                    elevation: 0,
+                  ),
                   body: child,
                 ),
               ),
@@ -155,20 +177,24 @@ class AppShell extends ConsumerWidget {
     }
 
     return Scaffold(
-      appBar: AppBar(title: Text(title)),
+      appBar: AppBar(
+        title: Text(title),
+        backgroundColor: Colors.white,
+        foregroundColor: AppTheme.ink,
+        elevation: 0,
+      ),
       drawer: Drawer(
         child: SafeArea(
           child: Column(
             children: [
               userHeader,
-              const Divider(),
+              const Divider(height: 1, color: Color(0xFFE5E7EB)),
               Expanded(
                 child: ListView(
                   children: [
                     for (var i = 0; i < items.length; i++)
-                      ListTile(
-                        leading: Icon(i == selected ? items[i].selectedIcon : items[i].icon),
-                        title: Text(items[i].label),
+                      _NavTile(
+                        item: items[i],
                         selected: i == selected,
                         onTap: () {
                           Navigator.pop(context);
@@ -178,9 +204,9 @@ class AppShell extends ConsumerWidget {
                   ],
                 ),
               ),
-              const Divider(height: 1),
+              const Divider(height: 1, color: Color(0xFFE5E7EB)),
               ListTile(
-                leading: const Icon(Icons.logout),
+                leading: const Icon(Icons.logout, color: AppTheme.ink),
                 title: const Text('Sign out'),
                 onTap: () {
                   Navigator.pop(context);
@@ -195,3 +221,45 @@ class AppShell extends ConsumerWidget {
     );
   }
 }
+
+class _NavTile extends StatelessWidget {
+  const _NavTile({
+    required this.item,
+    required this.selected,
+    required this.onTap,
+  });
+  final NavItem item;
+  final bool selected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final active = selected;
+    return InkWell(
+      onTap: onTap,
+      child: Container(
+        color: active ? _sidebarItemBg : Colors.transparent,
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        child: Row(
+          children: [
+            Icon(
+              active ? item.selectedIcon : item.icon,
+              color: active ? Colors.white : Colors.white.withValues(alpha: 0.7),
+              size: 20,
+            ),
+            const SizedBox(width: 14),
+            Expanded(
+              child: Text(item.label,
+                  style: TextStyle(
+                    color: active ? Colors.white : Colors.white.withValues(alpha: 0.85),
+                    fontWeight: active ? FontWeight.w600 : FontWeight.w500,
+                    fontSize: 14,
+                  )),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+

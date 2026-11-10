@@ -1,7 +1,8 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../constants/app_constants.dart';
+import '../constants/app_theme.dart';
 import '../models/activity_model.dart';
 import '../models/comment_model.dart';
 import '../models/ticket_model.dart';
@@ -12,7 +13,6 @@ import '../providers/tickets_provider.dart';
 import '../utils/error_messages.dart';
 import '../utils/formatters.dart';
 import '../widgets/common.dart';
-import 'dashboard_screen.dart' show activityColor, activityIcon, describeActivity;
 
 class TicketDetailScreen extends ConsumerWidget {
   const TicketDetailScreen({super.key, required this.ticketId});
@@ -33,45 +33,67 @@ class TicketDetailScreen extends ConsumerWidget {
       ),
       data: (d) {
         if (user == null) return const LoadingView();
-        final wide = MediaQuery.sizeOf(context).width >= 1100;
-        final main = [
-          _Header(ticket: d.ticket),
-          const SizedBox(height: 16),
-          if (user.isStaff) ...[
-            _StaffActions(ticket: d.ticket, user: user),
-            const SizedBox(height: 16),
-          ] else if (d.ticket.reporterId == user.id) ...[
-            _ReporterActions(ticket: d.ticket),
-            const SizedBox(height: 16),
-          ],
-        ];
-        final side = [
-          _CommentBox(ticket: d.ticket, user: user),
-          const SizedBox(height: 16),
-          _Timeline(detail: d),
-        ];
-        return RefreshIndicator(
-          onRefresh: () async => ref.invalidate(ticketDetailProvider(ticketId)),
-          child: ListView(
-            padding: const EdgeInsets.all(16),
-            children: [
-              PageBody(
-                maxWidth: 1300,
-                child: wide
-                    ? Row(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Expanded(flex: 3, child: Column(children: main)),
-                          const SizedBox(width: 16),
-                          Expanded(flex: 2, child: Column(children: side)),
-                        ],
-                      )
-                    : Column(children: [...main, ...side]),
+        return DefaultTabController(
+          length: 3,
+          child: Scaffold(
+            appBar: AppBar(
+              leading: IconButton(
+                icon: const Icon(Icons.arrow_back),
+                onPressed: () => Navigator.of(context).pop(),
               ),
-            ],
+              title: const Text('Detail Tiket'),
+              centerTitle: false,
+              elevation: 0,
+              bottom: TabBar(
+                labelColor: AppTheme.primary,
+                unselectedLabelColor: AppTheme.muted,
+                indicatorColor: AppTheme.primary,
+                tabs: const [
+                  Tab(text: 'Detail'),
+                  Tab(text: 'Komentar'),
+                  Tab(text: 'Lampiran'),
+                ],
+              ),
+            ),
+            body: TabBarView(
+              children: [
+                _DetailTab(ticket: d.ticket, user: user),
+                _CommentsTab(detail: d, user: user),
+                _AttachmentsTab(ticket: d.ticket),
+              ],
+            ),
           ),
         );
       },
+    );
+  }
+}
+
+// ---------------------------------------------------------------------------
+/// Detail tab: header meta + actions.
+class _DetailTab extends StatelessWidget {
+  const _DetailTab({required this.ticket, required this.user});
+  final TicketModel ticket;
+  final UserModel user;
+
+  @override
+  Widget build(BuildContext context) {
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _Header(ticket: ticket),
+          const SizedBox(height: 16),
+          if (user.isStaff) ...[
+            _StaffActions(ticket: ticket, user: user),
+            const SizedBox(height: 16),
+          ] else if (ticket.reporterId == user.id) ...[
+            _ReporterActions(ticket: ticket),
+            const SizedBox(height: 16),
+          ],
+        ],
+      ),
     );
   }
 }
@@ -87,88 +109,91 @@ class _Header extends StatelessWidget {
     final meta = <(String, String)>[
       ('Category', t.category),
       ('Priority', Fmt.priority(t.priority)),
-      ('Reporter', t.reporterName ?? '—'),
+      ('Reporter', t.reporterName ?? 'â€”'),
       ('Assigned to', t.assigneeName ?? 'Unassigned'),
       ('Created', Fmt.dateTime(t.createdAt)),
       ('Last update', Fmt.dateTime(t.updatedAt)),
       if (t.resolvedAt != null) ('Resolved', Fmt.dateTime(t.resolvedAt!)),
       if (t.closedAt != null) ('Closed', Fmt.dateTime(t.closedAt!)),
     ];
-    // Text + SelectionArea (not SelectableText): stays selectable for copying
-    // ticket numbers, and is exposed to screen readers. SelectableText content
-    // was announced as empty edit fields on Flutter Web (Phase 16 E2E finding).
     return Card(
-      margin: EdgeInsets.zero,
+      elevation: 0,
       child: SelectionArea(
         child: Padding(
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Wrap(
-              spacing: 8,
-              runSpacing: 8,
-              crossAxisAlignment: WrapCrossAlignment.center,
-              children: [
-                Text(t.ticketNumber,
-                    style: TextStyle(color: Colors.grey[700], fontWeight: FontWeight.bold)),
-                StatusChip(t.status),
-                PriorityChip(t.priority),
-              ],
-            ),
-            const SizedBox(height: 12),
-            Text(t.subject,
-                style: Theme.of(context)
-                    .textTheme
-                    .headlineSmall
-                    ?.copyWith(fontWeight: FontWeight.bold)),
-            const SizedBox(height: 16),
-            Wrap(
-              spacing: 24,
-              runSpacing: 12,
-              children: [
-                for (final (label, value) in meta)
-                  SizedBox(
-                    width: 160,
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(label, style: TextStyle(color: Colors.grey[600], fontSize: 12)),
-                        Text(value, style: const TextStyle(fontWeight: FontWeight.w500)),
-                      ],
-                    ),
-                  ),
-              ],
-            ),
-            const Divider(height: 32),
-            Text('Description', style: Theme.of(context).textTheme.titleMedium),
-            const SizedBox(height: 8),
-            Text(t.description),
-            if (t.resolution != null && t.resolution!.isNotEmpty) ...[
-              const SizedBox(height: 16),
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: Colors.green[50],
-                  borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: Colors.green[200]!),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text('Resolution',
-                        style: TextStyle(
-                            fontWeight: FontWeight.bold, color: Colors.green[800])),
-                    const SizedBox(height: 4),
-                    Text(t.resolution!),
-                  ],
-                ),
+          padding: const EdgeInsets.all(20),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                crossAxisAlignment: WrapCrossAlignment.center,
+                children: [
+                  Text(t.ticketNumber,
+                      style: TextStyle(
+                          color: AppTheme.muted, fontWeight: FontWeight.bold)),
+                  StatusChip(t.status),
+                  PriorityChip(t.priority),
+                ],
               ),
+              const SizedBox(height: 12),
+              Text(t.subject,
+                  style: Theme.of(context)
+                      .textTheme
+                      .titleLarge
+                      ?.copyWith(fontWeight: FontWeight.bold)),
+              const SizedBox(height: 16),
+              Wrap(
+                spacing: 24,
+                runSpacing: 12,
+                children: [
+                  for (final (label, value) in meta)
+                    SizedBox(
+                      width: 160,
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(label,
+                              style: TextStyle(
+                                  color: AppTheme.muted, fontSize: 12)),
+                          Text(value,
+                              style: const TextStyle(fontWeight: FontWeight.w500)),
+                        ],
+                      ),
+                    ),
+                ],
+              ),
+              const Divider(height: 32),
+              Text('Description',
+                  style: Theme.of(context).textTheme.titleMedium),
+              const SizedBox(height: 8),
+              Text(t.description),
+              if (t.resolution != null && t.resolution!.isNotEmpty) ...[
+                const SizedBox(height: 16),
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFDCFCE7),
+                    borderRadius: BorderRadius.circular(10),
+                    border: Border.all(color: const Color(0xFF86EFAC)),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text('Resolution',
+                          style: TextStyle(
+                              fontWeight: FontWeight.bold,
+                              color: const Color(0xFF15803D))),
+                      const SizedBox(height: 4),
+                      Text(t.resolution!),
+                    ],
+                  ),
+                ),
+              ],
             ],
-          ],
+          ),
         ),
-      ),
       ),
     );
   }
@@ -263,7 +288,7 @@ class _StaffActionsState extends ConsumerState<_StaffActions> with _ActionRunner
                 contentPadding: EdgeInsets.zero,
                 leading: Icon(s.id == t.assignedToId ? Icons.radio_button_checked : Icons.person_outline),
                 title: Text(s.fullName),
-                subtitle: Text('${s.employeeNumber} • ${Fmt.role(s.role)}'),
+                subtitle: Text('${s.employeeNumber} â€¢ ${Fmt.role(s.role)}'),
               ),
             ),
         ],
@@ -283,7 +308,7 @@ class _StaffActionsState extends ConsumerState<_StaffActions> with _ActionRunner
     final next = AppConstants.staffTransitions[t.status] ?? const [];
     final mine = t.assignedToId == widget.user.id;
     return Card(
-      margin: EdgeInsets.zero,
+      elevation: 0,
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
@@ -315,7 +340,7 @@ class _StaffActionsState extends ConsumerState<_StaffActions> with _ActionRunner
                   OutlinedButton.icon(
                     onPressed: busy ? null : _assign,
                     icon: const Icon(Icons.person_add_alt),
-                    label: const Text('Assign to…'),
+                    label: const Text('Assign toâ€¦'),
                   ),
                 for (final s in next)
                   OutlinedButton.icon(
@@ -406,15 +431,15 @@ class _ReporterActionsState extends ConsumerState<_ReporterActions> with _Action
     }
 
     return Card(
-      margin: EdgeInsets.zero,
-      color: Colors.blue[50],
+      elevation: 0,
+      color: AppTheme.primary.withValues(alpha: 0.05),
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Row(children: [
-              Icon(Icons.info_outline, color: Colors.blue[800]),
+              Icon(Icons.info_outline, color: AppTheme.primary),
               const SizedBox(width: 8),
               Expanded(child: Text(message)),
             ]),
@@ -430,16 +455,17 @@ class _ReporterActionsState extends ConsumerState<_ReporterActions> with _Action
 }
 
 // ---------------------------------------------------------------------------
-class _CommentBox extends ConsumerStatefulWidget {
-  const _CommentBox({required this.ticket, required this.user});
-  final TicketModel ticket;
+/// Comments tab: comment box + timeline.
+class _CommentsTab extends ConsumerStatefulWidget {
+  const _CommentsTab({required this.detail, required this.user});
+  final TicketDetail detail;
   final UserModel user;
 
   @override
-  ConsumerState<_CommentBox> createState() => _CommentBoxState();
+  ConsumerState<_CommentsTab> createState() => _CommentsTabState();
 }
 
-class _CommentBoxState extends ConsumerState<_CommentBox> with _ActionRunner {
+class _CommentsTabState extends ConsumerState<_CommentsTab> with _ActionRunner {
   final _text = TextEditingController();
   bool _internal = false;
 
@@ -456,7 +482,7 @@ class _CommentBoxState extends ConsumerState<_CommentBox> with _ActionRunner {
       return;
     }
     await run(() async {
-      await ref.read(ticketActionsProvider).addComment(widget.ticket.id, content, isInternal: _internal);
+      await ref.read(ticketActionsProvider).addComment(widget.detail.ticket.id, content, isInternal: _internal);
       _text.clear();
       setState(() => _internal = false);
     }, _internal ? 'Internal note added' : 'Comment posted');
@@ -465,84 +491,73 @@ class _CommentBoxState extends ConsumerState<_CommentBox> with _ActionRunner {
   @override
   Widget build(BuildContext context) {
     final staff = widget.user.isStaff;
-    return Card(
-      margin: EdgeInsets.zero,
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Text('Add a comment', style: Theme.of(context).textTheme.titleMedium),
-            const SizedBox(height: 12),
-            TextField(
-              key: const Key('comment_field'),
-              controller: _text,
-              enabled: !busy,
-              minLines: 3,
-              maxLines: 8,
-              maxLength: 5000,
-              decoration: InputDecoration(
-                hintText: staff
-                    ? 'Reply to the employee, or add a technical note'
-                    : 'Add details or reply to IT Support',
-              ),
-            ),
-            if (staff)
-              CheckboxListTile(
-                contentPadding: EdgeInsets.zero,
-                controlAffinity: ListTileControlAffinity.leading,
-                value: _internal,
-                onChanged: busy ? null : (v) => setState(() => _internal = v ?? false),
-                title: const Text('Internal work note'),
-                subtitle: const Text('Only visible to IT Support and Administrators; no email is sent'),
-              ),
-            const SizedBox(height: 8),
-            Align(
-              alignment: Alignment.centerRight,
-              child: FilledButton.icon(
-                key: const Key('post_comment_button'),
-                onPressed: busy ? null : _post,
-                icon: busy
-                    ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2))
-                    : const Icon(Icons.send),
-                label: Text(_internal ? 'Add note' : 'Post comment'),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _Timeline extends StatelessWidget {
-  const _Timeline({required this.detail});
-  final TicketDetail detail;
-
-  @override
-  Widget build(BuildContext context) {
     final events = <(DateTime, Widget)>[
-      for (final a in detail.activities) (a.createdAt, _ActivityItem(a)),
-      for (final c in detail.comments) (c.createdAt, _CommentItem(c)),
+      for (final a in widget.detail.activities) (a.createdAt, _ActivityItem(a)),
+      for (final c in widget.detail.comments) (c.createdAt, _CommentItem(c)),
     ]..sort((x, y) => y.$1.compareTo(x.$1)); // newest first
 
-    return Card(
-      margin: EdgeInsets.zero,
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Text('History & comments', style: Theme.of(context).textTheme.titleMedium),
-            const SizedBox(height: 8),
-            if (events.isEmpty)
-              const Padding(
-                padding: EdgeInsets.all(16),
-                child: Text('No activity yet.'),
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Card(
+            elevation: 0,
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Text('Add a comment', style: Theme.of(context).textTheme.titleMedium),
+                  const SizedBox(height: 12),
+                  TextField(
+                    key: const Key('comment_field'),
+                    controller: _text,
+                    enabled: !busy,
+                    minLines: 3,
+                    maxLines: 8,
+                    maxLength: 5000,
+                    decoration: InputDecoration(
+                      hintText: staff
+                          ? 'Reply to the employee, or add a technical note'
+                          : 'Add details or reply to IT Support',
+                    ),
+                  ),
+                  if (staff)
+                    CheckboxListTile(
+                      contentPadding: EdgeInsets.zero,
+                      controlAffinity: ListTileControlAffinity.leading,
+                      value: _internal,
+                      onChanged: busy ? null : (v) => setState(() => _internal = v ?? false),
+                      title: const Text('Internal work note'),
+                      subtitle: const Text('Only visible to IT Support and Administrators; no email is sent'),
+                    ),
+                  const SizedBox(height: 8),
+                  Align(
+                    alignment: Alignment.centerRight,
+                    child: FilledButton.icon(
+                      key: const Key('post_comment_button'),
+                      onPressed: busy ? null : _post,
+                      icon: busy
+                          ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2))
+                          : const Icon(Icons.send),
+                      label: Text(_internal ? 'Add note' : 'Post comment'),
+                    ),
+                  ),
+                ],
               ),
-            for (final e in events) e.$2,
-          ],
-        ),
+            ),
+          ),
+          const SizedBox(height: 16),
+          Text('History & comments', style: Theme.of(context).textTheme.titleMedium),
+          const SizedBox(height: 8),
+          if (events.isEmpty)
+            const Padding(
+              padding: EdgeInsets.all(16),
+              child: Text('No activity yet.'),
+            ),
+          for (final e in events) e.$2,
+        ],
       ),
     );
   }
@@ -564,7 +579,7 @@ class _ActivityItem extends StatelessWidget {
             if (a.note != null && a.note!.isNotEmpty)
               Padding(
                 padding: const EdgeInsets.only(top: 4),
-                child: Text('“${a.note}”', style: const TextStyle(fontStyle: FontStyle.italic)),
+                child: Text('â€œ${a.note}â€', style: const TextStyle(fontStyle: FontStyle.italic)),
               ),
           ],
         ),
@@ -580,9 +595,9 @@ class _CommentItem extends StatelessWidget {
         margin: const EdgeInsets.symmetric(vertical: 6),
         padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
-          color: c.isInternal ? Colors.amber[50] : Colors.grey[100],
+          color: c.isInternal ? const Color(0xFFFEF3C7) : Colors.grey[100],
           borderRadius: BorderRadius.circular(8),
-          border: c.isInternal ? Border.all(color: Colors.amber[300]!) : null,
+          border: c.isInternal ? Border.all(color: const Color(0xFFFDE047)) : null,
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -593,11 +608,11 @@ class _CommentItem extends StatelessWidget {
               children: [
                 const Icon(Icons.chat_bubble_outline, size: 16),
                 Text(c.authorName ?? 'User', style: const TextStyle(fontWeight: FontWeight.w600)),
-                Text(Fmt.dateTime(c.createdAt), style: TextStyle(color: Colors.grey[600], fontSize: 12)),
+                Text(Fmt.dateTime(c.createdAt), style: TextStyle(color: AppTheme.muted, fontSize: 12)),
                 if (c.isInternal)
                   Text('INTERNAL NOTE',
                       style: TextStyle(
-                          color: Colors.amber[900], fontSize: 11, fontWeight: FontWeight.bold)),
+                          color: const Color(0xFFB45309), fontSize: 11, fontWeight: FontWeight.bold)),
               ],
             ),
             const SizedBox(height: 6),
@@ -606,3 +621,71 @@ class _CommentItem extends StatelessWidget {
         ),
       );
 }
+
+// ---------------------------------------------------------------------------
+/// Attachments tab placeholder.
+class _AttachmentsTab extends StatelessWidget {
+  const _AttachmentsTab({required this.ticket});
+  final TicketModel ticket;
+
+  @override
+  Widget build(BuildContext context) {
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(16),
+      child: Card(
+        elevation: 0,
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text('Attachments', style: Theme.of(context).textTheme.titleMedium),
+              const SizedBox(height: 16),
+              const Center(
+                child: Text('No attachments yet.'),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+IconData activityIcon(String action) => switch (action) {
+      ActivityModel.actionCreated => Icons.add_circle_outline,
+      ActivityModel.actionAssigned => Icons.person_add_alt,
+      ActivityModel.actionResolved => Icons.check_circle_outline,
+      ActivityModel.actionReopened => Icons.replay,
+      ActivityModel.actionClosed => Icons.lock_outline,
+      ActivityModel.actionPriorityChanged => Icons.flag_outlined,
+      ActivityModel.actionCategoryChanged => Icons.category_outlined,
+      _ => Icons.sync_alt,
+    };
+
+Color activityColor(String action) => switch (action) {
+      ActivityModel.actionCreated => AppTheme.primary,
+      ActivityModel.actionAssigned => const Color(0xFF7C3AED),
+      ActivityModel.actionResolved => const Color(0xFF10B981),
+      ActivityModel.actionReopened => const Color(0xFFEF4444),
+      ActivityModel.actionClosed => const Color(0xFF6B7280),
+      _ => const Color(0xFFF59E0B),
+    };
+
+String describeActivity(ActivityModel a) {
+  final who = a.actorName ?? 'System';
+  return switch (a.action) {
+    ActivityModel.actionCreated => 'created by $who',
+    ActivityModel.actionAssigned =>
+      a.newValue == null ? 'unassigned by $who' : 'assigned by $who',
+    ActivityModel.actionResolved => 'resolved by $who',
+    ActivityModel.actionReopened => 'reopened by $who',
+    ActivityModel.actionClosed => 'closed by $who',
+    ActivityModel.actionPriorityChanged =>
+      'priority ${Fmt.priority(a.oldValue)} â†’ ${Fmt.priority(a.newValue)} by $who',
+    ActivityModel.actionCategoryChanged =>
+      'category ${a.oldValue} â†’ ${a.newValue} by $who',
+    _ => 'status ${Fmt.status(a.oldValue)} â†’ ${Fmt.status(a.newValue)} by $who',
+  };
+}
+
