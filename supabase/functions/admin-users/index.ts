@@ -6,11 +6,11 @@
 //   { action: "create", employee_number, full_name, email, department, role, phone_number?, password }
 //   { action: "update", user_id, full_name?, email?, department?, role?, phone_number?, is_active? }
 //   { action: "reset_password", user_id, password }
-import { bearerToken, corsHeaders, json } from "../_shared/http.ts";
+import { bearerToken, corsHeaders, json, readJsonObject, withErrorBoundary } from "../_shared/http.ts";
 import { adminClient, verifyCaller } from "../_shared/supabase.ts";
 import { validateCreate, validateResetPassword, validateUpdate } from "./validation.ts";
 
-Deno.serve(async (req) => {
+Deno.serve(withErrorBoundary("admin-users", async (req) => {
   const headers = corsHeaders(req.headers.get("origin"), Deno.env.get("ALLOWED_ORIGINS"));
   if (req.method === "OPTIONS") return new Response("ok", { headers });
   if (req.method !== "POST") return json({ error: "Method not allowed" }, 405, headers);
@@ -20,8 +20,8 @@ Deno.serve(async (req) => {
   if (!caller) return json({ error: "Not authenticated" }, 401, headers);
   if (caller.role !== "administrator") return json({ error: "Administrator access required" }, 403, headers);
 
-  let body: Record<string, unknown>;
-  try { body = await req.json(); } catch { return json({ error: "Invalid JSON body" }, 400, headers); }
+  const body = await readJsonObject(req);
+  if (!body) return json({ error: "Invalid JSON body" }, 400, headers);
 
   try {
     switch (body.action) {
@@ -48,8 +48,12 @@ Deno.serve(async (req) => {
           email: d.email, department: d.department, role: d.role, phone_number: d.phone_number,
         });
         if (pErr) {
-          await admin.auth.admin.deleteUser(created.user.id); // roll back the auth user
-          return json({ error: "Could not create profile: " + pErr.message }, 400, headers);
+          // Roll back the auth user so a retry is possible; log if that fails too.
+          const { error: delErr } = await admin.auth.admin.deleteUser(created.user.id);
+          if (delErr) console.error("admin-users rollback failed; orphan auth user", created.user.id, delErr.message);
+          const dup = pErr.code === "23505";
+          return json({ error: dup ? "Employee number or email already exists" : "Could not create profile: " + pErr.message },
+            dup ? 409 : 400, headers);
         }
         return json({ id: created.user.id }, 201, headers);
       }
@@ -106,4 +110,4 @@ Deno.serve(async (req) => {
     console.error("admin-users error", e instanceof Error ? e.message : e);
     return json({ error: "Internal error" }, 500, headers);
   }
-});
+}));

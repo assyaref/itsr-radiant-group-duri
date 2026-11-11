@@ -1,5 +1,5 @@
 import { assert, assertEquals } from "jsr:@std/assert@1.0.13";
-import { clientIp, corsHeaders, escapeHtml, normalizeEmployeeNumber } from "../_shared/http.ts";
+import { clientIp, corsHeaders, escapeHtml, isValidHost, normalizeEmployeeNumber, parsePort, readJsonObject, withErrorBoundary } from "../_shared/http.ts";
 import { buildEmail, type EventContext, type Settings } from "../_shared/notification_rules.ts";
 import { validateCreate, validateResetPassword, validateUpdate } from "../admin-users/validation.ts";
 
@@ -137,4 +137,45 @@ Deno.test("send errors: description is short and structured", () => {
   assertEquals(describeSendError({ code: "EENVELOPE", responseCode: 550, message: "rejected" }), "EENVELOPE 550 rejected");
   assert(describeSendError({ message: "x".repeat(2000) }).length <= 500);
   assertEquals(describeSendError("plain"), "plain");
+});
+
+const post = (body: string) => new Request("https://x.test/f", { method: "POST", body });
+
+Deno.test("readJsonObject: only plain JSON objects are accepted", async () => {
+  assertEquals(await readJsonObject(post('{"a":1}')), { a: 1 });
+  assertEquals(await readJsonObject(post("null")), null);
+  assertEquals(await readJsonObject(post("[]")), null);
+  assertEquals(await readJsonObject(post('"x"')), null);
+  assertEquals(await readJsonObject(post("{bad")), null);
+  assertEquals(await readJsonObject(post("")), null);
+  assertEquals(await readJsonObject(post(JSON.stringify({ a: "x".repeat(100) })), 50), null);
+});
+
+Deno.test("parsePort: strict integer 1-65535", () => {
+  assertEquals(parsePort(587), 587);
+  assertEquals(parsePort("465"), 465);
+  assertEquals(parsePort(0), null);
+  assertEquals(parsePort(70000), null);
+  assertEquals(parsePort(25.5), null);
+  assertEquals(parsePort("abc"), null);
+  assertEquals(parsePort(null), null);
+});
+
+Deno.test("isValidHost rejects schemes, paths and spaces", () => {
+  assert(isValidHost("smtp.gmail.com"));
+  assert(isValidHost("10.0.0.5"));
+  assert(!isValidHost("https://smtp.gmail.com"));
+  assert(!isValidHost("smtp.gmail.com/x"));
+  assert(!isValidHost("smtp gmail.com"));
+  assert(!isValidHost(""));
+});
+
+Deno.test("withErrorBoundary turns exceptions into JSON 500 with CORS", async () => {
+  Deno.env.set("ALLOWED_ORIGINS", "https://app.test");
+  const h = withErrorBoundary("t", () => { throw new Error("boom"); });
+  const res = await h(new Request("https://x.test/f", { method: "POST", headers: { origin: "https://app.test" } }));
+  assertEquals(res.status, 500);
+  assertEquals(res.headers.get("Access-Control-Allow-Origin"), "https://app.test");
+  const body = await res.json();
+  assert(!JSON.stringify(body).includes("boom"));
 });

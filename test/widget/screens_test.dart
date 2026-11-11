@@ -14,11 +14,18 @@ import '../support/fakes.dart';
 const phone = Size(390, 844);
 const desktop = Size(1440, 900);
 
+Future<void> openCompanyLogin(WidgetTester t) async {
+  await t.ensureVisible(find.byKey(const Key('company_login_entry')));
+  await t.tap(find.byKey(const Key('company_login_entry')));
+  await t.pumpAndSettle();
+}
+
 void main() {
   group('Login', () {
     testWidgets('validates empty form without calling the server', (t) async {
       final auth = FakeAuthRepository();
       await pumpApp(t, const LoginScreen(), auth: auth, size: phone);
+      await openCompanyLogin(t);
       await t.tap(find.byKey(const Key('login_button')));
       await t.pump();
       expect(find.text('Please enter your employee number'), findsOneWidget);
@@ -29,6 +36,7 @@ void main() {
     testWidgets('invalid credentials show a generic, safe message', (t) async {
       final auth = FakeAuthRepository(signInError: const InvalidCredentials());
       await pumpApp(t, const LoginScreen(), auth: auth, size: phone);
+      await openCompanyLogin(t);
       await t.enterText(find.byKey(const Key('employee_number_field')), 'emp001');
       await t.enterText(find.byKey(const Key('password_field')), 'wrongpass');
       await t.tap(find.byKey(const Key('login_button')));
@@ -41,11 +49,45 @@ void main() {
     testWidgets('rate limiting message is shown', (t) async {
       final auth = FakeAuthRepository(signInError: const RateLimited());
       await pumpApp(t, const LoginScreen(), auth: auth, size: desktop);
+      await openCompanyLogin(t);
       await t.enterText(find.byKey(const Key('employee_number_field')), 'EMP001');
       await t.enterText(find.byKey(const Key('password_field')), 'whatever1');
       await t.tap(find.byKey(const Key('login_button')));
       await t.pumpAndSettle();
       expect(find.textContaining('15 minutes'), findsOneWidget);
+    });
+
+    testWidgets('welcome page matches the design: both sign-in options', (t) async {
+      await pumpApp(t, const LoginScreen(), auth: FakeAuthRepository(), size: phone);
+      expect(find.text('IT Support'), findsOneWidget);
+      expect(find.text('Cabang Duri'), findsOneWidget);
+      expect(find.textContaining('Solusi Cepat'), findsOneWidget);
+      expect(find.byKey(const Key('email_login_entry')), findsOneWidget);
+      expect(find.text('atau'), findsOneWidget);
+      expect(find.byKey(const Key('company_login_entry')), findsOneWidget);
+      expect(t.takeException(), isNull);
+    });
+
+    testWidgets('email sign-in sends the lower-cased email', (t) async {
+      final auth = FakeAuthRepository(signInError: const InvalidCredentials());
+      await pumpApp(t, const LoginScreen(), auth: auth, size: phone);
+      await t.tap(find.byKey(const Key('email_login_entry')));
+      await t.pumpAndSettle();
+      await t.enterText(find.byKey(const Key('email_field')), 'Andi@Radiant.co.id');
+      await t.enterText(find.byKey(const Key('password_field')), 'secret12');
+      await t.ensureVisible(find.byKey(const Key('login_button')));
+      await t.tap(find.byKey(const Key('login_button')));
+      await t.pumpAndSettle();
+      expect(auth.calls, ['signIn:andi@radiant.co.id']);
+      expect(find.byKey(const Key('login_error')), findsOneWidget);
+    });
+
+    testWidgets('back returns to the welcome page', (t) async {
+      await pumpApp(t, const LoginScreen(), auth: FakeAuthRepository(), size: phone);
+      await openCompanyLogin(t);
+      await t.tap(find.byKey(const Key('login_back_button')));
+      await t.pumpAndSettle();
+      expect(find.byKey(const Key('company_login_entry')), findsOneWidget);
     });
   });
 

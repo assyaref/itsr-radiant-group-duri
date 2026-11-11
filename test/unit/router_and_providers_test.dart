@@ -23,6 +23,12 @@ void main() {
       expect(go(const AsyncLoading(), '/splash'), isNull);
     });
 
+    test('profile load failure stays on splash (retry / sign out), not login', () {
+      final err = AsyncError<UserModel?>(Exception('offline'), StackTrace.empty);
+      expect(go(err, '/tickets/abc'), '/splash?from=%2Ftickets%2Fabc');
+      expect(go(err, '/splash'), isNull);
+    });
+
     test('signed-out users are sent to login (deep link kept)', () {
       expect(go(out, '/dashboard'), '/login');
       expect(go(out, '/tickets/abc'), '/login?from=%2Ftickets%2Fabc');

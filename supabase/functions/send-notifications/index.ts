@@ -14,7 +14,7 @@
 //
 // No hard-coded smtp.gmail.com. No GMAIL_USER / GMAIL_APP_PASSWORD dependency.
 import nodemailer from "npm:nodemailer@6.9.16";
-import { bearerToken, corsHeaders, json } from "../_shared/http.ts";
+import { bearerToken, corsHeaders, json, SMTP_TIMEOUTS, withErrorBoundary } from "../_shared/http.ts";
 import { adminClient, verifyCaller } from "../_shared/supabase.ts";
 import { buildEmail, type EventContext, type Person, type Settings } from "../_shared/notification_rules.ts";
 import { classifySendError, describeSendError, PermanentError } from "../_shared/smtp_errors.ts";
@@ -27,10 +27,11 @@ function smtpTransport(host: string | null, port: number | null, secure: boolean
   return nodemailer.createTransport({
     host, port, secure: secure ?? false,
     auth: { user: username, pass: password },
+    ...SMTP_TIMEOUTS,
   });
 }
 
-Deno.serve(async (req) => {
+Deno.serve(withErrorBoundary("send-notifications", async (req) => {
   const headers = corsHeaders(req.headers.get("origin"), Deno.env.get("ALLOWED_ORIGINS"));
   if (req.method === "OPTIONS") return new Response("ok", { headers });
   if (req.method !== "POST") return json({ error: "Method not allowed" }, 405, headers);
@@ -43,9 +44,14 @@ Deno.serve(async (req) => {
   }
 
   // Read SMTP configuration from app_settings (non-secret) + Vault (password).
-  const { data: settingsRow } = await admin.from("app_settings")
+  const { data: settingsRow, error: settingsErr } = await admin.from("app_settings")
     .select("smtp_host, smtp_port, smtp_secure, smtp_username, smtp_sender_name, smtp_sender_email, it_support_group_email, manager_email, app_base_url, notifications_enabled")
     .eq("id", true).single();
+
+  if (settingsErr || !settingsRow) {
+    console.error("send-notifications: cannot read app_settings", settingsErr?.message);
+    return json({ error: "Could not read settings; nothing was claimed" }, 503, headers);
+  }
 
   const { data: pw } = await admin.rpc("get_smtp_password");
   const smtpPassword = typeof pw === "string" ? pw : null;
@@ -63,6 +69,10 @@ Deno.serve(async (req) => {
     return json({ error: "Email is not configured (SMTP settings incomplete)" }, 503, headers);
   }
 
+  const senderAddress = settingsRow.smtp_sender_email ?? settingsRow.smtp_username ?? "";
+  if (!senderAddress.includes("@")) {
+    return json({ error: "Email is not configured (sender address missing)" }, 503, headers);
+  }
   const from = `"${settingsRow?.smtp_sender_name ?? Deno.env.get("MAIL_FROM_NAME") ?? "ITSR Radiant Group Duri"}" <${settingsRow?.smtp_sender_email ?? settingsRow?.smtp_username ?? ""}>`;
 
   // Check the SMTP login BEFORE claiming anything: a wrong/revoked App Password
@@ -99,8 +109,16 @@ Deno.serve(async (req) => {
   const { data: batch, error: claimErr } = await admin.rpc("claim_notifications", { p_limit: 20 });
   if (claimErr) return json({ error: "Could not claim notifications" }, 500, headers);
 
-  const results = { sent: 0, skipped: 0, failed: 0, permanent: 0 };
+  // Stay well inside the Edge Function wall-clock limit: rows not reached are
+  // returned as "failed" (retryable) instead of sitting locked for 10 minutes.
+  const deadline = Date.now() + 100_000;
+  const results = { sent: 0, skipped: 0, failed: 0, permanent: 0, deferred: 0 };
   for (const row of (batch ?? []) as Array<{ id: string; ticket_id: string; event_type: EventContext["event"]; payload: Record<string, unknown> }>) {
+    if (Date.now() > deadline) {
+      await rpcWithRetry("complete_notification", { p_id: row.id, p_status: "failed", p_error: "deferred: time budget exhausted" });
+      results.deferred++;
+      continue;
+    }
     try {
       const { data: t, error: ticketErr } = await admin.from("tickets")
         .select(`id, ticket_number, subject, description, category, priority, status, resolution,
@@ -150,5 +168,6 @@ Deno.serve(async (req) => {
       }
     }
   }
+  transport.close();
   return json(results, 200, headers);
-});
+}));

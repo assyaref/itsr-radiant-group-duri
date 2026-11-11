@@ -1,4 +1,4 @@
-// Login Edge Function: employee number + password -> Supabase Auth session.
+// Login Edge Function: (employee number | email) + password -> Supabase Auth session.
 //  * Employee number -> email lookup happens server-side (no client enumeration).
 //  * Uniform error message + padded response time (no account-existence oracle).
 //  * Rate limit: 5 failures / 15 min per employee number, 30 failures / 15 min per IP
@@ -6,13 +6,13 @@
 //  * Deactivated profiles cannot log in.
 //  * Service-role key stays in this runtime; the browser only ever receives the
 //    user's own session tokens.
-import { clientIp, corsHeaders, json, normalizeEmployeeNumber, padResponseTime } from "../_shared/http.ts";
+import { clientIp, corsHeaders, json, EMAIL_RE, normalizeEmployeeNumber, padResponseTime, readJsonObject, withErrorBoundary } from "../_shared/http.ts";
 import { adminClient, publicClient } from "../_shared/supabase.ts";
 
 const GENERIC = "Authentication failed. Please check your credentials.";
 const LIMITED = "Too many login attempts. Please try again in 15 minutes.";
 
-Deno.serve(async (req) => {
+Deno.serve(withErrorBoundary("login", async (req) => {
   const headers = corsHeaders(req.headers.get("origin"), Deno.env.get("ALLOWED_ORIGINS"));
   if (req.method === "OPTIONS") return new Response("ok", { headers });
   if (req.method !== "POST") return json({ error: "Method not allowed" }, 405, headers);
@@ -23,31 +23,38 @@ Deno.serve(async (req) => {
     return json({ error: message }, status, headers);
   };
 
-  let body: { employeeNumber?: unknown; password?: unknown };
-  try { body = await req.json(); } catch { return fail(400, GENERIC); }
+  const body = await readJsonObject(req);
+  if (!body) return fail(400, GENERIC);
 
-  const employeeNumber = normalizeEmployeeNumber(body.employeeNumber);
+  // Sign in with EITHER an employee number ("Akun Perusahaan") or an email.
+  const email = typeof body.email === "string" ? body.email.trim().toLowerCase() : "";
+  const byEmail = email.length > 0;
+  const employeeNumber = byEmail ? null : normalizeEmployeeNumber(body.employeeNumber);
   const password = typeof body.password === "string" ? body.password : "";
-  if (!employeeNumber || password.length < 6 || password.length > 128) return fail(401, GENERIC);
+  if (byEmail ? (!EMAIL_RE.test(email) || email.length > 254) : !employeeNumber) return fail(401, GENERIC);
+  if (password.length < 6 || password.length > 128) return fail(401, GENERIC);
 
   const ip = clientIp(req);
   try {
     const admin = adminClient();
 
+    // Profile lookup first (the uniform, padded reply hides the result), so
+    // email and employee-number attempts share ONE per-account rate limit.
+    const lookup = admin.from("profiles").select("id, email, is_active, employee_number");
+    const { data: profile, error: lookupErr } = byEmail
+      ? await lookup.eq("email", email).maybeSingle()
+      : await lookup.eq("employee_number", employeeNumber).maybeSingle();
+    if (lookupErr) throw new Error(`profile lookup failed: ${lookupErr.message}`);
+    const rateKey: string = profile?.employee_number ?? employeeNumber ?? `@${email}`.slice(0, 40);
+
     const { data: limited, error: rlError } = await admin.rpc("login_is_rate_limited", {
-      p_ip_address: ip, p_employee_number: employeeNumber,
+      p_ip_address: ip, p_employee_number: rateKey,
     });
     if (rlError || limited === true) return fail(429, LIMITED); // fail closed
 
-    const { data: profile } = await admin
-      .from("profiles")
-      .select("id, email, is_active")
-      .eq("employee_number", employeeNumber)
-      .maybeSingle();
-
     if (!profile || !profile.is_active) {
       await admin.rpc("record_login_attempt", {
-        p_ip_address: ip, p_employee_number: employeeNumber, p_user_id: null, p_success: false,
+        p_ip_address: ip, p_employee_number: rateKey, p_user_id: null, p_success: false,
       });
       return fail(401, GENERIC);
     }
@@ -57,13 +64,13 @@ Deno.serve(async (req) => {
     });
     if (authError || !auth.session) {
       await admin.rpc("record_login_attempt", {
-        p_ip_address: ip, p_employee_number: employeeNumber, p_user_id: profile.id, p_success: false,
+        p_ip_address: ip, p_employee_number: rateKey, p_user_id: profile.id, p_success: false,
       });
       return fail(401, GENERIC);
     }
 
     await admin.rpc("record_login_attempt", {
-      p_ip_address: ip, p_employee_number: employeeNumber, p_user_id: profile.id, p_success: true,
+      p_ip_address: ip, p_employee_number: rateKey, p_user_id: profile.id, p_success: true,
     });
 
     await padResponseTime(start);
@@ -73,7 +80,9 @@ Deno.serve(async (req) => {
       expires_in: auth.session.expires_in,
     }, 200, headers);
   } catch (e) {
+    // Infrastructure failure (DB/Auth unreachable), not a wrong password:
+    // answer 503 so the app says "try again later" instead of "wrong password".
     console.error("login error", e instanceof Error ? e.message : e);
-    return fail(401, GENERIC);
+    return fail(503, "Login is temporarily unavailable. Please try again later.");
   }
-});
+}));

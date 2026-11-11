@@ -15,7 +15,7 @@
 //   send_test  Send a test email. Requires explicit confirmation + full SMTP config.
 //   status     Return SMTP configuration status (no password, no secrets).
 import nodemailer from "npm:nodemailer@6.9.16";
-import { bearerToken, corsHeaders, json } from "../_shared/http.ts";
+import { bearerToken, corsHeaders, isValidHost, json, parsePort, readJsonObject, SMTP_TIMEOUTS, withErrorBoundary } from "../_shared/http.ts";
 import { adminClient, verifyCaller, type CallerProfile } from "../_shared/supabase.ts";
 
 const ADMIN_ROLE = "administrator";
@@ -40,10 +40,11 @@ function buildTransport(cfg: SmtpConfig) {
     port: cfg.port,
     secure: cfg.secure ?? false,
     auth: cfg.username && cfg.password ? { user: cfg.username, pass: cfg.password } : undefined,
+    ...SMTP_TIMEOUTS,
   });
 }
 
-Deno.serve(async (req) => {
+Deno.serve(withErrorBoundary("smtp-config", async (req) => {
   const headers = corsHeaders(req.headers.get("origin"), Deno.env.get("ALLOWED_ORIGINS"));
   if (req.method === "OPTIONS") return new Response("ok", { headers });
   if (req.method !== "POST") return json({ error: "Method not allowed" }, 405, headers);
@@ -55,12 +56,8 @@ Deno.serve(async (req) => {
     return json({ error: "Administrator access required" }, 403, headers);
   }
 
-  let body: { action?: string; [k: string]: unknown };
-  try {
-    body = (await req.json()) as { action?: string; [k: string]: unknown };
-  } catch {
-    return json({ error: "Invalid JSON body" }, 400, headers);
-  }
+  const body = await readJsonObject(req);
+  if (!body) return json({ error: "Invalid JSON body" }, 400, headers);
 
   const action = body.action;
   if (!action || typeof action !== "string") {
@@ -111,7 +108,7 @@ Deno.serve(async (req) => {
   if (action === "save") {
     const cfg: SmtpConfig = {
       host: typeof body.host === "string" ? body.host.trim() : undefined,
-      port: typeof body.port === "number" ? body.port : undefined,
+      port: parsePort(body.port) ?? undefined,
       secure: typeof body.secure === "boolean" ? body.secure : undefined,
       username: typeof body.username === "string" ? body.username.trim() : undefined,
       password: typeof body.password === "string" ? body.password : undefined,
@@ -121,14 +118,18 @@ Deno.serve(async (req) => {
 
     const errors: string[] = [];
     if (!cfg.host) errors.push("SMTP host is required");
-    if (!cfg.port) errors.push("SMTP port is required");
+    else if (!isValidHost(cfg.host)) errors.push("SMTP host is not valid");
+    if (!cfg.port) errors.push("SMTP port must be a number between 1 and 65535");
     if (cfg.secure === undefined) errors.push("Encryption (SSL/TLS or STARTTLS) is required");
     if (!cfg.username) errors.push("SMTP username is required");
     if (!cfg.sender_email) errors.push("Sender email is required");
     if (cfg.sender_email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(cfg.sender_email)) {
       errors.push("Sender email is not valid");
     }
-    if (cfg.password === undefined) errors.push("SMTP password is required");
+    // Validate the password BEFORE writing anything, so a rejected save never
+    // leaves app_settings half-updated.
+    if (!cfg.password) errors.push("SMTP password is required");
+    else if (cfg.password.length > 512) errors.push("SMTP password is too long");
 
     if (errors.length > 0) {
       return json({ error: errors.join("; ") }, 400, headers);
@@ -179,7 +180,7 @@ Deno.serve(async (req) => {
   if (action === "test") {
     const cfg: SmtpConfig = {
       host: typeof body.host === "string" ? body.host.trim() : undefined,
-      port: typeof body.port === "number" ? body.port : undefined,
+      port: parsePort(body.port) ?? undefined,
       secure: typeof body.secure === "boolean" ? body.secure : undefined,
       username: typeof body.username === "string" ? body.username.trim() : undefined,
       password: typeof body.password === "string" ? body.password : undefined,
@@ -227,7 +228,7 @@ Deno.serve(async (req) => {
 
     const cfg: SmtpConfig = {
       host: typeof body.host === "string" ? body.host.trim() : undefined,
-      port: typeof body.port === "number" ? body.port : undefined,
+      port: parsePort(body.port) ?? undefined,
       secure: typeof body.secure === "boolean" ? body.secure : undefined,
       username: typeof body.username === "string" ? body.username.trim() : undefined,
       password: typeof body.password === "string" ? body.password : undefined,
@@ -275,5 +276,5 @@ Deno.serve(async (req) => {
     }
   }
 
-  return json({ error: `Unknown action: ${action}` }, 400, headers);
-});
+  return json({ error: `Unknown action: ${String(action).slice(0, 40)}` }, 400, headers);
+}));

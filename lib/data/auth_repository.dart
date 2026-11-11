@@ -10,6 +10,7 @@ abstract class AuthRepository {
   /// Emits the signed-in user id (or null) whenever the session changes.
   Stream<String?> userIdChanges();
   String? get currentUserId;
+  /// [employeeNumber] may also be an email address (contains '@').
   Future<void> signIn(String employeeNumber, String password);
   Future<void> signOut();
 
@@ -34,7 +35,11 @@ class SupabaseAuthRepository implements AuthRepository {
     try {
       response = await _client.functions.invoke(
         'login',
-        body: {'employeeNumber': employeeNumber, 'password': password},
+        // An identifier containing '@' is an email address ("Masuk dengan
+        // Email"); otherwise it is an employee number ("Akun Perusahaan").
+        body: employeeNumber.contains('@')
+            ? {'email': employeeNumber.trim().toLowerCase(), 'password': password}
+            : {'employeeNumber': employeeNumber, 'password': password},
       );
     } on FunctionException catch (e) {
       if (e.status == 429) throw const RateLimited();
