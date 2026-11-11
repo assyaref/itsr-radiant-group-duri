@@ -38,6 +38,9 @@ class SupabaseAuthRepository implements AuthRepository {
       );
     } on FunctionException catch (e) {
       if (e.status == 429) throw const RateLimited();
+      // 5xx / gateway problems are not a wrong password: say so, so users do
+      // not lock themselves out by retrying a correct password.
+      if (e.status >= 500) throw const ServiceUnavailable();
       throw const InvalidCredentials();
     }
     final data = response.data;
@@ -46,13 +49,29 @@ class SupabaseAuthRepository implements AuthRepository {
     }
     await _client.auth.setSession(
       data['refresh_token'] as String,
-      accessToken: data['access_token'] as String?,
+      accessToken: data['access_token'] is String ? data['access_token'] as String : null,
     );
     // A session alone is not enough: the profile must exist and be active.
-    final profile = await fetchCurrentProfile();
+    // If it cannot be loaded (network drop right after login), do not leave a
+    // half-signed-in session behind.
+    UserModel? profile;
+    try {
+      profile = await fetchCurrentProfile();
+    } catch (_) {
+      await _safeLocalSignOut();
+      rethrow;
+    }
     if (profile == null) {
-      await _client.auth.signOut();
+      await _safeLocalSignOut();
       throw const InvalidCredentials();
+    }
+  }
+
+  Future<void> _safeLocalSignOut() async {
+    try {
+      await _client.auth.signOut();
+    } catch (_) {
+      // The local session is removed before the server call; ignore offline errors.
     }
   }
 

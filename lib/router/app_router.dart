@@ -20,6 +20,8 @@ import '../widgets/common.dart';
 /// Pure redirect logic (unit-tested). Returns the location to go to, or null.
 ///
 /// * session still loading      -> /splash (remembering the target)
+/// * profile could not be loaded -> /splash, which shows the error with
+///   "Try again" / "Sign out" (instead of silently dropping to /login)
 /// * signed out                 -> /login  (remembering the target)
 /// * signed in on /login|splash -> target or /dashboard
 /// * staff-only / admin-only    -> /dashboard when the role does not allow it
@@ -33,7 +35,7 @@ String? appRedirect(AsyncValue<UserModel?> auth, Uri uri) {
     return '$target?from=${Uri.encodeComponent(uri.toString())}';
   }
 
-  if (auth.isLoading && !auth.hasValue) {
+  if (!auth.hasValue && (auth.isLoading || auth.hasError)) {
     return path == '/splash' ? null : withFrom('/splash');
   }
 
@@ -54,6 +56,34 @@ String? appRedirect(AsyncValue<UserModel?> auth, Uri uri) {
   return null;
 }
 
+/// Shown while the session/profile loads, and when loading it failed.
+class SplashScreen extends ConsumerWidget {
+  const SplashScreen({super.key});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final auth = ref.watch(currentUserProvider);
+    if (auth.hasError && !auth.hasValue && !auth.isLoading) {
+      return Scaffold(
+        body: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            ErrorView(
+              error: auth.error!,
+              onRetry: () => ref.read(authControllerProvider.notifier).retryProfile(),
+            ),
+            TextButton(
+              onPressed: () => ref.read(authControllerProvider.notifier).signOut(),
+              child: const Text('Sign out'),
+            ),
+          ],
+        ),
+      );
+    }
+    return const Scaffold(body: LoadingView(label: 'Loading…'));
+  }
+}
+
 final goRouterProvider = Provider<GoRouter>((ref) {
   final auth = ValueNotifier<AsyncValue<UserModel?>>(const AsyncLoading());
   ref.listen<AsyncValue<UserModel?>>(
@@ -70,7 +100,7 @@ final goRouterProvider = Provider<GoRouter>((ref) {
     routes: [
       GoRoute(
         path: '/splash',
-        builder: (_, _) => const Scaffold(body: LoadingView(label: 'Loading…')),
+        builder: (_, _) => const SplashScreen(),
       ),
       GoRoute(path: '/login', builder: (_, _) => const LoginScreen()),
       GoRoute(path: '/', redirect: (_, _) => '/dashboard'),

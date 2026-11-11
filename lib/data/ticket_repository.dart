@@ -178,10 +178,10 @@ class SupabaseTicketRepository implements TicketRepository {
   @override
   Future<TicketStats> fetchStats(String scope) async {
     final rows = await _client.rpc('ticket_stats', params: {'p_scope': scope});
-    final list = rows as List;
-    return list.isEmpty
-        ? const TicketStats()
-        : TicketStats.fromJson(Map<String, dynamic>.from(list.first as Map));
+    final Object? first = rows is List ? (rows.isEmpty ? null : rows.first) : rows;
+    return first is Map
+        ? TicketStats.fromJson(Map<String, dynamic>.from(first))
+        : const TicketStats();
   }
 
   @override
@@ -205,8 +205,10 @@ class SupabaseTicketRepository implements TicketRepository {
   @override
   Future<List<StaffMember>> fetchAssignableStaff() async {
     final rows = await _client.rpc('assignable_staff');
-    return (rows as List)
-        .map((r) => StaffMember.fromJson(Map<String, dynamic>.from(r as Map)))
+    if (rows is! List) return const [];
+    return rows
+        .whereType<Map>()
+        .map((r) => StaffMember.fromJson(Map<String, dynamic>.from(r)))
         .toList();
   }
 

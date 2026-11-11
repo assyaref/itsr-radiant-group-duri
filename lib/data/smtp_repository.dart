@@ -38,7 +38,13 @@ class SupabaseSmtpRepository implements SmtpRepository {
 
   Future<Map<String, dynamic>> _invoke(Map<String, dynamic> body) async {
     final response = await _client.functions.invoke(_function, body: body);
-    return response.data as Map<String, dynamic>;
+    final data = response.data;
+    if (data is Map) return Map<String, dynamic>.from(data);
+    // Unexpected body (empty, HTML error page from a proxy, ...).
+    throw FunctionException(
+      status: response.status,
+      details: const {'error': 'Unexpected response from the server. Please try again.'},
+    );
   }
 
   @override
