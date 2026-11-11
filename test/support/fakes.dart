@@ -97,6 +97,7 @@ class FakeTicketRepository implements TicketRepository {
   FakeTicketRepository({List<TicketModel>? tickets}) : tickets = tickets ?? [];
   List<TicketModel> tickets;
   final calls = <String>[];
+  String? lastDescription;
   final List<({TicketScope scope, TicketFilter filter, int offset})> fetches = [];
   /// When set, fetches with a non-empty search wait for it (simulates a slow request).
   Completer<void>? searchGate;
@@ -167,6 +168,7 @@ class FakeTicketRepository implements TicketRepository {
     required String priority,
   }) async {
     calls.add('create:$reporterId:$subject:$category:$priority');
+    lastDescription = description;
     if (failWith != null) throw failWith!;
     return 'new-id';
   }

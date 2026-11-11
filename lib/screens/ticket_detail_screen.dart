@@ -1,5 +1,6 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import '../constants/app_constants.dart';
 import '../constants/app_theme.dart';
@@ -39,7 +40,10 @@ class TicketDetailScreen extends ConsumerWidget {
             appBar: AppBar(
               leading: IconButton(
                 icon: const Icon(Icons.arrow_back),
-                onPressed: () => Navigator.of(context).pop(),
+                tooltip: 'Kembali',
+                // Opened from a shared link there is nothing to pop.
+                onPressed: () =>
+                    context.canPop() ? context.pop() : context.go('/tickets'),
               ),
               title: const Text('Detail Tiket'),
               centerTitle: false,
@@ -109,7 +113,7 @@ class _Header extends StatelessWidget {
     final meta = <(String, String)>[
       ('Category', t.category),
       ('Priority', Fmt.priority(t.priority)),
-      ('Reporter', t.reporterName ?? 'â€”'),
+      ('Reporter', t.reporterName ?? '—'),
       ('Assigned to', t.assigneeName ?? 'Unassigned'),
       ('Created', Fmt.dateTime(t.createdAt)),
       ('Last update', Fmt.dateTime(t.updatedAt)),
@@ -288,7 +292,7 @@ class _StaffActionsState extends ConsumerState<_StaffActions> with _ActionRunner
                 contentPadding: EdgeInsets.zero,
                 leading: Icon(s.id == t.assignedToId ? Icons.radio_button_checked : Icons.person_outline),
                 title: Text(s.fullName),
-                subtitle: Text('${s.employeeNumber} â€¢ ${Fmt.role(s.role)}'),
+                subtitle: Text('${s.employeeNumber} • ${Fmt.role(s.role)}'),
               ),
             ),
         ],
@@ -340,7 +344,7 @@ class _StaffActionsState extends ConsumerState<_StaffActions> with _ActionRunner
                   OutlinedButton.icon(
                     onPressed: busy ? null : _assign,
                     icon: const Icon(Icons.person_add_alt),
-                    label: const Text('Assign toâ€¦'),
+                    label: const Text('Assign to…'),
                   ),
                 for (final s in next)
                   OutlinedButton.icon(
@@ -579,7 +583,7 @@ class _ActivityItem extends StatelessWidget {
             if (a.note != null && a.note!.isNotEmpty)
               Padding(
                 padding: const EdgeInsets.only(top: 4),
-                child: Text('â€œ${a.note}â€', style: const TextStyle(fontStyle: FontStyle.italic)),
+                child: Text('“${a.note}”', style: const TextStyle(fontStyle: FontStyle.italic)),
               ),
           ],
         ),
@@ -682,10 +686,10 @@ String describeActivity(ActivityModel a) {
     ActivityModel.actionReopened => 'reopened by $who',
     ActivityModel.actionClosed => 'closed by $who',
     ActivityModel.actionPriorityChanged =>
-      'priority ${Fmt.priority(a.oldValue)} â†’ ${Fmt.priority(a.newValue)} by $who',
+      'priority ${Fmt.priority(a.oldValue)} → ${Fmt.priority(a.newValue)} by $who',
     ActivityModel.actionCategoryChanged =>
-      'category ${a.oldValue} â†’ ${a.newValue} by $who',
-    _ => 'status ${Fmt.status(a.oldValue)} â†’ ${Fmt.status(a.newValue)} by $who',
+      'category ${a.oldValue} → ${a.newValue} by $who',
+    _ => 'status ${Fmt.status(a.oldValue)} → ${Fmt.status(a.newValue)} by $who',
   };
 }
 

@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
@@ -111,9 +111,13 @@ class DashboardScreen extends ConsumerWidget {
                     ),
                   ),
                   const SizedBox(width: 12),
-                  FilledButton(
+                  // Round "+" button as in the design; fits a 320px phone.
+                  IconButton.filled(
+                    key: const Key('dashboard_create_ticket'),
+                    tooltip: 'Buat Tiket',
                     onPressed: () => context.go('/tickets/new'),
-                    child: const Text('Buat Tiket'),
+                    iconSize: 28,
+                    icon: const Icon(Icons.add),
                   ),
                 ],
               ),
@@ -155,7 +159,7 @@ class DashboardScreen extends ConsumerWidget {
                       color: AppTheme.getStatusColor('in_progress'),
                       onTap: () => context.go('/tickets')),
                   _StatCard(
-                      label: 'Open',
+                      label: 'Menunggu',
                       value: s.open,
                       icon: Icons.mark_email_unread_outlined,
                       color: AppTheme.getStatusColor('open'),
@@ -381,7 +385,7 @@ class _RecentActivity extends ConsumerWidget {
                   [
                     if (a.ticketSubject != null) a.ticketSubject!,
                     Fmt.relative(a.createdAt),
-                  ].join(' â€¢ '),
+                  ].join(' • '),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                 ),
@@ -424,10 +428,10 @@ String describeActivity(ActivityModel a) {
     ActivityModel.actionReopened => 'reopened by $who',
     ActivityModel.actionClosed => 'closed by $who',
     ActivityModel.actionPriorityChanged =>
-      'priority ${Fmt.priority(a.oldValue)} â†’ ${Fmt.priority(a.newValue)} by $who',
+      'priority ${Fmt.priority(a.oldValue)} → ${Fmt.priority(a.newValue)} by $who',
     ActivityModel.actionCategoryChanged =>
-      'category ${a.oldValue} â†’ ${a.newValue} by $who',
-    _ => 'status ${Fmt.status(a.oldValue)} â†’ ${Fmt.status(a.newValue)} by $who',
+      'category ${a.oldValue} → ${a.newValue} by $who',
+    _ => 'status ${Fmt.status(a.oldValue)} → ${Fmt.status(a.newValue)} by $who',
   };
 }
 

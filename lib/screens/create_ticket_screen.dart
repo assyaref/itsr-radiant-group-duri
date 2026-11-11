@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
@@ -21,9 +21,9 @@ class _CreateTicketScreenState extends ConsumerState<CreateTicketScreen> {
   final _formKey = GlobalKey<FormState>();
   final _subject = TextEditingController();
   final _description = TextEditingController();
+  final _location = TextEditingController();
   String? _category;
   String _priority = AppConstants.priorityMedium;
-  String? _location;
   bool _busy = false;
   int _step = 0; // 0 = Detail, 1 = Lampiran
 
@@ -31,16 +31,45 @@ class _CreateTicketScreenState extends ConsumerState<CreateTicketScreen> {
   void dispose() {
     _subject.dispose();
     _description.dispose();
+    _location.dispose();
     super.dispose();
   }
 
-  Future<void> _submit() async {
+  void _leave() {
+    if (context.canPop()) {
+      context.pop();
+    } else {
+      context.go('/dashboard');
+    }
+  }
+
+  /// The ticket has no location column: keep the user's input by appending it
+  /// to the description instead of silently dropping it.
+  String _descriptionWithLocation() {
+    final loc = _location.text.trim();
+    final desc = _description.text.trim();
+    return loc.isEmpty ? desc : '$desc\n\nLokasi: $loc';
+  }
+
+  void _next() {
     if (_busy || !(_formKey.currentState?.validate() ?? false)) return;
+    setState(() => _step = 1);
+  }
+
+  Future<void> _submit() async {
+    if (_busy) return;
+    // Step 0 validated these already; guard anyway (e.g. state restored).
+    if (_category == null || Validators.subject(_subject.text) != null ||
+        Validators.description(_description.text) != null) {
+      setState(() => _step = 0);
+      WidgetsBinding.instance.addPostFrameCallback((_) => _formKey.currentState?.validate());
+      return;
+    }
     setState(() => _busy = true);
     try {
       final id = await ref.read(ticketActionsProvider).createTicket(
             subject: _subject.text,
-            description: _description.text,
+            description: _descriptionWithLocation(),
             category: _category!,
             priority: _priority,
           );
@@ -74,7 +103,7 @@ class _CreateTicketScreenState extends ConsumerState<CreateTicketScreen> {
           appBar: AppBar(
             leading: IconButton(
               icon: const Icon(Icons.arrow_back),
-              onPressed: () => context.pop(),
+              onPressed: _leave,
             ),
             title: const Text('Buat Tiket'),
             centerTitle: false,
@@ -94,7 +123,7 @@ class _CreateTicketScreenState extends ConsumerState<CreateTicketScreen> {
                         Expanded(child: _StepLine(_step >= 1)),
                         _StepCircle(2, 'Lampiran', _step == 1),
                         Expanded(child: _StepLine(_step >= 2)),
-                        _StepCircle(3, 'Kirim', _step >= 2),
+                        _StepCircle(3, 'Kirim', _busy),
                       ],
                     ),
                     const SizedBox(height: 16),
@@ -109,13 +138,6 @@ class _CreateTicketScreenState extends ConsumerState<CreateTicketScreen> {
                         ),
                       ),
                     ),
-                    if (_step == 0)
-                      const SizedBox(height: 8),
-                    if (_step == 0)
-                      Text(
-                        'Judul Masalah *',
-                        style: TextStyle(color: AppTheme.muted, fontSize: 13),
-                      ),
                   ],
                 ),
               ),
@@ -172,13 +194,13 @@ class _CreateTicketScreenState extends ConsumerState<CreateTicketScreen> {
                           const SizedBox(height: 16),
                           TextFormField(
                             key: const Key('location_field'),
-                            controller: TextEditingController(text: _location ?? ''),
+                            controller: _location,
                             enabled: !_busy,
+                            maxLength: 120,
                             decoration: const InputDecoration(
                               labelText: 'Location (Optional)',
                               hintText: 'e.g. Ruang Marketing',
                             ),
-                            onChanged: (v) => setState(() => _location = v.trim()),
                           ),
                           const SizedBox(height: 20),
                           TextFormField(
@@ -201,19 +223,16 @@ class _CreateTicketScreenState extends ConsumerState<CreateTicketScreen> {
                             children: [
                               Expanded(
                                 child: OutlinedButton(
-                                  onPressed: _busy ? null : () => context.pop(),
+                                  onPressed: _busy ? null : _leave,
                                   child: const Text('Batal'),
                                 ),
                               ),
                               const SizedBox(width: 12),
                               Expanded(
                                 child: FilledButton(
-                                  onPressed: _busy ? null : () {
-                                    if (_formKey.currentState!.validate()) {
-                                      setState(() => _step = 1);
-                                    }
-                                  },
-                                  child: const Text('Lanjutan â†’'),
+                                  key: const Key('next_step_button'),
+                                  onPressed: _busy ? null : _next,
+                                  child: const Text('Lanjutkan →'),
                                 ),
                               ),
                             ],
@@ -233,7 +252,7 @@ class _CreateTicketScreenState extends ConsumerState<CreateTicketScreen> {
                                 const Icon(Icons.cloud_upload_outlined, size: 48, color: AppTheme.primary),
                                 const SizedBox(height: 12),
                                 Text(
-                                  'Ketik untuk upload foto atau file',
+                                  'Lampiran (Opsional)',
                                   style: TextStyle(
                                     fontWeight: FontWeight.w600,
                                     color: AppTheme.ink,
@@ -244,25 +263,14 @@ class _CreateTicketScreenState extends ConsumerState<CreateTicketScreen> {
                                   'Format: JPG, PNG, PDF (Maks. 10 MB)',
                                   style: TextStyle(color: AppTheme.muted, fontSize: 13),
                                 ),
-                                const SizedBox(height: 16),
-                                Row(
-                                  children: [
-                                    Expanded(
-                                      child: OutlinedButton.icon(
-                                        onPressed: () {},
-                                        icon: const Icon(Icons.image_outlined),
-                                        label: const Text('Pilih File'),
-                                      ),
-                                    ),
-                                    const SizedBox(width: 12),
-                                    Expanded(
-                                      child: OutlinedButton.icon(
-                                        onPressed: () {},
-                                        icon: const Icon(Icons.camera_alt_outlined),
-                                        label: const Text('Kamera'),
-                                      ),
-                                    ),
-                                  ],
+                                const SizedBox(height: 12),
+                                const Text(
+                                  'Upload lampiran belum tersedia. Jelaskan detail '
+                                  '(pesan error, nama perangkat) di deskripsi; IT Support '
+                                  'dapat meminta foto melalui komentar tiket.',
+                                  key: Key('attachments_unavailable'),
+                                  textAlign: TextAlign.center,
+                                  style: TextStyle(color: AppTheme.muted, fontSize: 12, height: 1.4),
                                 ),
                               ],
                             ),
@@ -279,8 +287,16 @@ class _CreateTicketScreenState extends ConsumerState<CreateTicketScreen> {
                               const SizedBox(width: 12),
                               Expanded(
                                 child: FilledButton(
+                                  key: const Key('submit_ticket_button'),
                                   onPressed: _busy ? null : _submit,
-                                  child: const Text('Lanjutan â†’'),
+                                  child: _busy
+                                      ? const SizedBox(
+                                          height: 20,
+                                          width: 20,
+                                          child: CircularProgressIndicator(
+                                              strokeWidth: 2.5, color: Colors.white),
+                                        )
+                                      : const Text('Kirim Tiket'),
                                 ),
                               ),
                             ],

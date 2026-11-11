@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
@@ -111,7 +111,7 @@ class AppShell extends ConsumerWidget {
             title: Text(user?.fullName ?? '',
                 overflow: TextOverflow.ellipsis,
                 style: const TextStyle(fontWeight: FontWeight.w600, color: Colors.white)),
-            subtitle: Text('${user?.employeeNumber ?? ''} â€¢ ${Fmt.role(user?.role)}',
+            subtitle: Text('${user?.employeeNumber ?? ''} • ${Fmt.role(user?.role)}',
                 overflow: TextOverflow.ellipsis,
                 style: TextStyle(color: Colors.white.withValues(alpha: 0.7), fontSize: 12)),
           ),
@@ -124,6 +124,7 @@ class AppShell extends ConsumerWidget {
         body: Row(
           children: [
             SizedBox(
+              key: const Key('desktop_sidebar'),
               width: 250,
               child: Material(
                 color: _sidebarDark,

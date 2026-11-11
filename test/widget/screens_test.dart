@@ -20,6 +20,11 @@ Future<void> openCompanyLogin(WidgetTester t) async {
   await t.pumpAndSettle();
 }
 
+Future<void> openTab(WidgetTester t, String label) async {
+  await t.tap(find.widgetWithText(Tab, label));
+  await t.pumpAndSettle();
+}
+
 void main() {
   group('Login', () {
     testWidgets('validates empty form without calling the server', (t) async {
@@ -96,9 +101,11 @@ void main() {
       final repo = FakeTicketRepository();
       await pumpApp(t, const CreateTicketScreen(),
           auth: FakeAuthRepository(profile: user('emp1', 'employee')), tickets: repo, size: phone);
-      await t.ensureVisible(find.byKey(const Key('submit_ticket_button')));
-      await t.tap(find.byKey(const Key('submit_ticket_button')));
+      await t.ensureVisible(find.byKey(const Key('next_step_button')));
+      await t.tap(find.byKey(const Key('next_step_button')));
       await t.pump();
+      expect(find.byKey(const Key('submit_ticket_button')), findsNothing,
+          reason: 'step 1 must be valid before moving to step 2');
       expect(find.text('Please enter a subject'), findsOneWidget);
       expect(find.text('Please select a category'), findsOneWidget);
       expect(find.text('Please describe the problem'), findsOneWidget);
@@ -115,9 +122,16 @@ void main() {
       await t.pumpAndSettle();
       await t.tap(find.text('Network').last);
       await t.pumpAndSettle();
+      await t.enterText(find.byKey(const Key('location_field')), 'Ruang Server');
+      await t.ensureVisible(find.byKey(const Key('next_step_button')));
+      await t.tap(find.byKey(const Key('next_step_button')));
+      await t.pumpAndSettle();
+      expect(find.byKey(const Key('attachments_unavailable')), findsOneWidget);
       await t.tap(find.byKey(const Key('submit_ticket_button')));
       await t.pump();
       expect(repo.calls.first, 'create:emp1:VPN is down:Network:medium');
+      expect(repo.lastDescription, 'Cannot connect since 8am\n\nLokasi: Ruang Server',
+          reason: 'location is kept, appended to the description');
     });
   });
 
@@ -132,12 +146,16 @@ void main() {
       ];
       await pumpApp(t, const TicketDetailScreen(ticketId: '1'),
           auth: FakeAuthRepository(profile: user('emp1', 'employee')), tickets: repo, size: desktop);
+      void readable(String s) =>
+          // Flutter merges adjacent text into one semantics node: match as substring.
+          expect(find.bySemanticsLabel(RegExp(RegExp.escape(s))), findsWidgets,
+              reason: '"$s" must be readable by assistive tech');
       for (final s in ['ITSR-00001', 'Printer broken', 'It does not print anything',
-                       'Replaced toner', 'It jams on page two']) {
-        // Flutter merges adjacent text into one semantics node: match as substring.
-        expect(find.bySemanticsLabel(RegExp(RegExp.escape(s))), findsWidgets,
-            reason: '"$s" must be readable by assistive tech');
+                       'Replaced toner']) {
+        readable(s);
       }
+      await openTab(t, 'Komentar');
+      readable('It jams on page two');
       handle.dispose();
     });
 
@@ -147,11 +165,12 @@ void main() {
       await pumpApp(t, const TicketDetailScreen(ticketId: '1'),
           auth: FakeAuthRepository(profile: user('emp1', 'employee')), tickets: repo, size: phone);
       expect(find.text('IT Support actions'), findsNothing);
-      expect(find.text('Internal work note'), findsNothing);
       expect(find.text('Replaced toner'), findsOneWidget);
       expect(find.text('Yes, close ticket'), findsOneWidget);
-      await t.drag(find.byType(ListView).first, const Offset(0, -1500));
-      await t.pumpAndSettle();
+      await openTab(t, 'Komentar');
+      expect(find.text('Internal work note'), findsNothing);
+      await openTab(t, 'Detail');
+      await t.ensureVisible(find.text('Reopen'));
       await t.tap(find.text('Reopen'));
       await t.pumpAndSettle();
       await t.enterText(find.descendant(of: find.byType(AlertDialog), matching: find.byType(TextFormField)), 'Still not printing');
@@ -168,14 +187,17 @@ void main() {
       ];
       await pumpApp(t, const TicketDetailScreen(ticketId: '1'),
           auth: FakeAuthRepository(profile: user('it1', 'it_support')), tickets: repo, size: desktop);
+      await openTab(t, 'Komentar');
       expect(find.text('INTERNAL NOTE'), findsOneWidget);
       expect(find.text('Internal work note'), findsOneWidget);
+      await openTab(t, 'Detail');
       // the server moves the ticket on; the screen reloads after the action
       repo.tickets = [ticket('1', status: 'in_progress', assignedToId: 'it1')];
       await t.tap(find.byKey(const Key('accept_ticket_button')));
       await t.pumpAndSettle();
       expect(repo.calls, contains('update:1:status=null:assignee=it1:unassign=false:resolution=null'));
       expect(find.byKey(const Key('accept_ticket_button')), findsNothing);
+      await t.ensureVisible(find.byKey(const Key('status_resolved')));
       await t.tap(find.byKey(const Key('status_resolved')));
       await t.pumpAndSettle();
       await t.tap(find.widgetWithText(FilledButton, 'Resolve'));
@@ -221,9 +243,13 @@ void main() {
       final repo = FakeTicketRepository(tickets: [ticket('1'), ticket('2', status: 'resolved')]);
       await pumpApp(t, const DashboardScreen(),
           auth: FakeAuthRepository(profile: user('emp1', 'employee', name: 'Ani')), tickets: repo, size: phone);
-      expect(find.text('Welcome, Ani'), findsOneWidget);
-      expect(find.text('Total tickets'), findsOneWidget);
+      expect(find.text('Hai, Ani'), findsOneWidget);
+      for (final label in ['Tiket Saya', 'Diproses', 'Menunggu', 'Selesai']) {
+        expect(find.text(label), findsOneWidget, reason: 'stat card "$label" (design)');
+      }
       expect(find.text('Support queue'), findsNothing);
+      await t.scrollUntilVisible(find.text('No activity yet'), 200,
+          scrollable: find.byType(Scrollable).first);
       expect(find.text('No activity yet'), findsOneWidget);
     });
 
@@ -235,18 +261,19 @@ void main() {
       expect(find.text('Unassigned'), findsOneWidget);
     });
 
-    testWidgets('desktop uses a navigation rail; phone uses a drawer', (t) async {
+    testWidgets('desktop uses a sidebar; phone uses a drawer', (t) async {
       final auth = FakeAuthRepository(profile: user('adm', 'administrator'));
       await pumpApp(t, const AppShell(location: '/dashboard', child: Text('body')),
           auth: auth, size: desktop);
-      expect(find.byType(NavigationRail), findsOneWidget);
+      expect(find.byKey(const Key('desktop_sidebar')), findsOneWidget);
       expect(find.text('Users'), findsOneWidget);
+      expect(find.byTooltip('Open navigation menu'), findsNothing);
 
       await t.pumpWidget(const SizedBox());
       await t.pump(const Duration(seconds: 1));
       await pumpApp(t, const AppShell(location: '/dashboard', child: Text('body')),
           auth: auth, size: phone);
-      expect(find.byType(NavigationRail), findsNothing);
+      expect(find.byKey(const Key('desktop_sidebar')), findsNothing);
       expect(find.byTooltip('Open navigation menu'), findsOneWidget);
     });
 
