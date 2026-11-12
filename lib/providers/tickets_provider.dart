@@ -1,12 +1,16 @@
+import 'dart:typed_data';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../data/ticket_repository.dart';
 import '../models/activity_model.dart';
 import '../models/app_notification.dart';
+import '../models/attachment_model.dart';
 import '../models/category_model.dart';
 import '../models/ticket_model.dart';
 import '../models/ticket_stats.dart';
 import '../models/ticket_summary.dart';
+import '../utils/error_messages.dart';
 import 'auth_provider.dart';
 
 export '../data/ticket_repository.dart' show TicketScope, TicketFilter;
@@ -172,6 +176,12 @@ final ticketDetailProvider = FutureProvider.autoDispose
       return ref.watch(ticketRepositoryProvider).fetchDetail(id);
     });
 
+final attachmentsProvider = FutureProvider.autoDispose
+    .family<List<AttachmentModel>, String>((ref, ticketId) async {
+      await ref.watch(currentUserProvider.future);
+      return ref.watch(ticketRepositoryProvider).fetchAttachments(ticketId);
+    });
+
 /// The caller's 5 newest own tickets (Beranda "Tiket Terbaru"), independent
 /// of the filters chosen on the ticket list.
 final recentMyTicketsProvider = FutureProvider.autoDispose<List<TicketModel>>((
@@ -195,16 +205,18 @@ final recentMyTicketsProvider = FutureProvider.autoDispose<List<TicketModel>>((
 /// visible tickets for IT Support / administrators.
 final ticketSummaryProvider = FutureProvider.autoDispose
     .family<TicketSummary, SummaryPeriod>((ref, period) async {
-  final user = await ref.watch(currentUserProvider.future);
-  if (user == null) return TicketSummary.of(const []);
-  final tickets = await ref.watch(ticketRepositoryProvider).fetchTicketsInRange(
-        scope: user.isStaff ? TicketScope.queue : TicketScope.mine,
-        userId: user.id,
-        from: period.from,
-        to: period.to,
-      );
-  return TicketSummary.of(tickets);
-});
+      final user = await ref.watch(currentUserProvider.future);
+      if (user == null) return TicketSummary.of(const []);
+      final tickets = await ref
+          .watch(ticketRepositoryProvider)
+          .fetchTicketsInRange(
+            scope: user.isStaff ? TicketScope.queue : TicketScope.mine,
+            userId: user.id,
+            from: period.from,
+            to: period.to,
+          );
+      return TicketSummary.of(tickets);
+    });
 
 /// In-app notifications (ticket events + comments by others).
 final notificationsProvider = FutureProvider.autoDispose<List<AppNotification>>(
@@ -309,6 +321,24 @@ class TicketActions {
   Future<void> changePriority(String ticketId, String priority) async {
     await _repo.updateTicket(ticketId, priority: priority);
     _refresh(ticketId: ticketId);
+  }
+
+  /// Uploads files to a ticket one by one. Returns the error message of each
+  /// file that failed (empty list = all uploaded).
+  Future<List<String>> uploadAttachments(
+    String ticketId,
+    List<({String name, Uint8List bytes})> files,
+  ) async {
+    final failures = <String>[];
+    for (final f in files) {
+      try {
+        await _repo.uploadAttachment(ticketId, f.name, f.bytes);
+      } catch (e) {
+        failures.add('${f.name}: ${friendlyError(e)}');
+      }
+    }
+    _ref.invalidate(attachmentsProvider(ticketId));
+    return failures;
   }
 
   Future<void> reopen(String ticketId, String reason) async {

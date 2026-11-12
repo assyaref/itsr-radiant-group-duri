@@ -1,6 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'dart:typed_data';
+
 import 'package:itsr_radiant/models/app_notification.dart';
+import 'package:itsr_radiant/models/attachment_model.dart';
+import 'package:itsr_radiant/screens/ticket_detail_screen.dart';
 import 'package:itsr_radiant/screens/employee/employee_tickets_screen.dart';
 import 'package:itsr_radiant/screens/employee/notifications_screen.dart';
 import 'package:itsr_radiant/screens/employee/profile_screen.dart';
@@ -112,6 +116,31 @@ void main() {
     await t.pumpAndSettle();
     expect(debugDownloads.single, startsWith('ringkasan-tiket-'));
     expect(debugDownloads.single, endsWith('.pdf'));
+  });
+
+  testWidgets('ticket detail: attachments tab lists, downloads and uploads', (t) async {
+    final repo = FakeTicketRepository(tickets: [ticket('1')])
+      ..attachments = [
+        AttachmentModel(id: 'a1', ticketId: '1', fileName: 'foto_laptop.jpg', mimeType: 'image/jpeg',
+            sizeBytes: 2516582, createdAt: DateTime.utc(2026, 11, 2, 8, 30)),
+      ];
+    await pumpApp(t, const TicketDetailScreen(ticketId: '1'),
+        auth: FakeAuthRepository(profile: emp), tickets: repo, size: phone);
+    await t.tap(find.widgetWithText(Tab, 'Lampiran'));
+    await t.pumpAndSettle();
+    expect(find.text('foto_laptop.jpg'), findsOneWidget);
+    expect(find.textContaining('2.4 MB'), findsOneWidget);
+    debugDownloads.clear();
+    await t.tap(find.byKey(const Key('download_a1')));
+    await t.pumpAndSettle();
+    expect(repo.calls, contains('download:a1'));
+    expect(debugDownloads, ['foto_laptop.jpg']);
+    debugPickedFiles = [PickedFile(name: 'adapter.pdf', bytes: Uint8List.fromList([9, 9]), mimeType: 'application/pdf')];
+    await t.tap(find.byKey(const Key('add_attachment_button')));
+    await t.pumpAndSettle();
+    debugPickedFiles = null;
+    expect(repo.calls, contains('upload:1:adapter.pdf:2'));
+    expect(find.text('adapter.pdf'), findsOneWidget);
   });
 
   for (final (name, screen) in [

@@ -13,6 +13,9 @@ import '../providers/tickets_provider.dart';
 import '../utils/error_messages.dart';
 import '../utils/formatters.dart';
 import '../widgets/common.dart';
+import '../models/attachment_model.dart';
+import '../utils/browser_files.dart';
+import '../widgets/attachment_widgets.dart';
 import '../widgets/employee_ui.dart';
 
 /// "7.–9. Detail Tiket" of the design: coloured header, progress
@@ -65,7 +68,15 @@ class TicketDetailScreen extends ConsumerWidget {
                 ),
                 SliverPersistentHeader(
                   pinned: true,
-                  delegate: _TabsHeader(commentCount: visibleComments.length),
+                  delegate: _TabsHeader(
+                    commentCount: visibleComments.length,
+                    attachmentCount:
+                        ref
+                            .watch(attachmentsProvider(ticketId))
+                            .valueOrNull
+                            ?.length ??
+                        0,
+                  ),
                 ),
               ],
               body: TabBarView(
@@ -76,7 +87,7 @@ class TicketDetailScreen extends ConsumerWidget {
                     user: user,
                     comments: visibleComments,
                   ),
-                  const _AttachmentsTab(),
+                  _AttachmentsTab(ticket: d.ticket, user: user),
                 ],
               ),
             ),
@@ -301,8 +312,9 @@ class _ProgressNode extends StatelessWidget {
 }
 
 class _TabsHeader extends SliverPersistentHeaderDelegate {
-  _TabsHeader({required this.commentCount});
+  _TabsHeader({required this.commentCount, required this.attachmentCount});
   final int commentCount;
+  final int attachmentCount;
 
   @override
   double get minExtent => 60;
@@ -310,7 +322,9 @@ class _TabsHeader extends SliverPersistentHeaderDelegate {
   double get maxExtent => 60;
 
   @override
-  bool shouldRebuild(_TabsHeader old) => old.commentCount != commentCount;
+  bool shouldRebuild(_TabsHeader old) =>
+      old.commentCount != commentCount ||
+      old.attachmentCount != attachmentCount;
 
   @override
   Widget build(
@@ -375,7 +389,7 @@ class _TabsHeader extends SliverPersistentHeaderDelegate {
           tabs: [
             tab('Detail', null),
             tab('Komentar', commentCount),
-            tab('Lampiran', 0),
+            tab('Lampiran', attachmentCount),
           ],
         ),
       ),
@@ -1134,15 +1148,124 @@ class _CommentItem extends StatelessWidget {
 
 // ---------------------------------------------------------------------------
 /// Attachments tab (upload is not available yet).
-class _AttachmentsTab extends StatelessWidget {
-  const _AttachmentsTab();
+class _AttachmentsTab extends ConsumerStatefulWidget {
+  const _AttachmentsTab({required this.ticket, required this.user});
+  final TicketModel ticket;
+  final UserModel user;
 
   @override
-  Widget build(BuildContext context) => const EmptyView(
-    icon: Icons.attach_file,
-    title: 'Belum ada lampiran',
-    message: 'Upload lampiran belum tersedia. Kirim detail atau permintaan foto melalui komentar.',
-  );
+  ConsumerState<_AttachmentsTab> createState() => _AttachmentsTabState();
+}
+
+class _AttachmentsTabState extends ConsumerState<_AttachmentsTab> {
+  bool _uploading = false;
+  String? _downloading;
+
+  bool get _canUpload =>
+      widget.user.isStaff ||
+      (widget.ticket.reporterId == widget.user.id &&
+          widget.ticket.status != AppConstants.statusClosed);
+
+  Future<void> _upload(int existing) async {
+    final files = await pickAttachmentFiles(context, alreadyChosen: existing);
+    if (files.isEmpty || !mounted) return;
+    setState(() => _uploading = true);
+    try {
+      final failed = await ref.read(ticketActionsProvider).uploadAttachments(
+        widget.ticket.id,
+        [for (final f in files) (name: f.name, bytes: f.bytes)],
+      );
+      if (!mounted) return;
+      if (failed.isEmpty) {
+        showSnack(
+          context,
+          files.length == 1
+              ? 'Lampiran diunggah'
+              : '${files.length} lampiran diunggah',
+        );
+      } else {
+        showSnack(context, failed.join('\n'), error: true);
+      }
+    } finally {
+      if (mounted) setState(() => _uploading = false);
+    }
+  }
+
+  Future<void> _download(AttachmentModel a) async {
+    setState(() => _downloading = a.id);
+    try {
+      final bytes = await ref
+          .read(ticketRepositoryProvider)
+          .downloadAttachment(a.id);
+      await downloadBytes(bytes, a.fileName, a.mimeType);
+    } catch (e) {
+      if (mounted) showSnack(context, friendlyError(e), error: true);
+    } finally {
+      if (mounted) setState(() => _downloading = null);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final async = ref.watch(attachmentsProvider(widget.ticket.id));
+    return async.when(
+      loading: () => const LoadingView(),
+      error: (e, _) => ErrorView(
+        error: e,
+        onRetry: () => ref.invalidate(attachmentsProvider(widget.ticket.id)),
+      ),
+      data: (items) => ListView(
+        padding: const EdgeInsets.fromLTRB(16, 4, 16, 24),
+        children: [
+          if (items.isEmpty)
+            const Padding(
+              padding: EdgeInsets.symmetric(vertical: 24),
+              child: EmptyView(
+                icon: Icons.attach_file,
+                title: 'Belum ada lampiran',
+                message:
+                    'Foto atau dokumen membantu IT Support memahami masalah.',
+              ),
+            ),
+          for (final a in items) ...[
+            AttachmentTile(
+              attachment: a,
+              busy: _downloading == a.id,
+              onDownload: () => _download(a),
+            ),
+            const SizedBox(height: 8),
+          ],
+          if (_canUpload && items.length < AttachmentModel.maxPerTicket) ...[
+            const SizedBox(height: 8),
+            OutlinedButton.icon(
+              key: const Key('add_attachment_button'),
+              onPressed: _uploading ? null : () => _upload(items.length),
+              style: OutlinedButton.styleFrom(
+                minimumSize: const Size.fromHeight(48),
+                foregroundColor: EColors.blue,
+                side: const BorderSide(color: Color(0xFFBFD4FE)),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
+              icon: _uploading
+                  ? const SizedBox(
+                      width: 18,
+                      height: 18,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  : const Icon(Icons.cloud_upload_outlined),
+              label: Text(
+                _uploading
+                    ? 'Mengunggah…'
+                    : 'Tambah lampiran (JPG, PNG, PDF, maks. 10 MB)',
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
 }
 
 IconData activityIcon(String action) => switch (action) {

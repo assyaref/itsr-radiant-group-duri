@@ -207,3 +207,32 @@ Deno.test("withErrorBoundary turns exceptions into JSON 500 with CORS", async ()
   const body = await res.json();
   assert(!JSON.stringify(body).includes("boom"));
 });
+
+import { checkUpload, driveMultipart, sanitizeFileName, sniffMime } from "../_shared/attachments.ts";
+
+Deno.test("attachments: type sniffing, size limit and safe names", () => {
+  const png = new Uint8Array([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 1, 2]);
+  const jpg = new Uint8Array([0xff, 0xd8, 0xff, 0xe0, 0]);
+  const pdf = new TextEncoder().encode("%PDF-1.7 ...");
+  assertEquals(sniffMime(png), "image/png");
+  assertEquals(sniffMime(jpg), "image/jpeg");
+  assertEquals(sniffMime(pdf), "application/pdf");
+  assertEquals(sniffMime(new TextEncoder().encode("<html>")), null);
+  const b64 = (b: Uint8Array) => btoa(String.fromCharCode(...b));
+  const ok = checkUpload("../../etc/foto laptop.png", b64(png));
+  assert(ok.ok && ok.name === "foto laptop.png" && ok.mime === "image/png");
+  assert(!checkUpload("evil.exe", btoa("MZ....")).ok, "unknown content refused");
+  assert(!checkUpload("x.png", "not base64!!").ok);
+  assertEquals(sanitizeFileName("", "application/pdf"), "lampiran.pdf");
+  assert(sanitizeFileName("a".repeat(300) + ".pdf", "application/pdf").endsWith(".pdf"));
+  assert(sanitizeFileName("a".repeat(300) + ".pdf", "application/pdf").length <= 120);
+});
+
+Deno.test("attachments: Drive multipart body", () => {
+  const { body, contentType } = driveMultipart({ name: "a.png" }, new Uint8Array([1, 2, 3]), "image/png", "B");
+  assertEquals(contentType, "multipart/related; boundary=B");
+  const text = new TextDecoder().decode(body);
+  assert(text.startsWith("--B\r\nContent-Type: application/json"));
+  assert(text.includes('{"name":"a.png"}'));
+  assert(text.endsWith("\r\n--B--\r\n"));
+});

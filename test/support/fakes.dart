@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -8,6 +9,7 @@ import 'package:itsr_radiant/data/auth_repository.dart';
 import 'package:itsr_radiant/data/ticket_repository.dart';
 import 'package:itsr_radiant/models/activity_model.dart';
 import 'package:itsr_radiant/models/app_notification.dart';
+import 'package:itsr_radiant/models/attachment_model.dart';
 import 'package:itsr_radiant/models/app_settings_model.dart';
 import 'package:itsr_radiant/models/category_model.dart';
 import 'package:itsr_radiant/models/comment_model.dart';
@@ -220,6 +222,30 @@ class FakeTicketRepository implements TicketRepository {
   Future<void> kickNotifications() async => calls.add('kick');
 
   List<AppNotification> notifications = [];
+  List<AttachmentModel> attachments = [];
+
+  @override
+  Future<List<AttachmentModel>> fetchAttachments(String ticketId) async =>
+      attachments.where((a) => a.ticketId == ticketId).toList();
+
+  @override
+  Future<AttachmentModel> uploadAttachment(String ticketId, String fileName, Uint8List bytes) async {
+    calls.add('upload:$ticketId:$fileName:${bytes.length}');
+    if (failWith != null) throw failWith!;
+    final a = AttachmentModel(
+      id: 'att${attachments.length + 1}', ticketId: ticketId, fileName: fileName,
+      mimeType: fileName.endsWith('.pdf') ? 'application/pdf' : 'image/png',
+      sizeBytes: bytes.length, createdAt: DateTime.utc(2026, 11, 2),
+    );
+    attachments.add(a);
+    return a;
+  }
+
+  @override
+  Future<Uint8List> downloadAttachment(String attachmentId) async {
+    calls.add('download:$attachmentId');
+    return Uint8List.fromList([1, 2, 3]);
+  }
 
   @override
   Future<List<TicketModel>> fetchTicketsInRange({

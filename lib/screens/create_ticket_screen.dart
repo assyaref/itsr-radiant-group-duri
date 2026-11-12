@@ -9,6 +9,8 @@ import '../utils/error_messages.dart';
 import '../utils/formatters.dart';
 import '../utils/validators.dart';
 import '../widgets/common.dart';
+import '../utils/browser_files.dart';
+import '../widgets/attachment_widgets.dart';
 import '../widgets/employee_ui.dart';
 
 /// "4./5. Form Buat Tiket" of the design: 1 Detail → 2 Lampiran → 3 Kirim.
@@ -30,6 +32,15 @@ class _CreateTicketScreenState extends ConsumerState<CreateTicketScreen> {
   String _priority = AppConstants.priorityMedium;
   bool _busy = false;
   int _step = 0; // 0 = Detail, 1 = Lampiran, 2 = Kirim
+  final List<PickedFile> _files = [];
+
+  Future<void> _addFiles() async {
+    final picked = await pickAttachmentFiles(
+      context,
+      alreadyChosen: _files.length,
+    );
+    if (picked.isNotEmpty && mounted) setState(() => _files.addAll(picked));
+  }
 
   @override
   void initState() {
@@ -92,8 +103,29 @@ class _CreateTicketScreenState extends ConsumerState<CreateTicketScreen> {
             category: _category!,
             priority: _priority,
           );
+      // Attachments are uploaded after the ticket exists; a failed upload
+      // never loses the ticket itself.
+      List<String> failed = const [];
+      if (_files.isNotEmpty) {
+        failed = await ref.read(ticketActionsProvider).uploadAttachments(id, [
+          for (final f in _files) (name: f.name, bytes: f.bytes),
+        ]);
+      }
       if (!mounted) return;
+      final messenger = ScaffoldMessenger.maybeOf(context);
       context.go('/tickets/$id/submitted');
+      if (failed.isNotEmpty) {
+        messenger?.showSnackBar(
+          SnackBar(
+            backgroundColor: EColors.red,
+            duration: const Duration(seconds: 8),
+            content: Text(
+              'Tiket terkirim, tetapi ${failed.length} lampiran gagal diunggah:\n'
+              '${failed.join('\n')}\nAnda bisa menambahkannya lagi dari tab Lampiran.',
+            ),
+          ),
+        );
+      }
     } catch (e) {
       if (mounted) showSnack(context, friendlyError(e), error: true);
     } finally {
@@ -305,57 +337,11 @@ class _CreateTicketScreenState extends ConsumerState<CreateTicketScreen> {
           ),
         ),
         const SizedBox(height: 16),
-        Container(
-          padding: const EdgeInsets.symmetric(vertical: 28, horizontal: 16),
-          decoration: BoxDecoration(
-            color: const Color(0xFFF8FAFF),
-            borderRadius: BorderRadius.circular(14),
-            border: Border.all(color: const Color(0xFFBFD4FE), width: 1.4),
-          ),
-          child: const Column(
-            children: [
-              Icon(Icons.cloud_upload_outlined, size: 44, color: EColors.blue),
-              SizedBox(height: 10),
-              Text(
-                'Ketuk untuk upload foto atau file',
-                textAlign: TextAlign.center,
-                style: TextStyle(color: EColors.text),
-              ),
-              SizedBox(height: 4),
-              Text(
-                'Format: JPG, PNG, PDF (Maks. 10 MB)',
-                textAlign: TextAlign.center,
-                style: TextStyle(color: EColors.muted, fontSize: 12.5),
-              ),
-            ],
-          ),
-        ),
-        const SizedBox(height: 16),
-        Container(
-          key: const Key('attachments_unavailable'),
-          padding: const EdgeInsets.all(14),
-          decoration: BoxDecoration(
-            color: EColors.blueSoft,
-            borderRadius: BorderRadius.circular(12),
-          ),
-          child: const Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Icon(Icons.info_rounded, color: EColors.blue, size: 20),
-              SizedBox(width: 10),
-              Expanded(
-                child: Text(
-                  'Upload lampiran belum tersedia. Jelaskan detail masalah (pesan error, nama '
-                  'perangkat) di deskripsi; IT Support dapat meminta foto melalui komentar tiket.',
-                  style: TextStyle(
-                    color: EColors.blueDark,
-                    fontSize: 13,
-                    height: 1.4,
-                  ),
-                ),
-              ),
-            ],
-          ),
+        AttachmentPicker(
+          files: _files,
+          enabled: !_busy,
+          onAdd: _addFiles,
+          onRemove: (i) => setState(() => _files.removeAt(i)),
         ),
         const SizedBox(height: 24),
         _twoButtons(
@@ -437,6 +423,13 @@ class _CreateTicketScreenState extends ConsumerState<CreateTicketScreen> {
                 'Lokasi',
                 Text(
                   _location.text.trim().isEmpty ? '-' : _location.text.trim(),
+                  style: valueStyle,
+                ),
+              ),
+              row(
+                'Lampiran',
+                Text(
+                  _files.isEmpty ? '-' : _files.map((f) => f.name).join(', '),
                   style: valueStyle,
                 ),
               ),

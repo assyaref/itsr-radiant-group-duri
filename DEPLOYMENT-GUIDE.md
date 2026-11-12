@@ -111,3 +111,53 @@ Create the test accounts in Admin → Users: EMP-A, EMP-B (employees), IT-1 (IT 
 
 ## 8. Production
 Repeat §1–§7 against the production project **only after written approval**, using production keys passed through `--dart-define`.
+
+## 9. PIN passwords, attachments (Google Drive), ticket summary
+
+### 9.1 PIN passwords (4–5 digits)
+Accounts may use a 4–5 digit numeric PIN or a password of 8+ characters.
+Supabase Auth requires at least 6 characters, so the Edge Functions turn a PIN
+into `HMAC-SHA256(PIN_PEPPER, "pin:"+PIN)` before it reaches Auth.
+```bash
+supabase secrets set PIN_PEPPER="$(openssl rand -hex 32)"   # once; keep a backup
+supabase functions deploy login admin-users account
+```
+- **Never change or lose `PIN_PEPPER`**: every PIN account would stop working
+  (an administrator would have to reset those PINs).
+- PINs can only be tried through the rate-limited `login` function (5 failures /
+  15 min per account, 30 per IP), never directly against the Auth API.
+- Existing passwords are unaffected.
+
+### 9.2 Attachments in Google Drive
+Files (JPG/PNG/PDF, max 10 MB, max 10 per ticket) are stored in one Drive
+folder; the table `ticket_attachments` keeps the metadata
+(`supabase/migrations/20261112000100_ticket_attachments.sql`). Upload and
+download always go through the `attachments` Edge Function, which checks that
+the caller may see the ticket. The folder therefore does **not** need link
+sharing: set it to "Restricted".
+
+A service account cannot write into a personal My Drive (no storage quota), so
+the function uses OAuth with the folder owner's refresh token:
+1. Google Cloud Console → new project → enable **Google Drive API**.
+2. OAuth consent screen (Internal for Workspace, or External + add the owner as
+   test user; for External, publish the app or the refresh token expires after
+   7 days).
+3. Credentials → OAuth client ID → *Web application*, redirect URI
+   `https://developers.google.com/oauthplayground`.
+4. https://developers.google.com/oauthplayground → gear icon → "Use your own
+   OAuth credentials" → scope `https://www.googleapis.com/auth/drive` →
+   authorise **as the owner of the folder** → exchange for tokens → copy the
+   refresh token.
+5. ```bash
+   supabase secrets set GOOGLE_OAUTH_CLIENT_ID=... GOOGLE_OAUTH_CLIENT_SECRET=... \
+     GOOGLE_OAUTH_REFRESH_TOKEN=... GOOGLE_DRIVE_FOLDER_ID=<folder id from the URL>
+   supabase db push            # applies the ticket_attachments migration
+   supabase functions deploy attachments
+   ```
+Until the secrets exist the app shows "Penyimpanan lampiran belum dikonfigurasi"
+and tickets are still created normally (uploads are done after the ticket).
+
+### 9.3 Ticket summary
+`/summary` ("Ringkasan Tiket"): employees see their own tickets, IT Support and
+administrators all tickets. "Export PDF" is generated in the browser; no
+server setup is needed.

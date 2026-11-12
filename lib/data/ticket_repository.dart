@@ -1,7 +1,11 @@
+import 'dart:convert';
+import 'dart:typed_data';
+
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../models/activity_model.dart';
 import '../models/app_notification.dart';
+import '../models/attachment_model.dart';
 import '../models/category_model.dart';
 import '../models/comment_model.dart';
 import '../models/ticket_model.dart';
@@ -139,6 +143,19 @@ abstract class TicketRepository {
     required DateTime to,
     int limit = 2000,
   });
+
+  /// Attachments of a ticket (empty when the feature is not installed yet).
+  Future<List<AttachmentModel>> fetchAttachments(String ticketId);
+
+  /// Uploads one file to the ticket (stored in Google Drive by the server).
+  Future<AttachmentModel> uploadAttachment(
+    String ticketId,
+    String fileName,
+    Uint8List bytes,
+  );
+
+  /// Downloads an attachment's bytes through the server.
+  Future<Uint8List> downloadAttachment(String attachmentId);
 
   /// In-app notifications for [userId]: ticket events and other people's
   /// comments on tickets the caller can see (RLS-scoped), newest first.
@@ -345,6 +362,66 @@ class SupabaseTicketRepository implements TicketRepository {
     await _client.rpc(
       'reporter_ticket_action',
       params: {'p_ticket_id': ticketId, 'p_action': action, 'p_note': note},
+    );
+  }
+
+  @override
+  Future<List<AttachmentModel>> fetchAttachments(String ticketId) async {
+    try {
+      final rows = await _client
+          .from('ticket_attachments')
+          .select(
+            'id, ticket_id, uploaded_by, file_name, mime_type, size_bytes, created_at',
+          )
+          .eq('ticket_id', ticketId)
+          .order('created_at');
+      return rows.map(AttachmentModel.fromJson).toList();
+    } on PostgrestException catch (e) {
+      // Table not migrated yet (42P01 / PGRST205): show "no attachments"
+      // instead of breaking the ticket page.
+      if (e.code == '42P01' || e.code == 'PGRST205') return const [];
+      rethrow;
+    }
+  }
+
+  @override
+  Future<AttachmentModel> uploadAttachment(
+    String ticketId,
+    String fileName,
+    Uint8List bytes,
+  ) async {
+    final res = await _client.functions.invoke(
+      'attachments',
+      body: {
+        'action': 'upload',
+        'ticket_id': ticketId,
+        'file_name': fileName,
+        'data_base64': base64Encode(bytes),
+      },
+    );
+    final data = res.data;
+    if (data is! Map) {
+      throw FunctionException(
+        status: res.status,
+        details: const {'error': 'Unexpected response from the server.'},
+      );
+    }
+    return AttachmentModel.fromJson(Map<String, dynamic>.from(data));
+  }
+
+  @override
+  Future<Uint8List> downloadAttachment(String attachmentId) async {
+    final res = await _client.functions.invoke(
+      'attachments',
+      body: {'action': 'download', 'attachment_id': attachmentId},
+    );
+    final data = res.data;
+    if (data is Uint8List) return data;
+    if (data is List<int>) return Uint8List.fromList(data);
+    if (data is String) return Uint8List.fromList(utf8.encode(data));
+    throw FunctionException(
+      status: res.status,
+      details: const {'error': 'Unexpected response from the server.'},
     );
   }
 

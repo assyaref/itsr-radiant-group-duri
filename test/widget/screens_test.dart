@@ -8,6 +8,8 @@ import 'package:itsr_radiant/screens/my_tickets_screen.dart';
 import 'package:itsr_radiant/screens/ticket_detail_screen.dart';
 import 'package:itsr_radiant/utils/error_messages.dart';
 import 'package:itsr_radiant/utils/formatters.dart';
+import 'package:itsr_radiant/utils/browser_files.dart';
+import 'dart:typed_data';
 import 'package:itsr_radiant/widgets/app_shell.dart';
 
 import '../support/fakes.dart';
@@ -136,7 +138,21 @@ void main() {
       await t.ensureVisible(find.byKey(const Key('next_step_button')));
       await t.tap(find.byKey(const Key('next_step_button')));
       await t.pumpAndSettle();
-      expect(find.byKey(const Key('attachments_unavailable')), findsOneWidget);
+      expect(find.byKey(const Key('attachment_pick_area')), findsOneWidget);
+      debugPickedFiles = [
+        PickedFile(name: 'foto_laptop.png', bytes: Uint8List.fromList([1, 2, 3]), mimeType: 'image/png'),
+        PickedFile(name: 'virus.exe', bytes: Uint8List.fromList([1]), mimeType: 'application/octet-stream'),
+      ];
+      await t.tap(find.byKey(const Key('attachment_pick_area')));
+      await t.pumpAndSettle();
+      debugPickedFiles = null;
+      expect(find.text('foto_laptop.png'), findsWidgets);
+      expect(find.text('virus.exe'), findsNothing, reason: 'only JPG/PNG/PDF are accepted');
+      expect(find.textContaining('hanya JPG, PNG, atau PDF'), findsOneWidget);
+      t.state<ScaffoldMessengerState>(find.byType(ScaffoldMessenger)).hideCurrentSnackBar();
+      await t.pumpAndSettle();
+      await t.ensureVisible(find.byKey(const Key('next_step_button')));
+      await t.pumpAndSettle();
       await t.tap(find.byKey(const Key('next_step_button')));
       await t.pumpAndSettle();
       expect(find.text('Periksa & Kirim'), findsOneWidget);
@@ -145,6 +161,9 @@ void main() {
       await t.tap(find.byKey(const Key('submit_ticket_button')));
       await t.pump();
       expect(repo.calls.first, 'create:emp1:VPN is down:Network:medium');
+      await t.pumpAndSettle();
+      expect(repo.calls, contains('upload:new-id:foto_laptop.png:3'),
+          reason: 'chosen files are uploaded after the ticket is created');
       expect(repo.lastDescription, 'Cannot connect since 8am\n\nLokasi: Ruang Server',
           reason: 'location is kept, appended to the description');
     });
