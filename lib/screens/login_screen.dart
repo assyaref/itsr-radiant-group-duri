@@ -87,42 +87,50 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
           : _buildForm(context, showIllustration: !wide),
     );
 
-    return Scaffold(
-      backgroundColor: Colors.white,
-      body: DecoratedBox(
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [Color(0xFFEFF5FF), Colors.white],
-            stops: [0, 0.55],
+    // No on-screen back arrow (design): the phone's / browser's Back gesture
+    // returns from the sign-in form to the welcome page.
+    return PopScope(
+      canPop: _method == null,
+      onPopInvokedWithResult: (didPop, _) {
+        if (!didPop && !_busy) _choose(null);
+      },
+      child: Scaffold(
+        backgroundColor: Colors.white,
+        body: DecoratedBox(
+          decoration: const BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+              colors: [Color(0xFFEFF5FF), Colors.white],
+              stops: [0, 0.55],
+            ),
           ),
-        ),
-        child: SafeArea(
-          child: wide
-              ? Row(
-                  children: [
-                    const Expanded(child: _DesktopHero()),
-                    SizedBox(
-                      width: 480,
-                      child: Center(
-                        child: SingleChildScrollView(
-                          padding: const EdgeInsets.all(40),
-                          child: content,
+          child: SafeArea(
+            child: wide
+                ? Row(
+                    children: [
+                      const Expanded(child: _DesktopHero()),
+                      SizedBox(
+                        width: 480,
+                        child: Center(
+                          child: SingleChildScrollView(
+                            padding: const EdgeInsets.all(40),
+                            child: content,
+                          ),
                         ),
                       ),
-                    ),
-                  ],
-                )
-              : Center(
-                  child: SingleChildScrollView(
-                    padding: const EdgeInsets.fromLTRB(24, 16, 24, 24),
-                    child: ConstrainedBox(
-                      constraints: const BoxConstraints(maxWidth: 420),
-                      child: content,
+                    ],
+                  )
+                : Center(
+                    child: SingleChildScrollView(
+                      padding: const EdgeInsets.fromLTRB(24, 16, 24, 24),
+                      child: ConstrainedBox(
+                        constraints: const BoxConstraints(maxWidth: 420),
+                        child: content,
+                      ),
                     ),
                   ),
-                ),
+          ),
         ),
       ),
     );
@@ -138,29 +146,6 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            Row(
-              children: [
-                IconButton(
-                  key: const Key('login_back_button'),
-                  tooltip: 'Kembali',
-                  onPressed: _busy ? null : () => _choose(null),
-                  icon: const Icon(Icons.arrow_back),
-                ),
-                const SizedBox(width: 4),
-                Expanded(
-                  child: Text(
-                    email
-                        ? 'Masuk dengan Email'
-                        : 'Masuk dengan Akun Perusahaan',
-                    style: const TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.w700,
-                      color: AppTheme.ink,
-                    ),
-                  ),
-                ),
-              ],
-            ),
             const SizedBox(height: 8),
             if (showIllustration) ...[
               const _BrandHeader(compact: true),
@@ -297,18 +282,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                     : const Text('Masuk', style: TextStyle(fontSize: 16)),
               ),
             ),
-            const SizedBox(height: 16),
-            TextButton(
-              onPressed: _busy
-                  ? null
-                  : () => _choose(
-                      email ? LoginMethod.company : LoginMethod.email,
-                    ),
-              child: Text(
-                email ? 'Masuk dengan Akun Perusahaan' : 'Masuk dengan Email',
-              ),
-            ),
-            const SizedBox(height: 8),
+            const SizedBox(height: 20),
             const Text(
               'Lupa password? Hubungi administrator IT Support.',
               textAlign: TextAlign.center,
