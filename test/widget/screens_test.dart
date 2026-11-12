@@ -99,12 +99,16 @@ void main() {
       expect(find.byKey(const Key('login_error')), findsOneWidget);
     });
 
-    testWidgets('form has no back arrow / method switch; system Back returns to welcome', (t) async {
+    testWidgets('form: no back arrow or title, switch link kept; system Back returns to welcome', (t) async {
       await pumpApp(t, const LoginScreen(), auth: FakeAuthRepository(), size: phone);
       await openCompanyLogin(t);
       expect(find.byIcon(Icons.arrow_back), findsNothing);
-      expect(find.text('Masuk dengan Email'), findsNothing);
-      expect(find.text('Masuk dengan Akun Perusahaan'), findsNothing);
+      expect(find.text('Masuk dengan Akun Perusahaan'), findsNothing, reason: 'no title');
+      await t.ensureVisible(find.byKey(const Key('switch_login_method')));
+      await t.tap(find.byKey(const Key('switch_login_method')));
+      await t.pumpAndSettle();
+      expect(find.byKey(const Key('email_field')), findsOneWidget, reason: 'switched to email');
+      expect(find.text('Masuk dengan Akun Perusahaan'), findsOneWidget, reason: 'switch link back');
       await t.binding.handlePopRoute();
       await t.pumpAndSettle();
       expect(find.byKey(const Key('company_login_entry')), findsOneWidget);

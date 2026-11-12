@@ -282,7 +282,19 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                     : const Text('Masuk', style: TextStyle(fontSize: 16)),
               ),
             ),
-            const SizedBox(height: 20),
+            const SizedBox(height: 16),
+            TextButton(
+              key: const Key('switch_login_method'),
+              onPressed: _busy
+                  ? null
+                  : () => _choose(
+                      email ? LoginMethod.company : LoginMethod.email,
+                    ),
+              child: Text(
+                email ? 'Masuk dengan Akun Perusahaan' : 'Masuk dengan Email',
+              ),
+            ),
+            const SizedBox(height: 8),
             const Text(
               'Lupa password? Hubungi administrator IT Support.',
               textAlign: TextAlign.center,
