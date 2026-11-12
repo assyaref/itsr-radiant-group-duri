@@ -116,6 +116,9 @@ Deno.test("HTML email is a boxed form with Indonesian labels and a button", () =
   assert(e.html.includes("border:1px solid #e2e8f0"), "boxed cells");
   assert(e.html.includes('href="https://itsr.example.test/#/tickets/tid"'));
   assert(e.text.includes("No. Tiket:    ITSR-00007"));
+  assert(e.html.includes("Sistem developed by"), "developer credit");
+  assert(e.html.includes('href="https://api.whatsapp.com/send?phone=6282167472765&amp;text=Haii%20..%F0%9F%91%8B"'));
+  assert(e.text.includes("Sistem developed by Assyaref.dev"));
 });
 
 Deno.test("user-supplied content is escaped in HTML body", () => {

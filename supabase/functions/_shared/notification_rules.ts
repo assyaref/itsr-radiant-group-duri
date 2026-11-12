@@ -54,6 +54,10 @@ function clean(list: (string | null | undefined)[]): string[] {
 /** Escaped text with line breaks kept (for multi-line user content). */
 const multiline = (s: string) => escapeHtml(s).replace(/\r?\n/g, "<br>");
 
+/** Developer credit, same link as in the kopikir app (WhatsApp). */
+export const DEVELOPER_NAME = "Assyaref.dev";
+export const DEVELOPER_URL = "https://api.whatsapp.com/send?phone=6282167472765&text=Haii%20..%F0%9F%91%8B";
+
 const pill = (label: string, color: string) =>
   `<span style="display:inline-block;padding:3px 10px;border-radius:12px;background:${color}1a;` +
   `color:${color};font-size:12px;font-weight:bold;border:1px solid ${color}55">${escapeHtml(label)}</span>`;
@@ -148,7 +152,8 @@ export function buildEmail(ctx: EventContext, settings: Settings): Email | null 
   if (t.status === "resolved" && t.resolution) lines.push("", "Penyelesaian:", t.resolution);
   if (link) lines.push("", `Buka tiket: ${link}`);
   lines.push("", "-- ITSR Radiant Group Duri - IT Support & Service Request",
-    "Email otomatis, mohon tidak membalas email ini.");
+    "Email otomatis, mohon tidak membalas email ini.",
+    `Sistem developed by ${DEVELOPER_NAME}: ${DEVELOPER_URL}`);
   const text = lines.join("\n");
 
   // ---- HTML part: boxed "form" layout, table-based for email clients ------
@@ -194,7 +199,10 @@ export function buildEmail(ctx: EventContext, settings: Settings): Email | null 
     // footer
     `<tr><td style="padding:14px 24px;border-top:1px solid #e2e8f0;color:#94a3b8;font-size:12px;line-height:1.5">` +
     `ITSR Radiant Group Duri – IT Support &amp; Service Request.<br>` +
-    `Email ini dikirim otomatis, mohon tidak membalas email ini.</td></tr>` +
+    `Email ini dikirim otomatis, mohon tidak membalas email ini.<br>` +
+    `<span style="color:#94a3b8">© ${new Date().getFullYear()} · Sistem developed by </span>` +
+    `<a href="${escapeHtml(DEVELOPER_URL)}" target="_blank" rel="noopener noreferrer" ` +
+    `style="color:#2563eb;font-weight:bold;text-decoration:none">${DEVELOPER_NAME}</a></td></tr>` +
     `</table></td></tr></table></body></html>`;
 
   return { to, cc, subject, text, html };
