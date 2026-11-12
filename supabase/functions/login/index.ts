@@ -8,6 +8,7 @@
 //    user's own session tokens.
 import { clientIp, corsHeaders, json, EMAIL_RE, normalizeEmployeeNumber, padResponseTime, readJsonObject, withErrorBoundary } from "../_shared/http.ts";
 import { adminClient, publicClient } from "../_shared/supabase.ts";
+import { authPassword, plausibleLoginPassword } from "../_shared/password.ts";
 
 const GENERIC = "Authentication failed. Please check your credentials.";
 const LIMITED = "Too many login attempts. Please try again in 15 minutes.";
@@ -30,9 +31,9 @@ Deno.serve(withErrorBoundary("login", async (req) => {
   const email = typeof body.email === "string" ? body.email.trim().toLowerCase() : "";
   const byEmail = email.length > 0;
   const employeeNumber = byEmail ? null : normalizeEmployeeNumber(body.employeeNumber);
-  const password = typeof body.password === "string" ? body.password : "";
+  const password = plausibleLoginPassword(body.password) ? body.password : "";
   if (byEmail ? (!EMAIL_RE.test(email) || email.length > 254) : !employeeNumber) return fail(401, GENERIC);
-  if (password.length < 6 || password.length > 128) return fail(401, GENERIC);
+  if (!password) return fail(401, GENERIC); // 4–5 digit PIN or 6–128 characters
 
   const ip = clientIp(req);
   try {
@@ -60,7 +61,7 @@ Deno.serve(withErrorBoundary("login", async (req) => {
     }
 
     const { data: auth, error: authError } = await publicClient().auth.signInWithPassword({
-      email: profile.email, password,
+      email: profile.email, password: await authPassword(password, Deno.env.get("PIN_PEPPER")),
     });
     if (authError || !auth.session) {
       await admin.rpc("record_login_attempt", {

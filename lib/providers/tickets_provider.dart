@@ -6,6 +6,7 @@ import '../models/app_notification.dart';
 import '../models/category_model.dart';
 import '../models/ticket_model.dart';
 import '../models/ticket_stats.dart';
+import '../models/ticket_summary.dart';
 import 'auth_provider.dart';
 
 export '../data/ticket_repository.dart' show TicketScope, TicketFilter;
@@ -188,6 +189,21 @@ final recentMyTicketsProvider = FutureProvider.autoDispose<List<TicketModel>>((
         limit: 5,
       );
   return page.items;
+});
+
+/// Summary of tickets created in a period: own tickets for employees, all
+/// visible tickets for IT Support / administrators.
+final ticketSummaryProvider = FutureProvider.autoDispose
+    .family<TicketSummary, SummaryPeriod>((ref, period) async {
+  final user = await ref.watch(currentUserProvider.future);
+  if (user == null) return TicketSummary.of(const []);
+  final tickets = await ref.watch(ticketRepositoryProvider).fetchTicketsInRange(
+        scope: user.isStaff ? TicketScope.queue : TicketScope.mine,
+        userId: user.id,
+        from: period.from,
+        to: period.to,
+      );
+  return TicketSummary.of(tickets);
 });
 
 /// In-app notifications (ticket events + comments by others).

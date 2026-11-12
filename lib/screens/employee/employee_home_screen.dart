@@ -7,6 +7,7 @@ import '../../models/user_model.dart';
 import '../../providers/tickets_provider.dart';
 import '../../widgets/common.dart';
 import '../../widgets/employee_ui.dart';
+import '../summary_screen.dart';
 
 /// "2. Beranda (Dashboard)" of the employee design.
 class EmployeeHomeScreen extends ConsumerWidget {
@@ -36,7 +37,9 @@ class EmployeeHomeScreen extends ConsumerWidget {
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 const _Stats(),
-                const SizedBox(height: 20),
+                const SizedBox(height: 12),
+                const SummaryEntryTile(),
+                const SizedBox(height: 16),
                 Row(
                   children: [
                     const Expanded(
@@ -103,7 +106,7 @@ class _Header extends StatelessWidget {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          'Hai, $firstName 👋',
+                          'Hai, $firstName',
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                           style: const TextStyle(
@@ -232,13 +235,15 @@ class _Stats extends ConsumerWidget {
             EColors.green,
           ),
         ];
-        return GridView.count(
-          crossAxisCount: 2,
+        return GridView(
           shrinkWrap: true,
           physics: const NeverScrollableScrollPhysics(),
-          mainAxisSpacing: 12,
-          crossAxisSpacing: 12,
-          childAspectRatio: 2.2,
+          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+            crossAxisCount: 2,
+            mainAxisSpacing: 12,
+            crossAxisSpacing: 12,
+            mainAxisExtent: 80,
+          ),
           children: [
             for (final (label, value, icon, color) in cards)
               InkWell(

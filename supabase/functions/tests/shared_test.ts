@@ -2,6 +2,33 @@ import { assert, assertEquals } from "jsr:@std/assert@1.0.13";
 import { clientIp, corsHeaders, escapeHtml, isValidHost, normalizeEmployeeNumber, parsePort, readJsonObject, withErrorBoundary } from "../_shared/http.ts";
 import { buildEmail, type EventContext, type Settings } from "../_shared/notification_rules.ts";
 import { validateCreate, validateResetPassword, validateUpdate } from "../admin-users/validation.ts";
+import { authPassword, isPin, newPasswordError, plausibleLoginPassword } from "../_shared/password.ts";
+
+Deno.test("PIN policy: 4-5 digit PINs or 8+ character passwords", () => {
+  assert(isPin("1234") && isPin("12345"));
+  assert(!isPin("123") && !isPin("123456") && !isPin("12a4"));
+  assertEquals(newPasswordError("1234"), null);
+  assertEquals(newPasswordError("54321"), null);
+  assertEquals(newPasswordError("longenough"), null);
+  assert(newPasswordError("123") !== null);
+  assert(newPasswordError("123456") !== null);
+  assert(newPasswordError("short") !== null);
+  assert(plausibleLoginPassword("1234") && plausibleLoginPassword("legacy6"));
+  assert(!plausibleLoginPassword("12") && !plausibleLoginPassword("abc"));
+});
+
+Deno.test("PIN is HMAC-derived for Supabase Auth; passwords pass through", async () => {
+  const pepper = "p".repeat(32);
+  const a = await authPassword("1234", pepper);
+  assert(a.startsWith("pin1.") && a.length > 40, "long derived secret");
+  assertEquals(a, await authPassword("1234", pepper), "deterministic");
+  assert(a !== await authPassword("1235", pepper));
+  assert(a !== await authPassword("1234", "q".repeat(32)), "depends on the pepper");
+  assertEquals(await authPassword("longenough", undefined), "longenough");
+  let threw = false;
+  try { await authPassword("1234", undefined); } catch { threw = true; }
+  assert(threw, "PINs refused without PIN_PEPPER");
+});
 
 Deno.test("employee number normalisation", () => {
   assertEquals(normalizeEmployeeNumber(" emp001 "), "EMP001");
@@ -91,6 +118,7 @@ Deno.test("admin create validation", () => {
   assert(!validateCreate({ employee_number: "EMP010", full_name: "x", email: "bad", role: "employee", password: "longenough" }).ok);
   assert(!validateCreate({ employee_number: "EMP010", full_name: "x", email: "a@b.co", role: "superuser", password: "longenough" }).ok);
   assert(!validateCreate({ employee_number: "EMP010", full_name: "x", email: "a@b.co", role: "employee", password: "short" }).ok);
+  assert(validateCreate({ employee_number: "EMP010", full_name: "x", email: "a@b.co", role: "employee", password: "1234" }).ok, "4-digit PIN");
 });
 
 Deno.test("admin update validation", () => {

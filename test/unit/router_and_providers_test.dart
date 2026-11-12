@@ -64,7 +64,7 @@ void main() {
   group('navigation items by role', () {
     List<String> paths(String role) => navItemsFor(user('x', role)).map((e) => e.path).toList();
     test('employee', () => expect(paths('employee'), ['/dashboard', '/tickets', '/tickets/new']));
-    test('it_support', () => expect(paths('it_support'), contains('/queue')));
+    test('it_support', () => expect(paths('it_support'), containsAll(['/queue', '/summary'])));
     test('admin', () => expect(paths('administrator'), containsAll(['/queue', '/admin/users', '/admin/settings'])));
     test('selected index prefers the longest match', () {
       final items = navItemsFor(user('x', 'employee'));

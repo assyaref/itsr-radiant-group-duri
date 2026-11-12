@@ -73,9 +73,9 @@ class AuthController extends AsyncNotifier<void> {
     }
   }
 
-  /// Changes the signed-in user's password (8–128 characters).
-  Future<void> changePassword(String newPassword) =>
-      ref.read(authRepositoryProvider).changePassword(newPassword);
+  /// Changes the signed-in user's password: a 4–5 digit PIN or 8–128 characters.
+  Future<void> changePassword(String currentPassword, String newPassword) =>
+      ref.read(authRepositoryProvider).changePassword(currentPassword, newPassword);
 
   /// Re-reads the profile after a failed load (e.g. the network was down
   /// when the app started with a persisted session).

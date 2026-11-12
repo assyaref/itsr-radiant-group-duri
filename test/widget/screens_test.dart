@@ -261,7 +261,7 @@ void main() {
       final repo = FakeTicketRepository(tickets: [ticket('1'), ticket('2', status: 'resolved')]);
       await pumpApp(t, const DashboardScreen(),
           auth: FakeAuthRepository(profile: user('emp1', 'employee', name: 'Ani')), tickets: repo, size: phone);
-      expect(find.text('Hai, Ani 👋'), findsOneWidget);
+      expect(find.text('Hai, Ani'), findsOneWidget);
       expect(find.textContaining('Laporkan Masalah IT'), findsOneWidget);
       for (final label in ['Tiket Saya', 'Diproses', 'Menunggu', 'Selesai']) {
         expect(find.text(label), findsWidgets, reason: 'stat card "$label" (design)');

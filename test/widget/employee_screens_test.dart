@@ -5,6 +5,8 @@ import 'package:itsr_radiant/screens/employee/employee_tickets_screen.dart';
 import 'package:itsr_radiant/screens/employee/notifications_screen.dart';
 import 'package:itsr_radiant/screens/employee/profile_screen.dart';
 import 'package:itsr_radiant/screens/employee/ticket_submitted_screen.dart';
+import 'package:itsr_radiant/screens/summary_screen.dart';
+import 'package:itsr_radiant/utils/browser_files.dart';
 
 import '../support/fakes.dart';
 
@@ -65,16 +67,21 @@ void main() {
     }
     await t.tap(find.byKey(const Key('profile_password')));
     await t.pumpAndSettle();
+    await t.enterText(find.byKey(const Key('current_password_field')), '1234');
     await t.enterText(find.byKey(const Key('new_password_field')), 'short');
     await t.tap(find.byKey(const Key('save_password_button')));
     await t.pump();
-    expect(find.text('Password must be at least 8 characters'), findsOneWidget);
-    await t.enterText(find.byKey(const Key('new_password_field')), 'NewSecret123');
-    await t.enterText(find.byKey(const Key('confirm_password_field')), 'Different123');
+    expect(find.text('Use a 4–5 digit PIN or at least 8 characters'), findsOneWidget);
+    await t.enterText(find.byKey(const Key('new_password_field')), '123');
+    await t.tap(find.byKey(const Key('save_password_button')));
+    await t.pump();
+    expect(find.text('A numeric PIN must be exactly 4 or 5 digits'), findsOneWidget);
+    await t.enterText(find.byKey(const Key('new_password_field')), '54321');
+    await t.enterText(find.byKey(const Key('confirm_password_field')), '54320');
     await t.tap(find.byKey(const Key('save_password_button')));
     await t.pump();
     expect(find.text('Password tidak sama'), findsOneWidget);
-    await t.enterText(find.byKey(const Key('confirm_password_field')), 'NewSecret123');
+    await t.enterText(find.byKey(const Key('confirm_password_field')), '54321');
     await t.tap(find.byKey(const Key('save_password_button')));
     await t.pumpAndSettle();
     expect(auth.calls, contains('changePassword'));
@@ -90,11 +97,29 @@ void main() {
     expect(find.text('Kembali ke Beranda'), findsOneWidget);
   });
 
+  testWidgets('summary: counts and PDF export', (t) async {
+    final now = DateTime.now();
+    final repo = FakeTicketRepository(tickets: [
+      ticket('1').copyWithCreated(now),
+      ticket('2', status: 'resolved').copyWithCreated(now),
+    ]);
+    await pumpApp(t, const SummaryScreen(), auth: FakeAuthRepository(profile: emp), tickets: repo, size: phone);
+    expect(find.text('Ringkasan Tiket'), findsOneWidget);
+    expect(find.text('Total Tiket'), findsOneWidget);
+    expect(find.text('Per Kategori'), findsOneWidget);
+    debugDownloads.clear();
+    await t.tap(find.byKey(const Key('export_pdf_button')));
+    await t.pumpAndSettle();
+    expect(debugDownloads.single, startsWith('ringkasan-tiket-'));
+    expect(debugDownloads.single, endsWith('.pdf'));
+  });
+
   for (final (name, screen) in [
     ('notifications', const NotificationsScreen()),
     ('profile', const ProfileScreen()),
     ('ticket list', const EmployeeTicketsScreen()),
     ('submitted', const TicketSubmittedScreen(ticketId: '1')),
+    ('summary', const SummaryScreen()),
   ]) {
     testWidgets('no overflow on a 320px-wide phone: $name', (t) async {
       final repo = FakeTicketRepository(tickets: [ticket('1')]);

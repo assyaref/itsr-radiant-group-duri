@@ -319,7 +319,7 @@ class _UserDialogState extends ConsumerState<_UserDialog> {
                       obscureText: true,
                       decoration: const InputDecoration(
                         labelText: 'Initial password *',
-                        helperText: 'At least 8 characters. Share it with the user securely.',
+                        helperText: 'A 4–5 digit PIN or at least 8 characters. Share it securely.',
                       ),
                       validator: Validators.newPassword,
                     ),
@@ -370,7 +370,10 @@ class _PasswordDialogState extends State<_PasswordDialog> {
               TextFormField(
                 controller: _pw,
                 obscureText: true,
-                decoration: const InputDecoration(labelText: 'New password'),
+                decoration: const InputDecoration(
+                  labelText: 'New password',
+                  helperText: 'A 4–5 digit PIN or at least 8 characters',
+                ),
                 validator: Validators.newPassword,
               ),
               const SizedBox(height: 12),

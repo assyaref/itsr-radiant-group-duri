@@ -24,8 +24,10 @@ List<NavItem> navItemsFor(UserModel? user) => [
       const NavItem('/tickets', 'My Tickets', Icons.confirmation_number_outlined,
           Icons.confirmation_number),
       const NavItem('/tickets/new', 'New Ticket', Icons.add_circle_outline, Icons.add_circle),
-      if (user?.isStaff ?? false)
-        const NavItem('/queue', 'Support Queue', Icons.support_agent_outlined, Icons.support_agent),
+      if (user?.isStaff ?? false) ...const [
+        NavItem('/queue', 'Support Queue', Icons.support_agent_outlined, Icons.support_agent),
+        NavItem('/summary', 'Ticket Summary', Icons.insert_chart_outlined, Icons.insert_chart),
+      ],
       if (user?.isAdmin ?? false) ...const [
         NavItem('/admin/users', 'Users', Icons.people_outline, Icons.people),
         NavItem('/admin/categories', 'Categories', Icons.category_outlined, Icons.category),

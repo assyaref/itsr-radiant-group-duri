@@ -36,6 +36,12 @@ class ProfileScreen extends ConsumerWidget {
         () => _changePassword(context, ref),
       ),
       (
+        const Key('profile_summary'),
+        Icons.insert_chart_outlined_rounded,
+        'Ringkasan Tiket',
+        () => context.push('/summary'),
+      ),
+      (
         const Key('profile_notifications'),
         Icons.notifications_none_rounded,
         'Notifikasi',
@@ -287,6 +293,7 @@ class _ChangePasswordDialog extends ConsumerStatefulWidget {
 
 class _ChangePasswordDialogState extends ConsumerState<_ChangePasswordDialog> {
   final _form = GlobalKey<FormState>();
+  final _current = TextEditingController();
   final _pw = TextEditingController();
   final _confirm = TextEditingController();
   bool _busy = false;
@@ -295,6 +302,7 @@ class _ChangePasswordDialogState extends ConsumerState<_ChangePasswordDialog> {
 
   @override
   void dispose() {
+    _current.dispose();
     _pw.dispose();
     _confirm.dispose();
     super.dispose();
@@ -307,7 +315,7 @@ class _ChangePasswordDialogState extends ConsumerState<_ChangePasswordDialog> {
       _error = null;
     });
     try {
-      await ref.read(authControllerProvider.notifier).changePassword(_pw.text);
+      await ref.read(authControllerProvider.notifier).changePassword(_current.text, _pw.text);
       if (mounted) Navigator.pop(context, true);
     } catch (e) {
       if (mounted) setState(() => _error = friendlyError(e));
@@ -335,14 +343,25 @@ class _ChangePasswordDialogState extends ConsumerState<_ChangePasswordDialog> {
                 ),
               ),
             TextFormField(
+              key: const Key('current_password_field'),
+              controller: _current,
+              obscureText: _obscure,
+              enabled: !_busy,
+              autofillHints: const [AutofillHints.password],
+              decoration: const InputDecoration(labelText: 'Password / PIN saat ini'),
+              validator: (v) =>
+                  (v == null || v.isEmpty) ? 'Masukkan password saat ini' : null,
+            ),
+            const SizedBox(height: 12),
+            TextFormField(
               key: const Key('new_password_field'),
               controller: _pw,
               obscureText: _obscure,
               enabled: !_busy,
               autofillHints: const [AutofillHints.newPassword],
               decoration: InputDecoration(
-                labelText: 'Password baru',
-                helperText: 'Minimal 8 karakter',
+                labelText: 'Password / PIN baru',
+                helperText: 'PIN 4–5 digit angka, atau minimal 8 karakter',
                 suffixIcon: IconButton(
                   tooltip: _obscure
                       ? 'Tampilkan password'

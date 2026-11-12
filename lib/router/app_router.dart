@@ -16,6 +16,7 @@ import '../screens/employee/ticket_submitted_screen.dart';
 import '../screens/it_support_queue_screen.dart';
 import '../screens/login_screen.dart';
 import '../screens/my_tickets_screen.dart';
+import '../screens/summary_screen.dart';
 import '../screens/ticket_detail_screen.dart';
 import '../widgets/app_shell.dart';
 import '../widgets/common.dart';
@@ -146,6 +147,7 @@ final goRouterProvider = Provider<GoRouter>((ref) {
               ),
             ],
           ),
+          GoRoute(path: '/summary', builder: (_, _) => const SummaryScreen()),
           GoRoute(
             path: '/notifications',
             builder: (_, _) => const NotificationsScreen(),

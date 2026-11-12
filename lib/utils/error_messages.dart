@@ -12,17 +12,19 @@ class AppFailure implements Exception {
 
 class InvalidCredentials extends AppFailure {
   const InvalidCredentials()
-      : super('Authentication failed. Please check your credentials.');
+    : super('Authentication failed. Please check your credentials.');
 }
 
 class RateLimited extends AppFailure {
   const RateLimited()
-      : super('Too many login attempts. Please try again in 15 minutes.');
+    : super('Too many login attempts. Please try again in 15 minutes.');
 }
 
 class ServiceUnavailable extends AppFailure {
   const ServiceUnavailable()
-      : super('The service is temporarily unavailable. Please try again in a few minutes.');
+    : super(
+        'The service is temporarily unavailable. Please try again in a few minutes.',
+      );
 }
 
 /// Converts any error into a message that is safe and useful to show users.
@@ -57,9 +59,15 @@ String friendlyError(Object error) {
       final msg = (details['error'] as String).trim();
       if (msg.isNotEmpty && msg.length <= 300) return msg;
     }
-    if (error.status == 401) return 'Your session has expired. Please sign in again.';
-    if (error.status == 403) return 'You do not have permission to perform this action.';
-    if (error.status == 429) return 'Too many requests. Please wait a moment and try again.';
+    if (error.status == 401) {
+      return 'Your session has expired. Please sign in again.';
+    }
+    if (error.status == 403) {
+      return 'You do not have permission to perform this action.';
+    }
+    if (error.status == 429) {
+      return 'Too many requests. Please wait a moment and try again.';
+    }
     if (error.status >= 500) {
       return 'The server could not complete the request (${error.status}). Please try again later.';
     }

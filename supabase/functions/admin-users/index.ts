@@ -8,6 +8,7 @@
 //   { action: "reset_password", user_id, password }
 import { bearerToken, corsHeaders, json, readJsonObject, withErrorBoundary } from "../_shared/http.ts";
 import { adminClient, verifyCaller } from "../_shared/supabase.ts";
+import { authPassword } from "../_shared/password.ts";
 import { validateCreate, validateResetPassword, validateUpdate } from "./validation.ts";
 
 Deno.serve(withErrorBoundary("admin-users", async (req) => {
@@ -39,7 +40,7 @@ Deno.serve(withErrorBoundary("admin-users", async (req) => {
         }
 
         const { data: created, error: cErr } = await admin.auth.admin.createUser({
-          email: d.email, password: d.password, email_confirm: true,
+          email: d.email, password: await authPassword(d.password, Deno.env.get("PIN_PEPPER")), email_confirm: true,
         });
         if (cErr || !created.user) return json({ error: cErr?.message ?? "Could not create auth user" }, 400, headers);
 
@@ -98,7 +99,9 @@ Deno.serve(withErrorBoundary("admin-users", async (req) => {
         if (!v.ok) return json({ error: v.error }, 400, headers);
         const { data: target } = await admin.from("profiles").select("id").eq("id", v.value.user_id).maybeSingle();
         if (!target) return json({ error: "User not found" }, 404, headers);
-        const { error } = await admin.auth.admin.updateUserById(v.value.user_id, { password: v.value.password });
+        const { error } = await admin.auth.admin.updateUserById(v.value.user_id, {
+          password: await authPassword(v.value.password, Deno.env.get("PIN_PEPPER")),
+        });
         if (error) return json({ error: error.message }, 400, headers);
         return json({ ok: true }, 200, headers);
       }

@@ -18,8 +18,9 @@ abstract class AuthRepository {
   /// Profile of the signed-in user, or null if signed out / deactivated.
   Future<UserModel?> fetchCurrentProfile();
 
-  /// Changes the signed-in user's own password.
-  Future<void> changePassword(String newPassword);
+  /// Changes the signed-in user's own password (or 4–5 digit PIN) after
+  /// re-checking the current one server-side (`account` Edge Function).
+  Future<void> changePassword(String currentPassword, String newPassword);
 }
 
 class SupabaseAuthRepository implements AuthRepository {
@@ -93,8 +94,12 @@ class SupabaseAuthRepository implements AuthRepository {
   Future<void> signOut() => _client.auth.signOut();
 
   @override
-  Future<void> changePassword(String newPassword) async {
-    await _client.auth.updateUser(UserAttributes(password: newPassword));
+  Future<void> changePassword(String currentPassword, String newPassword) async {
+    await _client.functions.invoke('account', body: {
+      'action': 'change_password',
+      'current_password': currentPassword,
+      'new_password': newPassword,
+    });
   }
 
   @override

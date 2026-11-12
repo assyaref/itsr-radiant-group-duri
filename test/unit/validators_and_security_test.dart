@@ -31,8 +31,16 @@ void main() {
     });
 
     test('passwords and emails', () {
-      expect(Validators.loginPassword('12345'), isNotNull);
+      expect(Validators.loginPassword('123'), isNotNull);
+      expect(Validators.loginPassword('1234'), isNull, reason: '4-digit PIN');
+      expect(Validators.loginPassword('12345'), isNull, reason: '5-digit PIN');
+      expect(Validators.loginPassword('abcde'), isNotNull);
       expect(Validators.loginPassword('123456'), isNull);
+      expect(Validators.newPassword('1234'), isNull, reason: '4-digit PIN');
+      expect(Validators.newPassword('12345'), isNull, reason: '5-digit PIN');
+      expect(Validators.newPassword('123'), isNotNull);
+      expect(Validators.newPassword('123456'), isNotNull, reason: '6-7 digit numbers are neither');
+      expect(Validators.newPassword('12ab'), isNotNull);
       expect(Validators.newPassword('1234567'), isNotNull);
       expect(Validators.newPassword('12345678'), isNull);
       expect(Validators.email('a@b.co'), isNull);

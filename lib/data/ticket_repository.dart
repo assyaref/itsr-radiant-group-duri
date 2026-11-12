@@ -129,6 +129,17 @@ abstract class TicketRepository {
   /// Ask the server to deliver queued email notifications. Never throws.
   Future<void> kickNotifications();
 
+  /// Tickets created in [from, to) for the summary report: the caller's own
+  /// ([TicketScope.mine]) or every ticket they can see (staff, any other
+  /// scope). Capped at [limit] rows; newest first.
+  Future<List<TicketModel>> fetchTicketsInRange({
+    required TicketScope scope,
+    required String userId,
+    required DateTime from,
+    required DateTime to,
+    int limit = 2000,
+  });
+
   /// In-app notifications for [userId]: ticket events and other people's
   /// comments on tickets the caller can see (RLS-scoped), newest first.
   Future<List<AppNotification>> fetchNotifications({
@@ -335,6 +346,24 @@ class SupabaseTicketRepository implements TicketRepository {
       'reporter_ticket_action',
       params: {'p_ticket_id': ticketId, 'p_action': action, 'p_note': note},
     );
+  }
+
+  @override
+  Future<List<TicketModel>> fetchTicketsInRange({
+    required TicketScope scope,
+    required String userId,
+    required DateTime from,
+    required DateTime to,
+    int limit = 2000,
+  }) async {
+    var q = _client
+        .from('tickets')
+        .select(_ticketSelect)
+        .gte('created_at', from.toUtc().toIso8601String())
+        .lt('created_at', to.toUtc().toIso8601String());
+    if (scope == TicketScope.mine) q = q.eq('reporter_id', userId);
+    final rows = await q.order('created_at', ascending: false).limit(limit);
+    return rows.map(TicketModel.fromJson).toList();
   }
 
   @override

@@ -55,6 +55,15 @@ TicketModel ticket(
       assigneeName: assignedToId == null ? null : 'Tech Name',
     );
 
+extension TicketCreatedAt on TicketModel {
+  TicketModel copyWithCreated(DateTime at) => TicketModel(
+        id: id, ticketNumber: ticketNumber, subject: subject, description: description,
+        category: category, priority: priority, status: status, reporterId: reporterId,
+        assignedToId: assignedToId, resolution: resolution, createdAt: at, updatedAt: at,
+        reporterName: reporterName, assigneeName: assigneeName,
+      );
+}
+
 class FakeAuthRepository implements AuthRepository {
   FakeAuthRepository({this.profile, this.signInError});
   UserModel? profile;
@@ -86,7 +95,8 @@ class FakeAuthRepository implements AuthRepository {
   }
 
   @override
-  Future<void> changePassword(String newPassword) async => calls.add('changePassword');
+  Future<void> changePassword(String currentPassword, String newPassword) async =>
+      calls.add('changePassword');
 
   @override
   Future<void> signOut() async {
@@ -210,6 +220,19 @@ class FakeTicketRepository implements TicketRepository {
   Future<void> kickNotifications() async => calls.add('kick');
 
   List<AppNotification> notifications = [];
+
+  @override
+  Future<List<TicketModel>> fetchTicketsInRange({
+    required TicketScope scope,
+    required String userId,
+    required DateTime from,
+    required DateTime to,
+    int limit = 2000,
+  }) async =>
+      tickets
+          .where((t) => scope != TicketScope.mine || t.reporterId == userId)
+          .where((t) => !t.createdAt.isBefore(from) && t.createdAt.isBefore(to))
+          .toList();
 
   @override
   Future<List<AppNotification>> fetchNotifications({required String userId, int limit = 30}) async =>
