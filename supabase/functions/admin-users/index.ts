@@ -8,7 +8,7 @@
 //   { action: "reset_password", user_id, password }
 import { bearerToken, corsHeaders, json, readJsonObject, withErrorBoundary } from "../_shared/http.ts";
 import { adminClient, verifyCaller } from "../_shared/supabase.ts";
-import { authPassword } from "../_shared/password.ts";
+import { authPassword, isPin, PIN_NOT_CONFIGURED, pinSupported } from "../_shared/password.ts";
 import { validateCreate, validateResetPassword, validateUpdate } from "./validation.ts";
 
 Deno.serve(withErrorBoundary("admin-users", async (req) => {
@@ -23,6 +23,9 @@ Deno.serve(withErrorBoundary("admin-users", async (req) => {
 
   const body = await readJsonObject(req);
   if (!body) return json({ error: "Invalid JSON body" }, 400, headers);
+  if (typeof body.password === "string" && isPin(body.password) && !pinSupported(Deno.env.get("PIN_PEPPER"))) {
+    return json({ error: PIN_NOT_CONFIGURED }, 503, headers);
+  }
 
   try {
     switch (body.action) {

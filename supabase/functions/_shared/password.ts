@@ -40,6 +40,14 @@ function b64url(bytes: Uint8Array): string {
   return btoa(s).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
 }
 
+/** Whether PINs can be used (PIN_PEPPER configured with >= 32 characters). */
+export function pinSupported(pepper: string | undefined): boolean {
+  return !!pepper && pepper.length >= 32;
+}
+
+export const PIN_NOT_CONFIGURED =
+  "PIN 4–5 digit belum diaktifkan oleh administrator. Gunakan password minimal 8 karakter.";
+
 /**
  * The password actually stored in / sent to Supabase Auth.
  * PINs need PIN_PEPPER (min. 32 characters); without it PINs are refused.

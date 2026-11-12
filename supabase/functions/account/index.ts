@@ -9,7 +9,7 @@
 // Supabase Auth rejects passwords shorter than 6 characters.
 import { bearerToken, clientIp, corsHeaders, json, readJsonObject, withErrorBoundary } from "../_shared/http.ts";
 import { adminClient, publicClient, verifyCaller } from "../_shared/supabase.ts";
-import { authPassword, newPasswordError, plausibleLoginPassword } from "../_shared/password.ts";
+import { authPassword, isPin, newPasswordError, PIN_NOT_CONFIGURED, pinSupported, plausibleLoginPassword } from "../_shared/password.ts";
 
 Deno.serve(withErrorBoundary("account", async (req) => {
   const headers = corsHeaders(req.headers.get("origin"), Deno.env.get("ALLOWED_ORIGINS"));
@@ -28,6 +28,7 @@ Deno.serve(withErrorBoundary("account", async (req) => {
   const next = typeof body.new_password === "string" ? body.new_password : "";
   const err = newPasswordError(next);
   if (err) return json({ error: err }, 400, headers);
+  if (isPin(next) && !pinSupported(pepper)) return json({ error: PIN_NOT_CONFIGURED }, 503, headers);
 
   const ip = clientIp(req);
   const { data: limited, error: rlError } = await admin.rpc("login_is_rate_limited", {
