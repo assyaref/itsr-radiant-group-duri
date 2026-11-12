@@ -332,9 +332,10 @@ class _BrandHeader extends StatelessWidget {
         const SizedBox(height: 10),
       ],
       Text(
-        'IT Support',
+        'IT Support & Service Request',
+        textAlign: TextAlign.center,
         style: TextStyle(
-          fontSize: compact ? 18 : 24,
+          fontSize: compact ? 18 : 22,
           fontWeight: FontWeight.w800,
           color: const Color(0xFF0F172A),
           height: 1.1,

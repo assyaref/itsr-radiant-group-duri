@@ -76,7 +76,7 @@ void main() {
 
     testWidgets('welcome page matches the design: both sign-in options', (t) async {
       await pumpApp(t, const LoginScreen(), auth: FakeAuthRepository(), size: phone);
-      expect(find.text('IT Support'), findsOneWidget);
+      expect(find.text('IT Support & Service Request'), findsOneWidget);
       expect(find.text('Cabang Duri'), findsOneWidget);
       expect(find.textContaining('Solusi Cepat'), findsOneWidget);
       expect(find.byKey(const Key('email_login_entry')), findsOneWidget);
