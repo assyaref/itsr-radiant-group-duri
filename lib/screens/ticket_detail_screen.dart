@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 
 import '../constants/app_constants.dart';
 import '../constants/app_theme.dart';
@@ -14,7 +13,11 @@ import '../providers/tickets_provider.dart';
 import '../utils/error_messages.dart';
 import '../utils/formatters.dart';
 import '../widgets/common.dart';
+import '../widgets/employee_ui.dart';
 
+/// "7.–9. Detail Tiket" of the design: coloured header, progress
+/// (Dibuat → Diproses → Selesai) and tabs Detail / Komentar / Lampiran.
+/// IT Support additionally gets the workflow actions in the Detail tab.
 class TicketDetailScreen extends ConsumerWidget {
   const TicketDetailScreen({super.key, required this.ticketId});
   final String ticketId;
@@ -24,79 +27,61 @@ class TicketDetailScreen extends ConsumerWidget {
     final detail = ref.watch(ticketDetailProvider(ticketId));
     final user = ref.watch(currentUserProvider).valueOrNull;
 
-    return detail.when(
-      skipLoadingOnRefresh: true,
-      skipLoadingOnReload: true,
-      loading: () => const LoadingView(),
-      error: (e, _) => ErrorView(
-        error: e,
-        onRetry: () => ref.invalidate(ticketDetailProvider(ticketId)),
+    return Scaffold(
+      backgroundColor: EColors.page,
+      appBar: EHeader(
+        title: 'Detail Tiket',
+        onBack: () => goBack(context, fallback: '/tickets'),
       ),
-      data: (d) {
-        if (user == null) return const LoadingView();
-        return DefaultTabController(
-          length: 3,
-          child: Scaffold(
-            appBar: AppBar(
-              leading: IconButton(
-                icon: const Icon(Icons.arrow_back),
-                tooltip: 'Kembali',
-                // Opened from a shared link there is nothing to pop.
-                onPressed: () =>
-                    context.canPop() ? context.pop() : context.go('/tickets'),
-              ),
-              title: const Text('Detail Tiket'),
-              centerTitle: false,
-              elevation: 0,
-              bottom: TabBar(
-                labelColor: AppTheme.primary,
-                unselectedLabelColor: AppTheme.muted,
-                indicatorColor: AppTheme.primary,
-                tabs: const [
-                  Tab(text: 'Detail'),
-                  Tab(text: 'Komentar'),
-                  Tab(text: 'Lampiran'),
+      body: detail.when(
+        skipLoadingOnRefresh: true,
+        skipLoadingOnReload: true,
+        loading: () => const LoadingView(),
+        error: (e, _) => ErrorView(
+          error: e,
+          onRetry: () => ref.invalidate(ticketDetailProvider(ticketId)),
+        ),
+        data: (d) {
+          if (user == null) return const LoadingView();
+          final visibleComments = user.isStaff
+              ? d.comments
+              : d.comments.where((c) => !c.isInternal).toList();
+          return DefaultTabController(
+            length: 3,
+            child: NestedScrollView(
+              headerSliverBuilder: (context, _) => [
+                SliverToBoxAdapter(
+                  child: Padding(
+                    padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+                    child: Column(
+                      children: [
+                        _Header(ticket: d.ticket),
+                        const SizedBox(height: 12),
+                        _Progress(detail: d),
+                        const SizedBox(height: 12),
+                      ],
+                    ),
+                  ),
+                ),
+                SliverPersistentHeader(
+                  pinned: true,
+                  delegate: _TabsHeader(commentCount: visibleComments.length),
+                ),
+              ],
+              body: TabBarView(
+                children: [
+                  _DetailTab(detail: d, user: user),
+                  _CommentsTab(
+                    detail: d,
+                    user: user,
+                    comments: visibleComments,
+                  ),
+                  const _AttachmentsTab(),
                 ],
               ),
             ),
-            body: TabBarView(
-              children: [
-                _DetailTab(ticket: d.ticket, user: user),
-                _CommentsTab(detail: d, user: user),
-                _AttachmentsTab(ticket: d.ticket),
-              ],
-            ),
-          ),
-        );
-      },
-    );
-  }
-}
-
-// ---------------------------------------------------------------------------
-/// Detail tab: header meta + actions.
-class _DetailTab extends StatelessWidget {
-  const _DetailTab({required this.ticket, required this.user});
-  final TicketModel ticket;
-  final UserModel user;
-
-  @override
-  Widget build(BuildContext context) {
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          _Header(ticket: ticket),
-          const SizedBox(height: 16),
-          if (user.isStaff) ...[
-            _StaffActions(ticket: ticket, user: user),
-            const SizedBox(height: 16),
-          ] else if (ticket.reporterId == user.id) ...[
-            _ReporterActions(ticket: ticket),
-            const SizedBox(height: 16),
-          ],
-        ],
+          );
+        },
       ),
     );
   }
@@ -110,95 +95,453 @@ class _Header extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final t = ticket;
-    final meta = <(String, String)>[
-      ('Category', t.category),
-      ('Priority', Fmt.priority(t.priority)),
-      ('Reporter', t.reporterName ?? '—'),
-      ('Assigned to', t.assigneeName ?? 'Unassigned'),
-      ('Created', Fmt.dateTime(t.createdAt)),
-      ('Last update', Fmt.dateTime(t.updatedAt)),
-      if (t.resolvedAt != null) ('Resolved', Fmt.dateTime(t.resolvedAt!)),
-      if (t.closedAt != null) ('Closed', Fmt.dateTime(t.closedAt!)),
-    ];
-    return Card(
-      elevation: 0,
+    final tint = EColors.priority(t.priority);
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Color.alphaBlend(tint.withValues(alpha: 0.08), Colors.white),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: tint.withValues(alpha: 0.18)),
+      ),
       child: SelectionArea(
-        child: Padding(
-          padding: const EdgeInsets.all(20),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    t.ticketNumber,
+                    style: TextStyle(
+                      color: tint,
+                      fontWeight: FontWeight.w700,
+                      fontSize: 14,
+                    ),
+                  ),
+                ),
+                ETag.priority(t.priority),
+                const SizedBox(width: 6),
+                ETag.status(t.status),
+              ],
+            ),
+            const SizedBox(height: 10),
+            Text(
+              t.subject,
+              style: const TextStyle(
+                fontSize: 17,
+                fontWeight: FontWeight.w700,
+                color: EColors.ink,
+                height: 1.3,
+              ),
+            ),
+            const SizedBox(height: 6),
+            Text(
+              t.description,
+              style: const TextStyle(
+                color: EColors.text,
+                fontSize: 13.5,
+                height: 1.45,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// Dibuat → Diproses → Selesai with the moment each step was reached.
+class _Progress extends StatelessWidget {
+  const _Progress({required this.detail});
+  final TicketDetail detail;
+
+  DateTime? get _startedAt {
+    for (final a in detail.activities) {
+      final started =
+          (a.action == ActivityModel.actionAssigned && a.newValue != null) ||
+          (a.action == ActivityModel.actionStatusChanged &&
+              (a.newValue == AppConstants.statusInProgress ||
+                  a.newValue == AppConstants.statusAssigned));
+      if (started) return a.createdAt;
+    }
+    return null;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final t = detail.ticket;
+    final started =
+        _startedAt ??
+        (t.status != AppConstants.statusOpen ? t.updatedAt : null);
+    final done = t.resolvedAt ?? t.closedAt;
+    final steps = [
+      ('Dibuat', t.createdAt),
+      ('Diproses', t.status == AppConstants.statusOpen ? null : started),
+      ('Selesai', t.isFinished ? done : null),
+    ];
+    return ECard(
+      padding: const EdgeInsets.fromLTRB(12, 14, 12, 12),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          for (var i = 0; i < steps.length; i++) ...[
+            Expanded(
+              child: _ProgressNode(
+                label: steps[i].$1,
+                at: steps[i].$2,
+                reached: steps[i].$2 != null,
+                alignment: i == 0
+                    ? CrossAxisAlignment.start
+                    : (i == steps.length - 1
+                          ? CrossAxisAlignment.end
+                          : CrossAxisAlignment.center),
+                lineBefore: i > 0 ? steps[i].$2 != null : null,
+                lineAfter: i < steps.length - 1
+                    ? steps[i + 1].$2 != null
+                    : null,
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+class _ProgressNode extends StatelessWidget {
+  const _ProgressNode({
+    required this.label,
+    required this.at,
+    required this.reached,
+    required this.alignment,
+    this.lineBefore,
+    this.lineAfter,
+  });
+  final String label;
+  final DateTime? at;
+  final bool reached;
+  final CrossAxisAlignment alignment;
+  final bool? lineBefore;
+  final bool? lineAfter;
+
+  @override
+  Widget build(BuildContext context) {
+    Widget line(bool? on) => on == null
+        ? const Spacer()
+        : Expanded(
+            child: Container(
+              height: 2,
+              color: on ? EColors.blue : EColors.line,
+            ),
+          );
+    final dot = Container(
+      width: 18,
+      height: 18,
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        color: Colors.white,
+        border: Border.all(
+          color: reached ? EColors.blue : EColors.grey,
+          width: 2,
+        ),
+      ),
+      alignment: Alignment.center,
+      child: reached
+          ? Container(
+              width: 8,
+              height: 8,
+              decoration: const BoxDecoration(
+                shape: BoxShape.circle,
+                color: EColors.blue,
+              ),
+            )
+          : null,
+    );
+    final textAlign = switch (alignment) {
+      CrossAxisAlignment.start => TextAlign.left,
+      CrossAxisAlignment.end => TextAlign.right,
+      _ => TextAlign.center,
+    };
+    return Semantics(
+      label: '$label: ${at == null ? 'belum' : Fmt.dateTime(at!)}',
+      excludeSemantics: true,
+      child: Column(
+        crossAxisAlignment: alignment,
+        children: [
+          SizedBox(
+            height: 18,
+            child: Row(
+              children: [
+                if (alignment != CrossAxisAlignment.start) line(lineBefore),
+                dot,
+                if (alignment != CrossAxisAlignment.end) line(lineAfter),
+              ],
+            ),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            label,
+            textAlign: textAlign,
+            style: TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
+              color: reached ? EColors.ink : EColors.muted,
+            ),
+          ),
+          Text(
+            at == null ? '-' : Fmt.dateTime(at!),
+            textAlign: textAlign,
+            style: const TextStyle(fontSize: 11, color: EColors.muted),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _TabsHeader extends SliverPersistentHeaderDelegate {
+  _TabsHeader({required this.commentCount});
+  final int commentCount;
+
+  @override
+  double get minExtent => 60;
+  @override
+  double get maxExtent => 60;
+
+  @override
+  bool shouldRebuild(_TabsHeader old) => old.commentCount != commentCount;
+
+  @override
+  Widget build(
+    BuildContext context,
+    double shrinkOffset,
+    bool overlapsContent,
+  ) {
+    Widget tab(String label, int? count) => Tab(
+      height: 40,
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Flexible(
+            child: Text(label, maxLines: 1, overflow: TextOverflow.ellipsis),
+          ),
+          if (count != null) ...[
+            const SizedBox(width: 6),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
+              decoration: BoxDecoration(
+                color: const Color(0xFFE2E8F0),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Text(
+                '$count',
+                style: const TextStyle(fontSize: 11, color: EColors.text),
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+    return Container(
+      color: EColors.page,
+      padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
+      child: Container(
+        padding: const EdgeInsets.all(3),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: EColors.line),
+        ),
+        child: TabBar(
+          dividerColor: Colors.transparent,
+          indicatorSize: TabBarIndicatorSize.tab,
+          indicator: BoxDecoration(
+            color: EColors.blueSoft,
+            borderRadius: BorderRadius.circular(9),
+            border: Border.all(color: const Color(0xFFBFD4FE)),
+          ),
+          labelPadding: const EdgeInsets.symmetric(horizontal: 4),
+          labelColor: EColors.blue,
+          unselectedLabelColor: EColors.text,
+          labelStyle: const TextStyle(
+            fontWeight: FontWeight.w700,
+            fontSize: 13,
+          ),
+          unselectedLabelStyle: const TextStyle(
+            fontWeight: FontWeight.w500,
+            fontSize: 13,
+          ),
+          tabs: [
+            tab('Detail', null),
+            tab('Komentar', commentCount),
+            tab('Lampiran', 0),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// ---------------------------------------------------------------------------
+/// Detail tab: information, resolution, actions and history.
+class _DetailTab extends StatelessWidget {
+  const _DetailTab({required this.detail, required this.user});
+  final TicketDetail detail;
+  final UserModel user;
+
+  @override
+  Widget build(BuildContext context) {
+    final t = detail.ticket;
+    final info = <(IconData, Color, String, String)>[
+      (categoryStyle(t.category).$1, EColors.blue, 'Kategori', t.category),
+      (
+        Icons.error_rounded,
+        EColors.priority(t.priority),
+        'Prioritas',
+        Fmt.priority(t.priority),
+      ),
+      (
+        Icons.flag_outlined,
+        EColors.status(t.status),
+        'Status',
+        Fmt.statusId(t.status),
+      ),
+      (
+        Icons.support_agent,
+        EColors.purple,
+        'Ditangani oleh',
+        t.assigneeName ?? 'Belum ditugaskan',
+      ),
+      (Icons.person_outline, EColors.teal, 'Pelapor', t.reporterName ?? '—'),
+      (Icons.schedule, EColors.muted, 'Diperbarui', Fmt.dateTime(t.updatedAt)),
+    ];
+    final history = [...detail.activities]
+      ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
+    return ListView(
+      padding: const EdgeInsets.fromLTRB(16, 4, 16, 24),
+      children: [
+        ECard(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Wrap(
-                spacing: 8,
-                runSpacing: 8,
-                crossAxisAlignment: WrapCrossAlignment.center,
-                children: [
-                  Text(t.ticketNumber,
-                      style: TextStyle(
-                          color: AppTheme.muted, fontWeight: FontWeight.bold)),
-                  StatusChip(t.status),
-                  PriorityChip(t.priority),
-                ],
+              const Text(
+                'Informasi',
+                style: TextStyle(
+                  fontSize: 15,
+                  fontWeight: FontWeight.w700,
+                  color: EColors.ink,
+                ),
               ),
               const SizedBox(height: 12),
-              Text(t.subject,
-                  style: Theme.of(context)
-                      .textTheme
-                      .titleLarge
-                      ?.copyWith(fontWeight: FontWeight.bold)),
-              const SizedBox(height: 16),
-              Wrap(
-                spacing: 24,
-                runSpacing: 12,
-                children: [
-                  for (final (label, value) in meta)
-                    SizedBox(
-                      width: 160,
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(label,
-                              style: TextStyle(
-                                  color: AppTheme.muted, fontSize: 12)),
-                          Text(value,
-                              style: const TextStyle(fontWeight: FontWeight.w500)),
-                        ],
-                      ),
-                    ),
-                ],
-              ),
-              const Divider(height: 32),
-              Text('Description',
-                  style: Theme.of(context).textTheme.titleMedium),
-              const SizedBox(height: 8),
-              Text(t.description),
-              if (t.resolution != null && t.resolution!.isNotEmpty) ...[
-                const SizedBox(height: 16),
-                Container(
-                  width: double.infinity,
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFDCFCE7),
-                    borderRadius: BorderRadius.circular(10),
-                    border: Border.all(color: const Color(0xFF86EFAC)),
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
+              LayoutBuilder(
+                builder: (context, c) {
+                  final w = (c.maxWidth - 12) / 2;
+                  return Wrap(
+                    spacing: 12,
+                    runSpacing: 14,
                     children: [
-                      Text('Resolution',
-                          style: TextStyle(
-                              fontWeight: FontWeight.bold,
-                              color: const Color(0xFF15803D))),
-                      const SizedBox(height: 4),
-                      Text(t.resolution!),
+                      for (final (icon, color, label, value) in info)
+                        SizedBox(
+                          width: w,
+                          child: Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Icon(icon, size: 20, color: color),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      label,
+                                      style: const TextStyle(
+                                        fontSize: 11.5,
+                                        color: EColors.muted,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 2),
+                                    Text(
+                                      value,
+                                      style: const TextStyle(
+                                        fontSize: 13.5,
+                                        fontWeight: FontWeight.w600,
+                                        color: EColors.ink,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
                     ],
-                  ),
-                ),
-              ],
+                  );
+                },
+              ),
             ],
           ),
         ),
-      ),
+        if (t.resolution != null && t.resolution!.isNotEmpty) ...[
+          const SizedBox(height: 12),
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(14),
+            decoration: BoxDecoration(
+              color: const Color(0xFFDCFCE7),
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(color: const Color(0xFF86EFAC)),
+            ),
+            child: SelectionArea(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    'Penyelesaian',
+                    style: TextStyle(
+                      fontWeight: FontWeight.w700,
+                      color: Color(0xFF15803D),
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(t.resolution!),
+                ],
+              ),
+            ),
+          ),
+        ],
+        const SizedBox(height: 12),
+        if (user.isStaff)
+          _StaffActions(ticket: t, user: user)
+        else if (t.reporterId == user.id)
+          _ReporterActions(ticket: t),
+        const SizedBox(height: 12),
+        ECard(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                'Riwayat',
+                style: TextStyle(
+                  fontSize: 15,
+                  fontWeight: FontWeight.w700,
+                  color: EColors.ink,
+                ),
+              ),
+              const SizedBox(height: 4),
+              if (history.isEmpty)
+                const Padding(
+                  padding: EdgeInsets.symmetric(vertical: 8),
+                  child: Text(
+                    'Belum ada aktivitas.',
+                    style: TextStyle(color: EColors.muted),
+                  ),
+                ),
+              for (final a in history) _ActivityItem(a),
+            ],
+          ),
+        ),
+      ],
     );
   }
 }
@@ -231,13 +574,17 @@ class _StaffActions extends ConsumerStatefulWidget {
   ConsumerState<_StaffActions> createState() => _StaffActionsState();
 }
 
-class _StaffActionsState extends ConsumerState<_StaffActions> with _ActionRunner {
+class _StaffActionsState extends ConsumerState<_StaffActions>
+    with _ActionRunner {
   TicketActions get _actions => ref.read(ticketActionsProvider);
   TicketModel get t => widget.ticket;
 
   static const _statusLabels = {
     AppConstants.statusInProgress: ('Start work', Icons.play_arrow),
-    AppConstants.statusPendingUser: ('Waiting for user', Icons.hourglass_bottom),
+    AppConstants.statusPendingUser: (
+      'Waiting for user',
+      Icons.hourglass_bottom,
+    ),
     AppConstants.statusResolved: ('Resolve', Icons.check_circle),
     AppConstants.statusClosed: ('Close', Icons.lock),
     AppConstants.statusReopened: ('Reopen', Icons.replay),
@@ -247,14 +594,19 @@ class _StaffActionsState extends ConsumerState<_StaffActions> with _ActionRunner
   Future<void> _changeStatus(String status) async {
     String? resolution;
     if (status == AppConstants.statusResolved ||
-        (status == AppConstants.statusClosed && (t.resolution ?? '').trim().isEmpty)) {
+        (status == AppConstants.statusClosed &&
+            (t.resolution ?? '').trim().isEmpty)) {
       resolution = await showTextInputDialog(
         context,
-        title: status == AppConstants.statusResolved ? 'Resolve ticket' : 'Close ticket',
+        title: status == AppConstants.statusResolved
+            ? 'Resolve ticket'
+            : 'Close ticket',
         label: status == AppConstants.statusResolved
             ? 'What was done to resolve it? (visible to the employee)'
             : 'Reason for closing (e.g. duplicate of ITSR-00012)',
-        confirmLabel: status == AppConstants.statusResolved ? 'Resolve' : 'Close',
+        confirmLabel: status == AppConstants.statusResolved
+            ? 'Resolve'
+            : 'Close',
         initialValue: t.resolution,
         minLength: 5,
       );
@@ -270,12 +622,16 @@ class _StaffActionsState extends ConsumerState<_StaffActions> with _ActionRunner
       );
       if (!ok) return;
     }
-    await run(() => _actions.changeStatus(t.id, status, resolution: resolution),
-        'Status updated to ${Fmt.status(status)}');
+    await run(
+      () => _actions.changeStatus(t.id, status, resolution: resolution),
+      'Status updated to ${Fmt.status(status)}',
+    );
   }
 
   Future<void> _assign() async {
-    final staff = await ref.read(assignableStaffProvider.future).catchError((Object e) {
+    final staff = await ref.read(assignableStaffProvider.future).catchError((
+      Object e,
+    ) {
       if (mounted) showSnack(context, friendlyError(e), error: true);
       return <StaffMember>[];
     });
@@ -290,7 +646,11 @@ class _StaffActionsState extends ConsumerState<_StaffActions> with _ActionRunner
               onPressed: () => Navigator.pop(ctx, s),
               child: ListTile(
                 contentPadding: EdgeInsets.zero,
-                leading: Icon(s.id == t.assignedToId ? Icons.radio_button_checked : Icons.person_outline),
+                leading: Icon(
+                  s.id == t.assignedToId
+                      ? Icons.radio_button_checked
+                      : Icons.person_outline,
+                ),
                 title: Text(s.fullName),
                 subtitle: Text('${s.employeeNumber} • ${Fmt.role(s.role)}'),
               ),
@@ -299,12 +659,18 @@ class _StaffActionsState extends ConsumerState<_StaffActions> with _ActionRunner
       ),
     );
     if (chosen == null || chosen.id == t.assignedToId) return;
-    await run(() => _actions.assignTicket(t.id, chosen.id), 'Assigned to ${chosen.fullName}');
+    await run(
+      () => _actions.assignTicket(t.id, chosen.id),
+      'Assigned to ${chosen.fullName}',
+    );
   }
 
   Future<void> _priority(String? p) async {
     if (p == null || p == t.priority) return;
-    await run(() => _actions.changePriority(t.id, p), 'Priority set to ${Fmt.priority(p)}');
+    await run(
+      () => _actions.changePriority(t.id, p),
+      'Priority set to ${Fmt.priority(p)}',
+    );
   }
 
   @override
@@ -318,14 +684,23 @@ class _StaffActionsState extends ConsumerState<_StaffActions> with _ActionRunner
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Row(children: [
-              Expanded(
-                child: Text('IT Support actions',
+            Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    'IT Support actions',
                     overflow: TextOverflow.ellipsis,
-                    style: Theme.of(context).textTheme.titleMedium),
-              ),
-              if (busy) const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2)),
-            ]),
+                    style: Theme.of(context).textTheme.titleMedium,
+                  ),
+                ),
+                if (busy)
+                  const SizedBox(
+                    width: 18,
+                    height: 18,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  ),
+              ],
+            ),
             const SizedBox(height: 12),
             Wrap(
               spacing: 8,
@@ -336,9 +711,14 @@ class _StaffActionsState extends ConsumerState<_StaffActions> with _ActionRunner
                     key: const Key('accept_ticket_button'),
                     onPressed: busy
                         ? null
-                        : () => run(() => _actions.acceptTicket(t.id), 'You are now assigned to this ticket'),
+                        : () => run(
+                            () => _actions.acceptTicket(t.id),
+                            'You are now assigned to this ticket',
+                          ),
                     icon: const Icon(Icons.pan_tool_alt),
-                    label: Text(t.assignedToId == null ? 'Accept ticket' : 'Take over'),
+                    label: Text(
+                      t.assignedToId == null ? 'Accept ticket' : 'Take over',
+                    ),
                   ),
                 if (!t.isFinished)
                   OutlinedButton.icon(
@@ -361,7 +741,10 @@ class _StaffActionsState extends ConsumerState<_StaffActions> with _ActionRunner
               child: DropdownButtonFormField<String>(
                 key: ValueKey('priority_${t.priority}'),
                 initialValue: t.priority,
-                decoration: const InputDecoration(labelText: 'Priority', isDense: true),
+                decoration: const InputDecoration(
+                  labelText: 'Priority',
+                  isDense: true,
+                ),
                 items: [
                   for (final p in AppConstants.priorities)
                     DropdownMenuItem(value: p, child: Text(Fmt.priority(p))),
@@ -384,7 +767,8 @@ class _ReporterActions extends ConsumerStatefulWidget {
   ConsumerState<_ReporterActions> createState() => _ReporterActionsState();
 }
 
-class _ReporterActionsState extends ConsumerState<_ReporterActions> with _ActionRunner {
+class _ReporterActionsState extends ConsumerState<_ReporterActions>
+    with _ActionRunner {
   @override
   Widget build(BuildContext context) {
     final t = widget.ticket;
@@ -394,59 +778,77 @@ class _ReporterActionsState extends ConsumerState<_ReporterActions> with _Action
 
     switch (t.status) {
       case AppConstants.statusResolved:
-        message = 'IT Support marked this ticket as resolved. Is your problem fixed?';
-        buttons.add(FilledButton.icon(
+        message = 'IT Support menandai tiket ini selesai. Apakah masalah Anda sudah teratasi?';
+        buttons.add(
+          FilledButton.icon(
+            onPressed: busy
+                ? null
+                : () async {
+                    final ok = await showConfirmDialog(
+                      context,
+                      title: 'Konfirmasi & tutup',
+                      message:
+                          'Tutup ${t.ticketNumber}? Anda masih bisa membukanya kembali jika masalah muncul lagi.',
+                      confirmLabel: 'Tutup tiket',
+                    );
+                    if (ok) {
+                      await run(
+                        () => actions.confirmClose(t.id),
+                        'Tiket ditutup. Terima kasih!',
+                      );
+                    }
+                  },
+            icon: const Icon(Icons.check),
+            label: const Text('Ya, tutup tiket'),
+          ),
+        );
+      case AppConstants.statusClosed:
+        message = 'Tiket ini sudah ditutup.';
+      case AppConstants.statusPendingUser:
+        message = 'IT Support menunggu informasi dari Anda. Silakan balas melalui tab Komentar.';
+      default:
+        message = 'IT Support akan memperbarui tiket ini selama penanganan. Anda akan mendapat notifikasi email.';
+    }
+    if (t.isFinished) {
+      buttons.add(
+        OutlinedButton.icon(
           onPressed: busy
               ? null
               : () async {
-                  final ok = await showConfirmDialog(context,
-                      title: 'Confirm and close',
-                      message: 'Close ${t.ticketNumber}? You can still reopen it later if the problem returns.',
-                      confirmLabel: 'Close ticket');
-                  if (ok) await run(() => actions.confirmClose(t.id), 'Ticket closed. Thank you!');
+                  final reason = await showTextInputDialog(
+                    context,
+                    title: 'Buka ulang tiket',
+                    label: 'Mengapa masalah belum teratasi?',
+                    confirmLabel: 'Buka Ulang',
+                    minLength: 5,
+                  );
+                  if (reason != null) {
+                    await run(
+                      () => actions.reopen(t.id, reason),
+                      'Tiket dibuka ulang. IT Support sudah diberi tahu.',
+                    );
+                  }
                 },
-          icon: const Icon(Icons.check),
-          label: const Text('Yes, close ticket'),
-        ));
-      case AppConstants.statusClosed:
-        message = 'This ticket is closed.';
-      case AppConstants.statusPendingUser:
-        message = 'IT Support is waiting for information from you. Please reply with a comment below.';
-      default:
-        message = 'IT Support will update this ticket as work progresses. You will be notified by email.';
-    }
-    if (t.isFinished) {
-      buttons.add(OutlinedButton.icon(
-        onPressed: busy
-            ? null
-            : () async {
-                final reason = await showTextInputDialog(context,
-                    title: 'Reopen ticket',
-                    label: 'Why is the problem not solved?',
-                    confirmLabel: 'Reopen',
-                    minLength: 5);
-                if (reason != null) {
-                  await run(() => actions.reopen(t.id, reason), 'Ticket reopened. IT Support has been notified.');
-                }
-              },
-        icon: const Icon(Icons.replay),
-        label: const Text('Reopen'),
-      ));
+          icon: const Icon(Icons.replay),
+          label: const Text('Buka Ulang'),
+        ),
+      );
     }
 
-    return Card(
-      elevation: 0,
-      color: AppTheme.primary.withValues(alpha: 0.05),
+    return ECard(
+      color: EColors.blueSoft,
       child: Padding(
-        padding: const EdgeInsets.all(16),
+        padding: EdgeInsets.zero,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Row(children: [
-              Icon(Icons.info_outline, color: AppTheme.primary),
-              const SizedBox(width: 8),
-              Expanded(child: Text(message)),
-            ]),
+            Row(
+              children: [
+                const Icon(Icons.info_rounded, color: EColors.blue),
+                const SizedBox(width: 8),
+                Expanded(child: Text(message)),
+              ],
+            ),
             if (buttons.isNotEmpty) ...[
               const SizedBox(height: 12),
               Wrap(spacing: 8, runSpacing: 8, children: buttons),
@@ -459,11 +861,16 @@ class _ReporterActionsState extends ConsumerState<_ReporterActions> with _Action
 }
 
 // ---------------------------------------------------------------------------
-/// Comments tab: comment box + timeline.
+/// Comments tab: conversation + composer pinned at the bottom.
 class _CommentsTab extends ConsumerStatefulWidget {
-  const _CommentsTab({required this.detail, required this.user});
+  const _CommentsTab({
+    required this.detail,
+    required this.user,
+    required this.comments,
+  });
   final TicketDetail detail;
   final UserModel user;
+  final List<CommentModel> comments;
 
   @override
   ConsumerState<_CommentsTab> createState() => _CommentsTabState();
@@ -482,87 +889,132 @@ class _CommentsTabState extends ConsumerState<_CommentsTab> with _ActionRunner {
   Future<void> _post() async {
     final content = _text.text.trim();
     if (content.isEmpty) {
-      showSnack(context, 'Please write a comment first', error: true);
+      showSnack(context, 'Tulis komentar terlebih dahulu', error: true);
       return;
     }
     await run(() async {
-      await ref.read(ticketActionsProvider).addComment(widget.detail.ticket.id, content, isInternal: _internal);
+      await ref
+          .read(ticketActionsProvider)
+          .addComment(widget.detail.ticket.id, content, isInternal: _internal);
       _text.clear();
       setState(() => _internal = false);
-    }, _internal ? 'Internal note added' : 'Comment posted');
+    }, _internal ? 'Catatan internal ditambahkan' : 'Komentar terkirim');
   }
 
   @override
   Widget build(BuildContext context) {
     final staff = widget.user.isStaff;
-    final events = <(DateTime, Widget)>[
-      for (final a in widget.detail.activities) (a.createdAt, _ActivityItem(a)),
-      for (final c in widget.detail.comments) (c.createdAt, _CommentItem(c)),
-    ]..sort((x, y) => y.$1.compareTo(x.$1)); // newest first
-
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Card(
-            elevation: 0,
+    final comments = [...widget.comments]
+      ..sort((a, b) => a.createdAt.compareTo(b.createdAt));
+    final closed =
+        widget.detail.ticket.status == AppConstants.statusClosed && !staff;
+    return Column(
+      children: [
+        Expanded(
+          child: comments.isEmpty
+              ? const EmptyView(
+                  icon: Icons.chat_bubble_outline,
+                  title: 'Belum ada komentar',
+                  message: 'Tulis komentar untuk berdiskusi dengan IT Support.',
+                )
+              : ListView.separated(
+                  padding: const EdgeInsets.fromLTRB(16, 4, 16, 16),
+                  itemCount: comments.length,
+                  separatorBuilder: (_, _) => const SizedBox(height: 8),
+                  itemBuilder: (_, i) => _CommentItem(comments[i]),
+                ),
+        ),
+        if (!closed)
+          Material(
+            color: Colors.white,
+            shape: const Border(top: BorderSide(color: EColors.line)),
             child: Padding(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  Text('Add a comment', style: Theme.of(context).textTheme.titleMedium),
-                  const SizedBox(height: 12),
-                  TextField(
-                    key: const Key('comment_field'),
-                    controller: _text,
-                    enabled: !busy,
-                    minLines: 3,
-                    maxLines: 8,
-                    maxLength: 5000,
-                    decoration: InputDecoration(
-                      hintText: staff
-                          ? 'Reply to the employee, or add a technical note'
-                          : 'Add details or reply to IT Support',
+              padding: const EdgeInsets.fromLTRB(12, 8, 12, 10),
+              child: SafeArea(
+                top: false,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    if (staff)
+                      CheckboxListTile(
+                        dense: true,
+                        contentPadding: EdgeInsets.zero,
+                        controlAffinity: ListTileControlAffinity.leading,
+                        value: _internal,
+                        onChanged: busy
+                            ? null
+                            : (v) => setState(() => _internal = v ?? false),
+                        title: const Text('Internal work note'),
+                        subtitle: const Text(
+                          'Hanya terlihat oleh IT Support & Administrator; tanpa email',
+                        ),
+                      ),
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.end,
+                      children: [
+                        Expanded(
+                          child: TextField(
+                            key: const Key('comment_field'),
+                            controller: _text,
+                            enabled: !busy,
+                            minLines: 1,
+                            maxLines: 5,
+                            maxLength: 5000,
+                            decoration:
+                                eInput(
+                                  hint: 'Tulis komentar...',
+                                  counter: '',
+                                ).copyWith(
+                                  suffixIcon: const Tooltip(
+                                    message: 'Lampiran belum tersedia',
+                                    child: Icon(
+                                      Icons.attach_file,
+                                      color: EColors.grey,
+                                    ),
+                                  ),
+                                ),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Padding(
+                          padding: const EdgeInsets.only(bottom: 20),
+                          child: SizedBox(
+                            width: 48,
+                            height: 48,
+                            child: FilledButton(
+                              key: const Key('post_comment_button'),
+                              onPressed: busy ? null : _post,
+                              style: FilledButton.styleFrom(
+                                padding: EdgeInsets.zero,
+                                backgroundColor: EColors.blue,
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                              ),
+                              child: busy
+                                  ? const SizedBox(
+                                      width: 18,
+                                      height: 18,
+                                      child: CircularProgressIndicator(
+                                        strokeWidth: 2,
+                                        color: Colors.white,
+                                      ),
+                                    )
+                                  : const Icon(
+                                      Icons.send_rounded,
+                                      semanticLabel: 'Kirim komentar',
+                                    ),
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
-                  ),
-                  if (staff)
-                    CheckboxListTile(
-                      contentPadding: EdgeInsets.zero,
-                      controlAffinity: ListTileControlAffinity.leading,
-                      value: _internal,
-                      onChanged: busy ? null : (v) => setState(() => _internal = v ?? false),
-                      title: const Text('Internal work note'),
-                      subtitle: const Text('Only visible to IT Support and Administrators; no email is sent'),
-                    ),
-                  const SizedBox(height: 8),
-                  Align(
-                    alignment: Alignment.centerRight,
-                    child: FilledButton.icon(
-                      key: const Key('post_comment_button'),
-                      onPressed: busy ? null : _post,
-                      icon: busy
-                          ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2))
-                          : const Icon(Icons.send),
-                      label: Text(_internal ? 'Add note' : 'Post comment'),
-                    ),
-                  ),
-                ],
+                  ],
+                ),
               ),
             ),
           ),
-          const SizedBox(height: 16),
-          Text('History & comments', style: Theme.of(context).textTheme.titleMedium),
-          const SizedBox(height: 8),
-          if (events.isEmpty)
-            const Padding(
-              padding: EdgeInsets.all(16),
-              child: Text('No activity yet.'),
-            ),
-          for (final e in events) e.$2,
-        ],
-      ),
+      ],
     );
   }
 }
@@ -572,22 +1024,42 @@ class _ActivityItem extends StatelessWidget {
   final ActivityModel a;
 
   @override
-  Widget build(BuildContext context) => ListTile(
-        contentPadding: EdgeInsets.zero,
-        leading: Icon(activityIcon(a.action), color: activityColor(a.action)),
-        title: Text('Ticket ${describeActivity(a)}'),
-        subtitle: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(Fmt.dateTime(a.createdAt), style: const TextStyle(fontSize: 12)),
-            if (a.note != null && a.note!.isNotEmpty)
-              Padding(
-                padding: const EdgeInsets.only(top: 4),
-                child: Text('“${a.note}”', style: const TextStyle(fontStyle: FontStyle.italic)),
+  Widget build(BuildContext context) => Padding(
+    padding: const EdgeInsets.symmetric(vertical: 8),
+    child: Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Icon(activityIcon(a.action), color: activityColor(a.action), size: 20),
+        const SizedBox(width: 10),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                describeActivityId(a),
+                style: const TextStyle(color: EColors.ink, fontSize: 13.5),
               ),
-          ],
+              Text(
+                Fmt.dateTime(a.createdAt),
+                style: const TextStyle(fontSize: 11.5, color: EColors.muted),
+              ),
+              if (a.note != null && a.note!.isNotEmpty)
+                Padding(
+                  padding: const EdgeInsets.only(top: 4),
+                  child: Text(
+                    '“${a.note}”',
+                    style: const TextStyle(
+                      fontStyle: FontStyle.italic,
+                      color: EColors.text,
+                    ),
+                  ),
+                ),
+            ],
+          ),
         ),
-      );
+      ],
+    ),
+  );
 }
 
 class _CommentItem extends StatelessWidget {
@@ -595,86 +1067,124 @@ class _CommentItem extends StatelessWidget {
   final CommentModel c;
 
   @override
-  Widget build(BuildContext context) => Container(
-        margin: const EdgeInsets.symmetric(vertical: 6),
-        padding: const EdgeInsets.all(12),
-        decoration: BoxDecoration(
-          color: c.isInternal ? const Color(0xFFFEF3C7) : Colors.grey[100],
-          borderRadius: BorderRadius.circular(8),
-          border: c.isInternal ? Border.all(color: const Color(0xFFFDE047)) : null,
+  Widget build(BuildContext context) {
+    final name = c.authorName ?? 'Pengguna';
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: c.isInternal ? const Color(0xFFFEF3C7) : Colors.white,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(
+          color: c.isInternal ? const Color(0xFFFDE047) : EColors.line,
         ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Wrap(
-              spacing: 8,
-              crossAxisAlignment: WrapCrossAlignment.center,
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          InitialsAvatar(name, size: 36),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Icon(Icons.chat_bubble_outline, size: 16),
-                Text(c.authorName ?? 'User', style: const TextStyle(fontWeight: FontWeight.w600)),
-                Text(Fmt.dateTime(c.createdAt), style: TextStyle(color: AppTheme.muted, fontSize: 12)),
-                if (c.isInternal)
-                  Text('INTERNAL NOTE',
-                      style: TextStyle(
-                          color: const Color(0xFFB45309), fontSize: 11, fontWeight: FontWeight.bold)),
+                Wrap(
+                  spacing: 8,
+                  crossAxisAlignment: WrapCrossAlignment.center,
+                  children: [
+                    Text(
+                      name,
+                      style: const TextStyle(
+                        fontWeight: FontWeight.w700,
+                        color: EColors.ink,
+                      ),
+                    ),
+                    Text(
+                      Fmt.dateTime(c.createdAt),
+                      style: const TextStyle(
+                        color: EColors.muted,
+                        fontSize: 11.5,
+                      ),
+                    ),
+                    if (c.isInternal)
+                      const Text(
+                        'INTERNAL NOTE',
+                        style: TextStyle(
+                          color: Color(0xFFB45309),
+                          fontSize: 11,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                  ],
+                ),
+                const SizedBox(height: 4),
+                SelectionArea(
+                  child: Text(
+                    c.content,
+                    style: const TextStyle(color: EColors.text, height: 1.4),
+                  ),
+                ),
               ],
             ),
-            const SizedBox(height: 6),
-            SelectionArea(child: Text(c.content)),
-          ],
-        ),
-      );
-}
-
-// ---------------------------------------------------------------------------
-/// Attachments tab placeholder.
-class _AttachmentsTab extends StatelessWidget {
-  const _AttachmentsTab({required this.ticket});
-  final TicketModel ticket;
-
-  @override
-  Widget build(BuildContext context) {
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(16),
-      child: Card(
-        elevation: 0,
-        child: Padding(
-          padding: const EdgeInsets.all(24),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text('Attachments', style: Theme.of(context).textTheme.titleMedium),
-              const SizedBox(height: 16),
-              const Center(
-                child: Text('No attachments yet.'),
-              ),
-            ],
           ),
-        ),
+        ],
       ),
     );
   }
 }
 
+// ---------------------------------------------------------------------------
+/// Attachments tab (upload is not available yet).
+class _AttachmentsTab extends StatelessWidget {
+  const _AttachmentsTab();
+
+  @override
+  Widget build(BuildContext context) => const EmptyView(
+    icon: Icons.attach_file,
+    title: 'Belum ada lampiran',
+    message: 'Upload lampiran belum tersedia. Kirim detail atau permintaan foto melalui komentar.',
+  );
+}
+
 IconData activityIcon(String action) => switch (action) {
-      ActivityModel.actionCreated => Icons.add_circle_outline,
-      ActivityModel.actionAssigned => Icons.person_add_alt,
-      ActivityModel.actionResolved => Icons.check_circle_outline,
-      ActivityModel.actionReopened => Icons.replay,
-      ActivityModel.actionClosed => Icons.lock_outline,
-      ActivityModel.actionPriorityChanged => Icons.flag_outlined,
-      ActivityModel.actionCategoryChanged => Icons.category_outlined,
-      _ => Icons.sync_alt,
-    };
+  ActivityModel.actionCreated => Icons.add_circle_outline,
+  ActivityModel.actionAssigned => Icons.person_add_alt,
+  ActivityModel.actionResolved => Icons.check_circle_outline,
+  ActivityModel.actionReopened => Icons.replay,
+  ActivityModel.actionClosed => Icons.lock_outline,
+  ActivityModel.actionPriorityChanged => Icons.flag_outlined,
+  ActivityModel.actionCategoryChanged => Icons.category_outlined,
+  _ => Icons.sync_alt,
+};
 
 Color activityColor(String action) => switch (action) {
-      ActivityModel.actionCreated => AppTheme.primary,
-      ActivityModel.actionAssigned => const Color(0xFF7C3AED),
-      ActivityModel.actionResolved => const Color(0xFF10B981),
-      ActivityModel.actionReopened => const Color(0xFFEF4444),
-      ActivityModel.actionClosed => const Color(0xFF6B7280),
-      _ => const Color(0xFFF59E0B),
-    };
+  ActivityModel.actionCreated => AppTheme.primary,
+  ActivityModel.actionAssigned => const Color(0xFF7C3AED),
+  ActivityModel.actionResolved => const Color(0xFF10B981),
+  ActivityModel.actionReopened => const Color(0xFFEF4444),
+  ActivityModel.actionClosed => const Color(0xFF6B7280),
+  _ => const Color(0xFFF59E0B),
+};
+
+/// Indonesian history line for the ticket detail ("Riwayat").
+String describeActivityId(ActivityModel a) {
+  final who = a.actorName ?? 'Sistem';
+  return switch (a.action) {
+    ActivityModel.actionCreated => 'Tiket dibuat oleh $who',
+    ActivityModel.actionAssigned =>
+      a.newValue == null
+          ? 'Tiket dikembalikan ke antrean oleh $who'
+          : 'Tiket ditangani oleh $who',
+    ActivityModel.actionResolved => 'Tiket diselesaikan oleh $who',
+    ActivityModel.actionReopened => 'Tiket dibuka ulang oleh $who',
+    ActivityModel.actionClosed => 'Tiket ditutup oleh $who',
+    ActivityModel.actionPriorityChanged =>
+      'Prioritas ${Fmt.priority(a.oldValue)} → ${Fmt.priority(a.newValue)} oleh $who',
+    ActivityModel.actionCategoryChanged =>
+      'Kategori ${a.oldValue} → ${a.newValue} oleh $who',
+    _ =>
+      'Status ${Fmt.statusId(a.oldValue)} → ${Fmt.statusId(a.newValue)} oleh $who',
+  };
+}
 
 String describeActivity(ActivityModel a) {
   final who = a.actorName ?? 'System';
@@ -692,4 +1202,3 @@ String describeActivity(ActivityModel a) {
     _ => 'status ${Fmt.status(a.oldValue)} → ${Fmt.status(a.newValue)} by $who',
   };
 }
-

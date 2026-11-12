@@ -7,6 +7,7 @@ import 'package:itsr_radiant/screens/login_screen.dart';
 import 'package:itsr_radiant/screens/my_tickets_screen.dart';
 import 'package:itsr_radiant/screens/ticket_detail_screen.dart';
 import 'package:itsr_radiant/utils/error_messages.dart';
+import 'package:itsr_radiant/utils/formatters.dart';
 import 'package:itsr_radiant/widgets/app_shell.dart';
 
 import '../support/fakes.dart';
@@ -17,6 +18,15 @@ const desktop = Size(1440, 900);
 Future<void> openCompanyLogin(WidgetTester t) async {
   await t.ensureVisible(find.byKey(const Key('company_login_entry')));
   await t.tap(find.byKey(const Key('company_login_entry')));
+  await t.pumpAndSettle();
+}
+
+/// Scrolls the ticket detail page (header + tab content) until [target] is
+/// fully below the pinned tab bar.
+Future<void> revealInDetail(WidgetTester t, Finder target) async {
+  await t.drag(find.byType(NestedScrollView), const Offset(0, -400));
+  await t.pumpAndSettle();
+  await t.scrollUntilVisible(target, 120, scrollable: find.byType(Scrollable).last);
   await t.pumpAndSettle();
 }
 
@@ -127,6 +137,11 @@ void main() {
       await t.tap(find.byKey(const Key('next_step_button')));
       await t.pumpAndSettle();
       expect(find.byKey(const Key('attachments_unavailable')), findsOneWidget);
+      await t.tap(find.byKey(const Key('next_step_button')));
+      await t.pumpAndSettle();
+      expect(find.text('Periksa & Kirim'), findsOneWidget);
+      expect(find.text('Ruang Server'), findsOneWidget, reason: 'review shows the location');
+      await t.ensureVisible(find.byKey(const Key('submit_ticket_button')));
       await t.tap(find.byKey(const Key('submit_ticket_button')));
       await t.pump();
       expect(repo.calls.first, 'create:emp1:VPN is down:Network:medium');
@@ -166,15 +181,15 @@ void main() {
           auth: FakeAuthRepository(profile: user('emp1', 'employee')), tickets: repo, size: phone);
       expect(find.text('IT Support actions'), findsNothing);
       expect(find.text('Replaced toner'), findsOneWidget);
-      expect(find.text('Yes, close ticket'), findsOneWidget);
+      expect(find.text('Ya, tutup tiket'), findsOneWidget);
       await openTab(t, 'Komentar');
       expect(find.text('Internal work note'), findsNothing);
       await openTab(t, 'Detail');
-      await t.ensureVisible(find.text('Reopen'));
-      await t.tap(find.text('Reopen'));
+      await revealInDetail(t, find.text('Buka Ulang'));
+      await t.tap(find.text('Buka Ulang'));
       await t.pumpAndSettle();
       await t.enterText(find.descendant(of: find.byType(AlertDialog), matching: find.byType(TextFormField)), 'Still not printing');
-      await t.tap(find.widgetWithText(FilledButton, 'Reopen'));
+      await t.tap(find.widgetWithText(FilledButton, 'Buka Ulang'));
       await t.pumpAndSettle();
       expect(repo.calls, contains('reporter:1:reopen:Still not printing'));
     });
@@ -197,7 +212,7 @@ void main() {
       await t.pumpAndSettle();
       expect(repo.calls, contains('update:1:status=null:assignee=it1:unassign=false:resolution=null'));
       expect(find.byKey(const Key('accept_ticket_button')), findsNothing);
-      await t.ensureVisible(find.byKey(const Key('status_resolved')));
+      await revealInDetail(t, find.byKey(const Key('status_resolved')));
       await t.tap(find.byKey(const Key('status_resolved')));
       await t.pumpAndSettle();
       await t.tap(find.widgetWithText(FilledButton, 'Resolve'));
@@ -224,8 +239,11 @@ void main() {
     testWidgets('My Tickets shows empty state with call to action', (t) async {
       await pumpApp(t, const MyTicketsScreen(),
           auth: FakeAuthRepository(profile: user('emp1', 'employee')), size: phone);
-      expect(find.text('You have not submitted any tickets'), findsOneWidget);
-      expect(find.text('Create a ticket'), findsOneWidget);
+      expect(find.text('Anda belum membuat tiket'), findsOneWidget);
+      expect(find.widgetWithText(FilledButton, 'Buat Tiket'), findsOneWidget);
+      for (final chip in ['Semua', 'Menunggu', 'Diproses', 'Selesai']) {
+        expect(find.byKey(Key('status_group_$chip')), findsOneWidget);
+      }
     });
 
     testWidgets('My Tickets lists only own tickets', (t) async {
@@ -243,14 +261,16 @@ void main() {
       final repo = FakeTicketRepository(tickets: [ticket('1'), ticket('2', status: 'resolved')]);
       await pumpApp(t, const DashboardScreen(),
           auth: FakeAuthRepository(profile: user('emp1', 'employee', name: 'Ani')), tickets: repo, size: phone);
-      expect(find.text('Hai, Ani'), findsOneWidget);
+      expect(find.text('Hai, Ani 👋'), findsOneWidget);
+      expect(find.textContaining('Laporkan Masalah IT'), findsOneWidget);
       for (final label in ['Tiket Saya', 'Diproses', 'Menunggu', 'Selesai']) {
-        expect(find.text(label), findsOneWidget, reason: 'stat card "$label" (design)');
+        expect(find.text(label), findsWidgets, reason: 'stat card "$label" (design)');
       }
       expect(find.text('Support queue'), findsNothing);
-      await t.scrollUntilVisible(find.text('No activity yet'), 200,
+      expect(find.text('Tiket Terbaru'), findsOneWidget);
+      await t.scrollUntilVisible(find.text('ITSR-00002 · ${Fmt.date(DateTime.utc(2026, 11, 1, 8))}'), 200,
           scrollable: find.byType(Scrollable).first);
-      expect(find.text('No activity yet'), findsOneWidget);
+      expect(find.text('Printer broken'), findsWidgets);
     });
 
     testWidgets('staff dashboard adds queue + assigned sections', (t) async {

@@ -7,6 +7,7 @@ import 'package:itsr_radiant/data/admin_repository.dart';
 import 'package:itsr_radiant/data/auth_repository.dart';
 import 'package:itsr_radiant/data/ticket_repository.dart';
 import 'package:itsr_radiant/models/activity_model.dart';
+import 'package:itsr_radiant/models/app_notification.dart';
 import 'package:itsr_radiant/models/app_settings_model.dart';
 import 'package:itsr_radiant/models/category_model.dart';
 import 'package:itsr_radiant/models/comment_model.dart';
@@ -85,6 +86,9 @@ class FakeAuthRepository implements AuthRepository {
   }
 
   @override
+  Future<void> changePassword(String newPassword) async => calls.add('changePassword');
+
+  @override
   Future<void> signOut() async {
     calls.add('signOut');
     _uid = null;
@@ -125,6 +129,9 @@ class FakeTicketRepository implements TicketRepository {
     var list = tickets.where((t) {
       if (scope == TicketScope.mine && t.reporterId != userId) return false;
       if (filter.status != null && t.status != filter.status) return false;
+      if (filter.status == null && filter.statusIn != null && !filter.statusIn!.contains(t.status)) {
+        return false;
+      }
       if (filter.search.isNotEmpty && !t.subject.toLowerCase().contains(filter.search.toLowerCase())) {
         return false;
       }
@@ -201,6 +208,12 @@ class FakeTicketRepository implements TicketRepository {
 
   @override
   Future<void> kickNotifications() async => calls.add('kick');
+
+  List<AppNotification> notifications = [];
+
+  @override
+  Future<List<AppNotification>> fetchNotifications({required String userId, int limit = 30}) async =>
+      notifications;
 }
 
 class FakeAdminRepository implements AdminRepository {

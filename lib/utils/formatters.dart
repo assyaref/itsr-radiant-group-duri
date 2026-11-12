@@ -34,8 +34,32 @@ class Fmt {
     'administrator': 'Administrator',
   };
 
+  /// Indonesian labels used by the employee screens (design wording).
+  static const Map<String, String> _statusId = {
+    'open': 'Menunggu',
+    'assigned': 'Ditugaskan',
+    'in_progress': 'Diproses',
+    'pending_user': 'Butuh Respons',
+    'resolved': 'Selesai',
+    'closed': 'Ditutup',
+    'reopened': 'Dibuka Ulang',
+  };
+
+  static String statusId(String? s) => _statusId[s] ?? (s ?? '-');
+
+  /// "5 menit lalu", "2 jam lalu", "3 hari lalu", else a date.
+  static String relativeId(DateTime d, {DateTime? now}) {
+    final diff = (now ?? DateTime.now()).difference(d.toLocal());
+    if (diff.inMinutes < 1) return 'baru saja';
+    if (diff.inMinutes < 60) return '${diff.inMinutes} menit lalu';
+    if (diff.inHours < 24) return '${diff.inHours} jam lalu';
+    if (diff.inDays < 7) return '${diff.inDays} hari lalu';
+    return date(d);
+  }
+
   static String status(String? s) => _status[s] ?? (s ?? 'Unknown');
   static String role(String? r) => _role[r] ?? (r ?? 'Unknown');
-  static String priority(String? p) =>
-      (p == null || p.isEmpty) ? 'Unknown' : p[0].toUpperCase() + p.substring(1);
+  static String priority(String? p) => (p == null || p.isEmpty)
+      ? 'Unknown'
+      : p[0].toUpperCase() + p.substring(1);
 }

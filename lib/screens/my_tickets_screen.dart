@@ -5,7 +5,9 @@ import 'package:go_router/go_router.dart';
 import '../constants/app_constants.dart';
 import '../constants/app_theme.dart';
 import '../providers/tickets_provider.dart';
+import '../providers/auth_provider.dart';
 import '../widgets/ticket_list_view.dart';
+import 'employee/employee_tickets_screen.dart';
 
 class MyTicketsScreen extends ConsumerWidget {
   const MyTicketsScreen({super.key});
@@ -21,6 +23,9 @@ class MyTicketsScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final user = ref.watch(currentUserProvider).valueOrNull;
+    // Employees get the "Tampilan Karyawan" list (search, filter, status chips).
+    if (user != null && !user.isStaff) return const EmployeeTicketsScreen();
     return DefaultTabController(
       length: 3,
       child: Scaffold(
@@ -58,9 +63,9 @@ class MyTicketsScreen extends ConsumerWidget {
                   // Apply the filter when the tab index changes.
                   WidgetsBinding.instance.addPostFrameCallback((_) {
                     if (!context.mounted) return;
-                    ref.read(ticketListProvider(TicketScope.mine).notifier).setFilter(
-                          TicketFilter(status: status),
-                        );
+                    ref
+                        .read(ticketListProvider(TicketScope.mine).notifier)
+                        .setFilter(TicketFilter(status: status));
                   });
                   return _TabContent(
                     scope: TicketScope.mine,

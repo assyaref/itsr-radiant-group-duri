@@ -1,17 +1,21 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../constants/app_constants.dart';
-import '../constants/app_theme.dart';
 import '../providers/tickets_provider.dart';
 import '../utils/error_messages.dart';
 import '../utils/formatters.dart';
 import '../utils/validators.dart';
 import '../widgets/common.dart';
+import '../widgets/employee_ui.dart';
 
+/// "4./5. Form Buat Tiket" of the design: 1 Detail → 2 Lampiran → 3 Kirim.
 class CreateTicketScreen extends ConsumerStatefulWidget {
   const CreateTicketScreen({super.key});
+
+  static const descriptionMax = 1000;
 
   @override
   ConsumerState<CreateTicketScreen> createState() => _CreateTicketScreenState();
@@ -25,7 +29,13 @@ class _CreateTicketScreenState extends ConsumerState<CreateTicketScreen> {
   String? _category;
   String _priority = AppConstants.priorityMedium;
   bool _busy = false;
-  int _step = 0; // 0 = Detail, 1 = Lampiran
+  int _step = 0; // 0 = Detail, 1 = Lampiran, 2 = Kirim
+
+  @override
+  void initState() {
+    super.initState();
+    _description.addListener(() => setState(() {}));
+  }
 
   @override
   void dispose() {
@@ -35,11 +45,12 @@ class _CreateTicketScreenState extends ConsumerState<CreateTicketScreen> {
     super.dispose();
   }
 
-  void _leave() {
-    if (context.canPop()) {
-      context.pop();
+  void _back() {
+    if (_busy) return;
+    if (_step > 0) {
+      setState(() => _step--);
     } else {
-      context.go('/dashboard');
+      goBack(context);
     }
   }
 
@@ -51,31 +62,38 @@ class _CreateTicketScreenState extends ConsumerState<CreateTicketScreen> {
     return loc.isEmpty ? desc : '$desc\n\nLokasi: $loc';
   }
 
+  bool get _detailValid =>
+      _category != null &&
+      Validators.subject(_subject.text) == null &&
+      Validators.description(_description.text) == null;
+
   void _next() {
-    if (_busy || !(_formKey.currentState?.validate() ?? false)) return;
-    setState(() => _step = 1);
+    if (_busy) return;
+    if (_step == 0 && !(_formKey.currentState?.validate() ?? false)) return;
+    setState(() => _step++);
   }
 
   Future<void> _submit() async {
     if (_busy) return;
-    // Step 0 validated these already; guard anyway (e.g. state restored).
-    if (_category == null || Validators.subject(_subject.text) != null ||
-        Validators.description(_description.text) != null) {
+    if (!_detailValid) {
       setState(() => _step = 0);
-      WidgetsBinding.instance.addPostFrameCallback((_) => _formKey.currentState?.validate());
+      WidgetsBinding.instance.addPostFrameCallback(
+        (_) => _formKey.currentState?.validate(),
+      );
       return;
     }
     setState(() => _busy = true);
     try {
-      final id = await ref.read(ticketActionsProvider).createTicket(
+      final id = await ref
+          .read(ticketActionsProvider)
+          .createTicket(
             subject: _subject.text,
             description: _descriptionWithLocation(),
             category: _category!,
             priority: _priority,
           );
       if (!mounted) return;
-      showSnack(context, 'Ticket submitted. IT Support has been notified.');
-      context.go('/tickets/$id');
+      context.go('/tickets/$id/submitted');
     } catch (e) {
       if (mounted) showSnack(context, friendlyError(e), error: true);
     } finally {
@@ -86,292 +104,477 @@ class _CreateTicketScreenState extends ConsumerState<CreateTicketScreen> {
   @override
   Widget build(BuildContext context) {
     final categories = ref.watch(categoriesProvider);
-
-    return categories.when(
-      loading: () => const LoadingView(),
-      error: (e, _) =>
-          ErrorView(error: e, onRetry: () => ref.invalidate(categoriesProvider)),
-      data: (cats) {
-        if (cats.isEmpty) {
-          return const EmptyView(
-            icon: Icons.category_outlined,
-            title: 'No categories available',
-            message: 'An administrator needs to add ticket categories first.',
-          );
-        }
-        return Scaffold(
-          appBar: AppBar(
-            leading: IconButton(
-              icon: const Icon(Icons.arrow_back),
-              onPressed: _leave,
-            ),
-            title: const Text('Buat Tiket'),
-            centerTitle: false,
-            elevation: 0,
+    return PopScope(
+      canPop: _step == 0 && !_busy,
+      onPopInvokedWithResult: (didPop, _) {
+        if (!didPop) _back();
+      },
+      child: Scaffold(
+        backgroundColor: Colors.white,
+        appBar: EHeader(title: 'Buat Tiket', onBack: _back),
+        body: categories.when(
+          loading: () => const LoadingView(),
+          error: (e, _) => ErrorView(
+            error: e,
+            onRetry: () => ref.invalidate(categoriesProvider),
           ),
-          body: Column(
-            children: [
-              // Stepper header (matches reference mobile create ticket)
-              Container(
-                color: Colors.white,
-                padding: const EdgeInsets.fromLTRB(20, 20, 20, 16),
-                child: Column(
-                  children: [
-                    Row(
-                      children: [
-                        _StepCircle(1, 'Detail', _step == 0),
-                        Expanded(child: _StepLine(_step >= 1)),
-                        _StepCircle(2, 'Lampiran', _step == 1),
-                        Expanded(child: _StepLine(_step >= 2)),
-                        _StepCircle(3, 'Kirim', _busy),
-                      ],
-                    ),
-                    const SizedBox(height: 16),
-                    Align(
-                      alignment: Alignment.centerLeft,
-                      child: Text(
-                        _step == 0 ? 'Informasi Masalah' : 'Upload Lampiran (Opsional)',
-                        style: const TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                          color: AppTheme.ink,
-                        ),
+          data: (cats) {
+            if (cats.isEmpty) {
+              return const EmptyView(
+                icon: Icons.category_outlined,
+                title: 'Kategori belum tersedia',
+                message: 'Administrator perlu menambahkan kategori tiket terlebih dahulu.',
+              );
+            }
+            return Column(
+              children: [
+                _Stepper(step: _step),
+                Expanded(
+                  child: SingleChildScrollView(
+                    padding: const EdgeInsets.fromLTRB(20, 8, 20, 24),
+                    child: switch (_step) {
+                      0 => _detailStep(cats.map((c) => c.name).toList()),
+                      1 => _attachmentStep(),
+                      _ => _reviewStep(),
+                    },
+                  ),
+                ),
+              ],
+            );
+          },
+        ),
+      ),
+    );
+  }
+
+  Widget _detailStep(List<String> categoryNames) {
+    return Form(
+      key: _formKey,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          const Text(
+            'Informasi Masalah',
+            style: TextStyle(
+              fontSize: 17,
+              fontWeight: FontWeight.w700,
+              color: EColors.ink,
+            ),
+          ),
+          const SizedBox(height: 16),
+          const FieldLabel('Judul Masalah', required: true),
+          TextFormField(
+            key: const Key('subject_field'),
+            controller: _subject,
+            enabled: !_busy,
+            maxLength: 200,
+            textInputAction: TextInputAction.next,
+            decoration: eInput(
+              hint: 'Contoh: Laptop tidak bisa nyala',
+              counter: '',
+            ),
+            validator: Validators.subject,
+          ),
+          const SizedBox(height: 8),
+          const FieldLabel('Kategori', required: true),
+          DropdownButtonFormField<String>(
+            key: const Key('category_field'),
+            initialValue: _category,
+            isExpanded: true,
+            hint: const Text('Pilih kategori'),
+            decoration: eInput(),
+            items: [
+              for (final name in categoryNames)
+                DropdownMenuItem(
+                  value: name,
+                  child: Row(
+                    children: [
+                      Icon(
+                        categoryStyle(name).$1,
+                        size: 20,
+                        color: EColors.text,
                       ),
-                    ),
-                  ],
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: Text(name, overflow: TextOverflow.ellipsis),
+                      ),
+                    ],
+                  ),
+                ),
+            ],
+            onChanged: _busy ? null : (v) => setState(() => _category = v),
+            validator: (v) => v == null ? 'Please select a category' : null,
+          ),
+          const SizedBox(height: 16),
+          const FieldLabel('Prioritas', required: true),
+          DropdownButtonFormField<String>(
+            key: const Key('priority_field'),
+            initialValue: _priority,
+            isExpanded: true,
+            decoration: eInput(),
+            items: [
+              for (final p in AppConstants.priorities)
+                DropdownMenuItem(
+                  value: p,
+                  child: Row(
+                    children: [
+                      Icon(
+                        Icons.error_rounded,
+                        size: 20,
+                        color: EColors.priority(p),
+                      ),
+                      const SizedBox(width: 10),
+                      Text(Fmt.priority(p)),
+                    ],
+                  ),
+                ),
+            ],
+            onChanged: _busy
+                ? null
+                : (v) => setState(() => _priority = v ?? _priority),
+          ),
+          const SizedBox(height: 16),
+          const FieldLabel('Deskripsi Masalah', required: true),
+          TextFormField(
+            key: const Key('description_field'),
+            controller: _description,
+            enabled: !_busy,
+            minLines: 4,
+            maxLines: 10,
+            inputFormatters: [
+              LengthLimitingTextInputFormatter(
+                CreateTicketScreen.descriptionMax,
+              ),
+            ],
+            decoration: eInput(
+              hint: 'Jelaskan masalah yang Anda alami, sejak kapan, dan pesan error jika ada.',
+              counter:
+                  '${_description.text.length}/${CreateTicketScreen.descriptionMax}',
+            ),
+            validator: Validators.description,
+          ),
+          const SizedBox(height: 8),
+          const FieldLabel('Lokasi', optional: true),
+          TextFormField(
+            key: const Key('location_field'),
+            controller: _location,
+            enabled: !_busy,
+            maxLength: 120,
+            decoration: eInput(
+              hint: 'Contoh: Ruang Marketing',
+              prefix: const Icon(
+                Icons.location_on_outlined,
+                color: EColors.text,
+              ),
+              counter: '',
+            ),
+          ),
+          const SizedBox(height: 16),
+          EPrimaryButton(
+            key: const Key('next_step_button'),
+            label: 'Lanjutkan',
+            icon: Icons.arrow_forward,
+            onPressed: _next,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _attachmentStep() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        const Text.rich(
+          TextSpan(
+            text: 'Upload Lampiran',
+            style: TextStyle(
+              fontSize: 17,
+              fontWeight: FontWeight.w700,
+              color: EColors.ink,
+            ),
+            children: [
+              TextSpan(
+                text: ' (Opsional)',
+                style: TextStyle(
+                  fontWeight: FontWeight.w400,
+                  color: EColors.muted,
                 ),
               ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 16),
+        Container(
+          padding: const EdgeInsets.symmetric(vertical: 28, horizontal: 16),
+          decoration: BoxDecoration(
+            color: const Color(0xFFF8FAFF),
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(color: const Color(0xFFBFD4FE), width: 1.4),
+          ),
+          child: const Column(
+            children: [
+              Icon(Icons.cloud_upload_outlined, size: 44, color: EColors.blue),
+              SizedBox(height: 10),
+              Text(
+                'Ketuk untuk upload foto atau file',
+                textAlign: TextAlign.center,
+                style: TextStyle(color: EColors.text),
+              ),
+              SizedBox(height: 4),
+              Text(
+                'Format: JPG, PNG, PDF (Maks. 10 MB)',
+                textAlign: TextAlign.center,
+                style: TextStyle(color: EColors.muted, fontSize: 12.5),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 16),
+        Container(
+          key: const Key('attachments_unavailable'),
+          padding: const EdgeInsets.all(14),
+          decoration: BoxDecoration(
+            color: EColors.blueSoft,
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: const Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Icon(Icons.info_rounded, color: EColors.blue, size: 20),
+              SizedBox(width: 10),
               Expanded(
-                child: SingleChildScrollView(
-                  padding: const EdgeInsets.all(16),
-                  child: Form(
-                    key: _formKey,
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: [
-                        if (_step == 0) ...[
-                          TextFormField(
-                            key: const Key('subject_field'),
-                            controller: _subject,
-                            enabled: !_busy,
-                            maxLength: 200,
-                            textInputAction: TextInputAction.next,
-                            decoration: const InputDecoration(
-                              labelText: 'Subject *',
-                              hintText: 'e.g. Laptop does not turn on',
-                            ),
-                            validator: Validators.subject,
-                          ),
-                          const SizedBox(height: 16),
-                          DropdownButtonFormField<String>(
-                            key: const Key('category_field'),
-                            initialValue: _category,
-                            isExpanded: true,
-                            decoration: const InputDecoration(labelText: 'Category *'),
-                            items: [
-                              for (final cat in cats)
-                                DropdownMenuItem(
-                                  value: cat.name,
-                                  child: Text(cat.name, overflow: TextOverflow.ellipsis),
-                                ),
-                            ],
-                            onChanged: _busy ? null : (v) => setState(() => _category = v),
-                            validator: (v) => v == null ? 'Please select a category' : null,
-                          ),
-                          const SizedBox(height: 16),
-                          DropdownButtonFormField<String>(
-                            key: const Key('priority_field'),
-                            initialValue: _priority,
-                            isExpanded: true,
-                            decoration: const InputDecoration(labelText: 'Priority *'),
-                            items: [
-                              for (final p in AppConstants.priorities)
-                                DropdownMenuItem(
-                                    value: p, child: Text(Fmt.priority(p))),
-                            ],
-                            onChanged: _busy ? null : (v) => setState(() => _priority = v!),
-                          ),
-                          const SizedBox(height: 16),
-                          TextFormField(
-                            key: const Key('location_field'),
-                            controller: _location,
-                            enabled: !_busy,
-                            maxLength: 120,
-                            decoration: const InputDecoration(
-                              labelText: 'Location (Optional)',
-                              hintText: 'e.g. Ruang Marketing',
-                            ),
-                          ),
-                          const SizedBox(height: 20),
-                          TextFormField(
-                            key: const Key('description_field'),
-                            controller: _description,
-                            enabled: !_busy,
-                            minLines: 5,
-                            maxLines: 12,
-                            maxLength: 5000,
-                            decoration: const InputDecoration(
-                              labelText: 'Description *',
-                              hintText:
-                                  'What happened? When did it start? Any error messages? Which device/location?',
-                              alignLabelWithHint: true,
-                            ),
-                            validator: Validators.description,
-                          ),
-                          const SizedBox(height: 24),
-                          Row(
-                            children: [
-                              Expanded(
-                                child: OutlinedButton(
-                                  onPressed: _busy ? null : _leave,
-                                  child: const Text('Batal'),
-                                ),
-                              ),
-                              const SizedBox(width: 12),
-                              Expanded(
-                                child: FilledButton(
-                                  key: const Key('next_step_button'),
-                                  onPressed: _busy ? null : _next,
-                                  child: const Text('Lanjutkan →'),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ] else if (_step == 1) ...[
-                          // Lampiran step (matches reference screen 5)
-                          Container(
-                            width: double.infinity,
-                            padding: const EdgeInsets.all(20),
-                            decoration: BoxDecoration(
-                              color: AppTheme.surface,
-                              borderRadius: BorderRadius.circular(16),
-                              border: Border.all(color: AppTheme.border),
-                            ),
-                            child: Column(
-                              children: [
-                                const Icon(Icons.cloud_upload_outlined, size: 48, color: AppTheme.primary),
-                                const SizedBox(height: 12),
-                                Text(
-                                  'Lampiran (Opsional)',
-                                  style: TextStyle(
-                                    fontWeight: FontWeight.w600,
-                                    color: AppTheme.ink,
-                                  ),
-                                ),
-                                const SizedBox(height: 6),
-                                Text(
-                                  'Format: JPG, PNG, PDF (Maks. 10 MB)',
-                                  style: TextStyle(color: AppTheme.muted, fontSize: 13),
-                                ),
-                                const SizedBox(height: 12),
-                                const Text(
-                                  'Upload lampiran belum tersedia. Jelaskan detail '
-                                  '(pesan error, nama perangkat) di deskripsi; IT Support '
-                                  'dapat meminta foto melalui komentar tiket.',
-                                  key: Key('attachments_unavailable'),
-                                  textAlign: TextAlign.center,
-                                  style: TextStyle(color: AppTheme.muted, fontSize: 12, height: 1.4),
-                                ),
-                              ],
-                            ),
-                          ),
-                          const SizedBox(height: 24),
-                          Row(
-                            children: [
-                              Expanded(
-                                child: OutlinedButton(
-                                  onPressed: _busy ? null : () => setState(() => _step = 0),
-                                  child: const Text('Kembali'),
-                                ),
-                              ),
-                              const SizedBox(width: 12),
-                              Expanded(
-                                child: FilledButton(
-                                  key: const Key('submit_ticket_button'),
-                                  onPressed: _busy ? null : _submit,
-                                  child: _busy
-                                      ? const SizedBox(
-                                          height: 20,
-                                          width: 20,
-                                          child: CircularProgressIndicator(
-                                              strokeWidth: 2.5, color: Colors.white),
-                                        )
-                                      : const Text('Kirim Tiket'),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ],
-                      ],
-                    ),
+                child: Text(
+                  'Upload lampiran belum tersedia. Jelaskan detail masalah (pesan error, nama '
+                  'perangkat) di deskripsi; IT Support dapat meminta foto melalui komentar tiket.',
+                  style: TextStyle(
+                    color: EColors.blueDark,
+                    fontSize: 13,
+                    height: 1.4,
                   ),
                 ),
               ),
             ],
           ),
-        );
-      },
-    );
-  }
-}
-
-class _StepCircle extends StatelessWidget {
-  const _StepCircle(this.number, this.label, this.active);
-  final int number;
-  final String label;
-  final bool active;
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Container(
-          width: 30,
-          height: 30,
-          decoration: BoxDecoration(
-            color: active ? AppTheme.primary : AppTheme.surface,
-            shape: BoxShape.circle,
-            border: Border.all(
-              color: active ? AppTheme.primary : AppTheme.border,
-              width: 2,
-            ),
-          ),
-          child: Center(
-            child: Text(
-              number.toString(),
-              style: TextStyle(
-                color: active ? Colors.white : AppTheme.muted,
-                fontWeight: FontWeight.bold,
-                fontSize: 13,
-              ),
-            ),
-          ),
         ),
-        const SizedBox(height: 6),
-        Text(
-          label,
-          style: TextStyle(
-            color: active ? AppTheme.primary : AppTheme.muted,
-            fontSize: 12,
-            fontWeight: active ? FontWeight.w700 : FontWeight.w500,
+        const SizedBox(height: 24),
+        _twoButtons(
+          next: EPrimaryButton(
+            key: const Key('next_step_button'),
+            label: 'Lanjutkan',
+            icon: Icons.arrow_forward,
+            onPressed: _next,
           ),
         ),
       ],
     );
   }
+
+  Widget _reviewStep() {
+    Widget row(String label, Widget value) => Padding(
+      padding: const EdgeInsets.symmetric(vertical: 8),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          SizedBox(
+            width: 92,
+            child: Text(
+              label,
+              style: const TextStyle(color: EColors.muted, fontSize: 13),
+            ),
+          ),
+          Expanded(child: value),
+        ],
+      ),
+    );
+    const valueStyle = TextStyle(
+      color: EColors.ink,
+      fontWeight: FontWeight.w600,
+    );
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        const Text(
+          'Periksa & Kirim',
+          style: TextStyle(
+            fontSize: 17,
+            fontWeight: FontWeight.w700,
+            color: EColors.ink,
+          ),
+        ),
+        const SizedBox(height: 12),
+        Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(color: EColors.line),
+          ),
+          child: Column(
+            children: [
+              row('Judul', Text(_subject.text.trim(), style: valueStyle)),
+              row(
+                'Kategori',
+                Row(
+                  children: [
+                    Icon(
+                      categoryStyle(_category ?? '').$1,
+                      size: 18,
+                      color: EColors.text,
+                    ),
+                    const SizedBox(width: 6),
+                    Flexible(child: Text(_category ?? '-', style: valueStyle)),
+                  ],
+                ),
+              ),
+              row(
+                'Prioritas',
+                Align(
+                  alignment: Alignment.centerLeft,
+                  child: ETag.priority(_priority),
+                ),
+              ),
+              row(
+                'Lokasi',
+                Text(
+                  _location.text.trim().isEmpty ? '-' : _location.text.trim(),
+                  style: valueStyle,
+                ),
+              ),
+              row(
+                'Deskripsi',
+                Text(
+                  _description.text.trim(),
+                  style: const TextStyle(color: EColors.text, height: 1.4),
+                ),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 24),
+        _twoButtons(
+          next: EPrimaryButton(
+            key: const Key('submit_ticket_button'),
+            label: 'Kirim Tiket',
+            icon: Icons.send_rounded,
+            busy: _busy,
+            onPressed: _submit,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _twoButtons({required Widget next}) => Row(
+    children: [
+      Expanded(
+        child: SizedBox(
+          height: 52,
+          child: OutlinedButton(
+            onPressed: _busy ? null : _back,
+            style: OutlinedButton.styleFrom(
+              foregroundColor: EColors.ink,
+              side: const BorderSide(color: EColors.line),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+            ),
+            child: const Text('Kembali'),
+          ),
+        ),
+      ),
+      const SizedBox(width: 12),
+      Expanded(child: next),
+    ],
+  );
 }
 
-class _StepLine extends StatelessWidget {
-  const _StepLine(this.active);
-  final bool active;
+class _Stepper extends StatelessWidget {
+  const _Stepper({required this.step});
+  final int step;
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      height: 2,
-      color: active ? AppTheme.primary : AppTheme.border,
+    const labels = ['Detail', 'Lampiran', 'Kirim'];
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(28, 8, 28, 16),
+      child: Row(
+        children: [
+          for (var i = 0; i < labels.length; i++) ...[
+            _StepDot(
+              number: i + 1,
+              label: labels[i],
+              state: i < step ? 1 : (i == step ? 0 : -1),
+            ),
+            if (i < labels.length - 1)
+              Expanded(
+                child: Container(
+                  margin: const EdgeInsets.only(bottom: 22),
+                  height: 2,
+                  color: i < step ? EColors.blue : EColors.line,
+                ),
+              ),
+          ],
+        ],
+      ),
     );
   }
 }
 
+class _StepDot extends StatelessWidget {
+  const _StepDot({
+    required this.number,
+    required this.label,
+    required this.state,
+  });
+  final int number;
+  final String label;
+
+  /// 1 = done, 0 = current, -1 = upcoming
+  final int state;
+
+  @override
+  Widget build(BuildContext context) {
+    final active = state >= 0;
+    return Semantics(
+      label: 'Langkah $number: $label${state == 0 ? ' (sekarang)' : ''}',
+      excludeSemantics: true,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            width: 30,
+            height: 30,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: state == 0 ? EColors.blue : Colors.white,
+              border: Border.all(
+                color: active ? EColors.blue : EColors.line,
+                width: 1.6,
+              ),
+            ),
+            alignment: Alignment.center,
+            child: state == 1
+                ? const Icon(Icons.check, size: 16, color: EColors.blue)
+                : Text(
+                    '$number',
+                    style: TextStyle(
+                      fontWeight: FontWeight.w700,
+                      fontSize: 13,
+                      color: state == 0 ? Colors.white : EColors.muted,
+                    ),
+                  ),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: 12,
+              fontWeight: state == 0 ? FontWeight.w700 : FontWeight.w500,
+              color: active ? EColors.blue : EColors.muted,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}

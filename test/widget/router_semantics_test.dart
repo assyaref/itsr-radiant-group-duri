@@ -38,10 +38,23 @@ void main() {
     handle.dispose();
   });
 
-  testWidgets('phone (routed): menu button is in the semantics tree', (t) async {
+  testWidgets('phone (routed): staff menu button is in the semantics tree', (t) async {
     final handle = t.ensureSemantics();
-    await pumpRouted(t, const Size(390, 844), 'employee');
+    await pumpRouted(t, const Size(390, 844), 'it_support');
     expect(find.bySemanticsLabel(RegExp('Open navigation menu')), findsOneWidget);
     handle.dispose();
   });
+
+  for (final (name, size) in [('phone', const Size(390, 844)), ('desktop', const Size(1440, 900))]) {
+    testWidgets('$name (routed): employees get the same bottom navigation', (t) async {
+      final handle = t.ensureSemantics();
+      await pumpRouted(t, size, 'employee');
+      for (final s in ['Beranda', 'Tiket', 'Buat Tiket', 'Notifikasi', 'Profil']) {
+        expect(find.bySemanticsLabel(s), findsWidgets, reason: '$name: "$s" tab');
+      }
+      expect(find.bySemanticsLabel(RegExp('Open navigation menu')), findsNothing);
+      expect(find.text('Sign out'), findsNothing, reason: 'no staff sidebar for employees');
+      handle.dispose();
+    });
+  }
 }

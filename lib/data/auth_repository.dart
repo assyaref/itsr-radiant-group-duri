@@ -10,12 +10,16 @@ abstract class AuthRepository {
   /// Emits the signed-in user id (or null) whenever the session changes.
   Stream<String?> userIdChanges();
   String? get currentUserId;
+
   /// [employeeNumber] may also be an email address (contains '@').
   Future<void> signIn(String employeeNumber, String password);
   Future<void> signOut();
 
   /// Profile of the signed-in user, or null if signed out / deactivated.
   Future<UserModel?> fetchCurrentProfile();
+
+  /// Changes the signed-in user's own password.
+  Future<void> changePassword(String newPassword);
 }
 
 class SupabaseAuthRepository implements AuthRepository {
@@ -38,7 +42,10 @@ class SupabaseAuthRepository implements AuthRepository {
         // An identifier containing '@' is an email address ("Masuk dengan
         // Email"); otherwise it is an employee number ("Akun Perusahaan").
         body: employeeNumber.contains('@')
-            ? {'email': employeeNumber.trim().toLowerCase(), 'password': password}
+            ? {
+                'email': employeeNumber.trim().toLowerCase(),
+                'password': password,
+              }
             : {'employeeNumber': employeeNumber, 'password': password},
       );
     } on FunctionException catch (e) {
@@ -54,7 +61,9 @@ class SupabaseAuthRepository implements AuthRepository {
     }
     await _client.auth.setSession(
       data['refresh_token'] as String,
-      accessToken: data['access_token'] is String ? data['access_token'] as String : null,
+      accessToken: data['access_token'] is String
+          ? data['access_token'] as String
+          : null,
     );
     // A session alone is not enough: the profile must exist and be active.
     // If it cannot be loaded (network drop right after login), do not leave a
@@ -84,11 +93,19 @@ class SupabaseAuthRepository implements AuthRepository {
   Future<void> signOut() => _client.auth.signOut();
 
   @override
+  Future<void> changePassword(String newPassword) async {
+    await _client.auth.updateUser(UserAttributes(password: newPassword));
+  }
+
+  @override
   Future<UserModel?> fetchCurrentProfile() async {
     final id = currentUserId;
     if (id == null) return null;
-    final row =
-        await _client.from('profiles').select().eq('id', id).maybeSingle();
+    final row = await _client
+        .from('profiles')
+        .select()
+        .eq('id', id)
+        .maybeSingle();
     if (row == null) return null;
     final profile = UserModel.fromJson(row);
     return profile.isActive ? profile : null;

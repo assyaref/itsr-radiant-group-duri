@@ -11,6 +11,7 @@ import '../providers/auth_provider.dart';
 import '../providers/tickets_provider.dart';
 import '../utils/formatters.dart';
 import '../widgets/common.dart';
+import 'employee/employee_home_screen.dart';
 
 /// Role-aware dashboard: employees see their own tickets; IT Support and
 /// administrators additionally see queue-wide and assigned-to-me figures.
@@ -21,6 +22,8 @@ class DashboardScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final user = ref.watch(currentUserProvider).valueOrNull;
     if (user == null) return const LoadingView();
+    // Employees get the "Tampilan Karyawan" design.
+    if (!user.isStaff) return EmployeeHomeScreen(user: user);
 
     Future<void> refresh() async {
       ref.invalidate(ticketStatsProvider);
@@ -47,15 +50,16 @@ class DashboardScreen extends ConsumerWidget {
                         children: [
                           Text(
                             'Hai, ${user.fullName.split(' ').first}',
-                            style: Theme.of(context)
-                                .textTheme
-                                .titleLarge
+                            style: Theme.of(context).textTheme.titleLarge
                                 ?.copyWith(fontWeight: FontWeight.w700),
                           ),
                           const SizedBox(height: 4),
                           Text(
                             'Selamat datang di ${AppConstants.appShortName}',
-                            style: TextStyle(color: AppTheme.muted, fontSize: 14),
+                            style: TextStyle(
+                              color: AppTheme.muted,
+                              fontSize: 14,
+                            ),
                           ),
                         ],
                       ),
@@ -67,7 +71,11 @@ class DashboardScreen extends ConsumerWidget {
                         color: AppTheme.primary.withValues(alpha: 0.1),
                         borderRadius: BorderRadius.circular(12),
                       ),
-                      child: const Icon(Icons.support_agent, color: AppTheme.primary, size: 24),
+                      child: const Icon(
+                        Icons.support_agent,
+                        color: AppTheme.primary,
+                        size: 24,
+                      ),
                     ),
                   ],
                 ),
@@ -88,7 +96,11 @@ class DashboardScreen extends ConsumerWidget {
                       color: AppTheme.primary.withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(14),
                     ),
-                    child: const Icon(Icons.add_circle_outline, color: AppTheme.primary, size: 28),
+                    child: const Icon(
+                      Icons.add_circle_outline,
+                      color: AppTheme.primary,
+                      size: 28,
+                    ),
                   ),
                   const SizedBox(width: 16),
                   Expanded(
@@ -97,9 +109,7 @@ class DashboardScreen extends ConsumerWidget {
                       children: [
                         Text(
                           'Laporkan Masalah IT dengan Cepat!',
-                          style: Theme.of(context)
-                              .textTheme
-                              .titleMedium
+                          style: Theme.of(context).textTheme.titleMedium
                               ?.copyWith(fontWeight: FontWeight.w700),
                         ),
                         const SizedBox(height: 4),
@@ -142,35 +152,44 @@ class DashboardScreen extends ConsumerWidget {
             builder: (context, ref, _) {
               final stats = ref.watch(ticketStatsProvider('mine'));
               return stats.when(
-                loading: () => const SizedBox(height: 130, child: LoadingView()),
+                loading: () =>
+                    const SizedBox(height: 130, child: LoadingView()),
                 error: (e, _) => ErrorView(
-                    error: e, onRetry: () => ref.invalidate(ticketStatsProvider('mine'))),
-                data: (TicketStats s) => _StatGrid(children: [
-                  _StatCard(
+                  error: e,
+                  onRetry: () => ref.invalidate(ticketStatsProvider('mine')),
+                ),
+                data: (TicketStats s) => _StatGrid(
+                  children: [
+                    _StatCard(
                       label: 'Tiket Saya',
                       value: s.total,
                       icon: Icons.confirmation_number,
                       color: AppTheme.primary,
-                      onTap: () => context.go('/tickets')),
-                  _StatCard(
+                      onTap: () => context.go('/tickets'),
+                    ),
+                    _StatCard(
                       label: 'Diproses',
                       value: s.inProgress,
                       icon: Icons.build_circle_outlined,
                       color: AppTheme.getStatusColor('in_progress'),
-                      onTap: () => context.go('/tickets')),
-                  _StatCard(
+                      onTap: () => context.go('/tickets'),
+                    ),
+                    _StatCard(
                       label: 'Menunggu',
                       value: s.open,
                       icon: Icons.mark_email_unread_outlined,
                       color: AppTheme.getStatusColor('open'),
-                      onTap: () => context.go('/tickets')),
-                  _StatCard(
+                      onTap: () => context.go('/tickets'),
+                    ),
+                    _StatCard(
                       label: 'Selesai',
                       value: s.resolved,
                       icon: Icons.check_circle_outline,
                       color: AppTheme.getStatusColor('resolved'),
-                      onTap: () => context.go('/tickets')),
-                ]),
+                      onTap: () => context.go('/tickets'),
+                    ),
+                  ],
+                ),
               );
             },
           ),
@@ -191,16 +210,16 @@ class _SectionTitle extends StatelessWidget {
   final String text;
   @override
   Widget build(BuildContext context) => Padding(
-        padding: const EdgeInsets.only(bottom: 12),
-        child: Semantics(
-          header: true,
-          child: Text(text,
-              style: Theme.of(context)
-                  .textTheme
-                  .titleMedium
-                  ?.copyWith(fontWeight: FontWeight.bold)),
-        ),
-      );
+    padding: const EdgeInsets.only(bottom: 12),
+    child: Semantics(
+      header: true,
+      child: Text(
+        text,
+        style: Theme.of(context).textTheme.titleMedium
+            ?.copyWith(fontWeight: FontWeight.bold),
+      ),
+    ),
+  );
 }
 
 class _StatsSection extends ConsumerWidget {
@@ -215,44 +234,51 @@ class _StatsSection extends ConsumerWidget {
     return stats.when(
       loading: () => const SizedBox(height: 120, child: LoadingView()),
       error: (e, _) => ErrorView(
-          error: e, onRetry: () => ref.invalidate(ticketStatsProvider(scope))),
+        error: e,
+        onRetry: () => ref.invalidate(ticketStatsProvider(scope)),
+      ),
       data: (TicketStats s) => Column(
         children: [
           if (staff)
             _StatCard(
-                label: 'Unassigned',
-                value: s.unassigned,
-                icon: Icons.inbox,
-                color: Colors.red[600]!,
-                onTap: onTap),
+              label: 'Unassigned',
+              value: s.unassigned,
+              icon: Icons.inbox,
+              color: Colors.red[600]!,
+              onTap: onTap,
+            ),
           const SizedBox(height: 12),
           _StatCard(
-              label: 'Total tickets',
-              value: s.total,
-              icon: Icons.confirmation_number,
-              color: AppTheme.primary,
-              onTap: onTap),
+            label: 'Total tickets',
+            value: s.total,
+            icon: Icons.confirmation_number,
+            color: AppTheme.primary,
+            onTap: onTap,
+          ),
           const SizedBox(height: 12),
           _StatCard(
-              label: 'Open',
-              value: s.open,
-              icon: Icons.mark_email_unread_outlined,
-              color: AppTheme.getStatusColor('open'),
-              onTap: onTap),
+            label: 'Open',
+            value: s.open,
+            icon: Icons.mark_email_unread_outlined,
+            color: AppTheme.getStatusColor('open'),
+            onTap: onTap,
+          ),
           const SizedBox(height: 12),
           _StatCard(
-              label: 'In progress',
-              value: s.inProgress,
-              icon: Icons.build_circle_outlined,
-              color: AppTheme.getStatusColor('in_progress'),
-              onTap: onTap),
+            label: 'In progress',
+            value: s.inProgress,
+            icon: Icons.build_circle_outlined,
+            color: AppTheme.getStatusColor('in_progress'),
+            onTap: onTap,
+          ),
           const SizedBox(height: 12),
           _StatCard(
-              label: 'Resolved',
-              value: s.resolved,
-              icon: Icons.check_circle_outline,
-              color: AppTheme.getStatusColor('resolved'),
-              onTap: onTap),
+            label: 'Resolved',
+            value: s.resolved,
+            icon: Icons.check_circle_outline,
+            color: AppTheme.getStatusColor('resolved'),
+            onTap: onTap,
+          ),
         ],
       ),
     );
@@ -268,8 +294,10 @@ class _AssignedToMe extends ConsumerWidget {
     return list.when(
       loading: () => const SizedBox(height: 120, child: LoadingView()),
       error: (e, _) => ErrorView(
-          error: e,
-          onRetry: () => ref.invalidate(ticketListProvider(TicketScope.assignedToMe))),
+        error: e,
+        onRetry: () =>
+            ref.invalidate(ticketListProvider(TicketScope.assignedToMe)),
+      ),
       data: (s) {
         final active = s.items.where((t) => !t.isFinished).take(5).toList();
         if (active.isEmpty) {
@@ -287,13 +315,15 @@ class _AssignedToMe extends ConsumerWidget {
             ),
           );
         }
-        return Column(children: [
-          for (final t in active)
-            Padding(
-              padding: const EdgeInsets.only(bottom: 8),
-              child: TicketTileCompact(ticket: t),
-            ),
-        ]);
+        return Column(
+          children: [
+            for (final t in active)
+              Padding(
+                padding: const EdgeInsets.only(bottom: 8),
+                child: TicketTileCompact(ticket: t),
+              ),
+          ],
+        );
       },
     );
   }
@@ -308,8 +338,10 @@ class _RecentTickets extends ConsumerWidget {
     return list.when(
       loading: () => const SizedBox(height: 140, child: LoadingView()),
       error: (e, _) => ErrorView(
-          error: e,
-          onRetry: () => ref.read(ticketListProvider(TicketScope.mine).notifier).refresh()),
+        error: e,
+        onRetry: () =>
+            ref.read(ticketListProvider(TicketScope.mine).notifier).refresh(),
+      ),
       data: (s) {
         final recent = s.items.take(5).toList();
         if (recent.isEmpty) {
@@ -320,26 +352,36 @@ class _RecentTickets extends ConsumerWidget {
               child: Center(
                 child: Column(
                   children: [
-                    Icon(Icons.inbox_outlined, size: 40, color: AppTheme.muted.withValues(alpha: 0.5)),
+                    Icon(
+                      Icons.inbox_outlined,
+                      size: 40,
+                      color: AppTheme.muted.withValues(alpha: 0.5),
+                    ),
                     const SizedBox(height: 12),
-                    Text('No tickets yet',
-                        style: Theme.of(context).textTheme.titleMedium),
+                    Text(
+                      'No tickets yet',
+                      style: Theme.of(context).textTheme.titleMedium,
+                    ),
                     const SizedBox(height: 6),
-                    Text('Having an IT problem? Create a ticket.',
-                        style: TextStyle(color: AppTheme.muted, fontSize: 13)),
+                    Text(
+                      'Having an IT problem? Create a ticket.',
+                      style: TextStyle(color: AppTheme.muted, fontSize: 13),
+                    ),
                   ],
                 ),
               ),
             ),
           );
         }
-        return Column(children: [
-          for (final t in recent)
-            Padding(
-              padding: const EdgeInsets.only(bottom: 10),
-              child: TicketTileCompact(ticket: t),
-            ),
-        ]);
+        return Column(
+          children: [
+            for (final t in recent)
+              Padding(
+                padding: const EdgeInsets.only(bottom: 10),
+                child: TicketTileCompact(ticket: t),
+              ),
+          ],
+        );
       },
     );
   }
@@ -353,8 +395,10 @@ class _RecentActivity extends ConsumerWidget {
     final activity = ref.watch(recentActivityProvider);
     return activity.when(
       loading: () => const SizedBox(height: 100, child: LoadingView()),
-      error: (e, _) =>
-          ErrorView(error: e, onRetry: () => ref.invalidate(recentActivityProvider)),
+      error: (e, _) => ErrorView(
+        error: e,
+        onRetry: () => ref.invalidate(recentActivityProvider),
+      ),
       data: (items) {
         if (items.isEmpty) {
           return Card(
@@ -371,27 +415,35 @@ class _RecentActivity extends ConsumerWidget {
         }
         return Card(
           elevation: 0,
-          child: Column(children: [
-            for (final a in items)
-              ListTile(
-                contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-                leading: Icon(activityIcon(a.action), color: activityColor(a.action)),
-                title: Text(
-                  '${a.ticketNumber ?? ''} ${describeActivity(a)}'.trim(),
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
+          child: Column(
+            children: [
+              for (final a in items)
+                ListTile(
+                  contentPadding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 4,
+                  ),
+                  leading: Icon(
+                    activityIcon(a.action),
+                    color: activityColor(a.action),
+                  ),
+                  title: Text(
+                    '${a.ticketNumber ?? ''} ${describeActivity(a)}'.trim(),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  subtitle: Text(
+                    [
+                      if (a.ticketSubject != null) a.ticketSubject!,
+                      Fmt.relative(a.createdAt),
+                    ].join(' • '),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  onTap: () => context.push('/tickets/${a.ticketId}'),
                 ),
-                subtitle: Text(
-                  [
-                    if (a.ticketSubject != null) a.ticketSubject!,
-                    Fmt.relative(a.createdAt),
-                  ].join(' • '),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
-                onTap: () => context.push('/tickets/${a.ticketId}'),
-              ),
-          ]),
+            ],
+          ),
         );
       },
     );
@@ -399,24 +451,24 @@ class _RecentActivity extends ConsumerWidget {
 }
 
 IconData activityIcon(String action) => switch (action) {
-      ActivityModel.actionCreated => Icons.add_circle_outline,
-      ActivityModel.actionAssigned => Icons.person_add_alt,
-      ActivityModel.actionResolved => Icons.check_circle_outline,
-      ActivityModel.actionReopened => Icons.replay,
-      ActivityModel.actionClosed => Icons.lock_outline,
-      ActivityModel.actionPriorityChanged => Icons.flag_outlined,
-      ActivityModel.actionCategoryChanged => Icons.category_outlined,
-      _ => Icons.sync_alt,
-    };
+  ActivityModel.actionCreated => Icons.add_circle_outline,
+  ActivityModel.actionAssigned => Icons.person_add_alt,
+  ActivityModel.actionResolved => Icons.check_circle_outline,
+  ActivityModel.actionReopened => Icons.replay,
+  ActivityModel.actionClosed => Icons.lock_outline,
+  ActivityModel.actionPriorityChanged => Icons.flag_outlined,
+  ActivityModel.actionCategoryChanged => Icons.category_outlined,
+  _ => Icons.sync_alt,
+};
 
 Color activityColor(String action) => switch (action) {
-      ActivityModel.actionCreated => AppTheme.primary,
-      ActivityModel.actionAssigned => const Color(0xFF7C3AED),
-      ActivityModel.actionResolved => const Color(0xFF10B981),
-      ActivityModel.actionReopened => const Color(0xFFEF4444),
-      ActivityModel.actionClosed => const Color(0xFF6B7280),
-      _ => const Color(0xFFF59E0B),
-    };
+  ActivityModel.actionCreated => AppTheme.primary,
+  ActivityModel.actionAssigned => const Color(0xFF7C3AED),
+  ActivityModel.actionResolved => const Color(0xFF10B981),
+  ActivityModel.actionReopened => const Color(0xFFEF4444),
+  ActivityModel.actionClosed => const Color(0xFF6B7280),
+  _ => const Color(0xFFF59E0B),
+};
 
 String describeActivity(ActivityModel a) {
   final who = a.actorName ?? 'System';
@@ -458,21 +510,35 @@ class TicketTileCompact extends StatelessWidget {
                   color: AppTheme.surface,
                   borderRadius: BorderRadius.circular(10),
                 ),
-                child: const Icon(Icons.confirmation_number, size: 20, color: AppTheme.muted),
+                child: const Icon(
+                  Icons.confirmation_number,
+                  size: 20,
+                  color: AppTheme.muted,
+                ),
               ),
               const SizedBox(width: 12),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(ticket.ticketNumber,
-                        style: const TextStyle(
-                            color: AppTheme.ink, fontWeight: FontWeight.bold, fontSize: 14)),
+                    Text(
+                      ticket.ticketNumber,
+                      style: const TextStyle(
+                        color: AppTheme.ink,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 14,
+                      ),
+                    ),
                     const SizedBox(height: 2),
-                    Text(ticket.subject,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(fontSize: 13, color: AppTheme.muted)),
+                    Text(
+                      ticket.subject,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        fontSize: 13,
+                        color: AppTheme.muted,
+                      ),
+                    ),
                   ],
                 ),
               ),
@@ -509,44 +575,46 @@ class _StatCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Card(
-        elevation: 0,
-        child: InkWell(
-          borderRadius: BorderRadius.circular(14),
-          onTap: onTap,
-          child: Padding(
-            padding: const EdgeInsets.all(16),
-            child: Row(
-              children: [
-                Container(
-                  width: 44,
-                  height: 44,
-                  decoration: BoxDecoration(
-                    color: color.withValues(alpha: 0.1),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Icon(icon, color: color, size: 22),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text('$value',
-                          style: Theme.of(context)
-                              .textTheme
-                              .titleLarge
-                              ?.copyWith(fontWeight: FontWeight.bold)),
-                      Text(label,
-                          overflow: TextOverflow.ellipsis,
-                          style: TextStyle(color: AppTheme.muted, fontSize: 13)),
-                    ],
-                  ),
-                ),
-              ],
+    elevation: 0,
+    child: InkWell(
+      borderRadius: BorderRadius.circular(14),
+      onTap: onTap,
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Row(
+          children: [
+            Container(
+              width: 44,
+              height: 44,
+              decoration: BoxDecoration(
+                color: color.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Icon(icon, color: color, size: 22),
             ),
-          ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    '$value',
+                    style: Theme.of(context).textTheme.titleLarge
+                        ?.copyWith(fontWeight: FontWeight.bold),
+                  ),
+                  Text(
+                    label,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(color: AppTheme.muted, fontSize: 13),
+                  ),
+                ],
+              ),
+            ),
+          ],
         ),
-      );
+      ),
+    ),
+  );
 }
 
 /// Horizontal stat grid: 2 cards on phones, 4 on wide screens.
@@ -556,16 +624,17 @@ class _StatGrid extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => LayoutBuilder(
-        builder: (context, c) {
-          final cols = c.maxWidth >= 700 ? 4 : 2;
-          const gap = 12.0;
-          final w = (c.maxWidth - gap * (cols - 1)) / cols;
-          return Wrap(
-            spacing: gap,
-            runSpacing: gap,
-            children: [for (final child in children) SizedBox(width: w, child: child)],
-          );
-        },
+    builder: (context, c) {
+      final cols = c.maxWidth >= 700 ? 4 : 2;
+      const gap = 12.0;
+      final w = (c.maxWidth - gap * (cols - 1)) / cols;
+      return Wrap(
+        spacing: gap,
+        runSpacing: gap,
+        children: [
+          for (final child in children) SizedBox(width: w, child: child),
+        ],
       );
+    },
+  );
 }
-

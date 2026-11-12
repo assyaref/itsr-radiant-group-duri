@@ -2,6 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../data/ticket_repository.dart';
 import '../models/activity_model.dart';
+import '../models/app_notification.dart';
 import '../models/category_model.dart';
 import '../models/ticket_model.dart';
 import '../models/ticket_stats.dart';
@@ -32,13 +33,12 @@ class TicketListState {
     int? total,
     TicketFilter? filter,
     bool? isLoadingMore,
-  }) =>
-      TicketListState(
-        items: items ?? this.items,
-        total: total ?? this.total,
-        filter: filter ?? this.filter,
-        isLoadingMore: isLoadingMore ?? this.isLoadingMore,
-      );
+  }) => TicketListState(
+    items: items ?? this.items,
+    total: total ?? this.total,
+    filter: filter ?? this.filter,
+    isLoadingMore: isLoadingMore ?? this.isLoadingMore,
+  );
 }
 
 class TicketListNotifier
@@ -56,14 +56,20 @@ class TicketListNotifier
   Future<TicketListState> _load(TicketFilter filter) async {
     final user = await ref.read(currentUserProvider.future);
     if (user == null) return TicketListState(filter: filter);
-    final page = await ref.read(ticketRepositoryProvider).fetchTickets(
+    final page = await ref
+        .read(ticketRepositoryProvider)
+        .fetchTickets(
           scope: arg,
           userId: user.id,
           filter: filter,
           offset: 0,
           limit: pageSize,
         );
-    return TicketListState(items: page.items, total: page.total, filter: filter);
+    return TicketListState(
+      items: page.items,
+      total: page.total,
+      filter: filter,
+    );
   }
 
   /// Applies a new filter once (called from user input, never from build()).
@@ -71,8 +77,10 @@ class TicketListNotifier
     if (state.valueOrNull?.filter == filter && !state.hasError) return;
     final id = ++_requestId;
     state = AsyncLoading<TicketListState>().copyWithPrevious(
-      AsyncData(state.valueOrNull?.copyWith(filter: filter) ??
-          TicketListState(filter: filter)),
+      AsyncData(
+        state.valueOrNull?.copyWith(filter: filter) ??
+            TicketListState(filter: filter),
+      ),
     );
     final next = await AsyncValue.guard(() => _load(filter));
     if (id == _requestId) state = next;
@@ -80,7 +88,10 @@ class TicketListNotifier
 
   Future<void> loadMore() async {
     final current = state.valueOrNull;
-    if (current == null || !current.hasMore || current.isLoadingMore || state.isLoading) {
+    if (current == null ||
+        !current.hasMore ||
+        current.isLoadingMore ||
+        state.isLoading) {
       return;
     }
     final id = _requestId;
@@ -89,10 +100,14 @@ class TicketListNotifier
       final user = await ref.read(currentUserProvider.future);
       if (user == null) {
         // Session ended mid-load: clear the spinner instead of leaving it stuck.
-        if (id == _requestId) state = AsyncData(current.copyWith(isLoadingMore: false));
+        if (id == _requestId) {
+          state = AsyncData(current.copyWith(isLoadingMore: false));
+        }
         return;
       }
-      final page = await ref.read(ticketRepositoryProvider).fetchTickets(
+      final page = await ref
+          .read(ticketRepositoryProvider)
+          .fetchTickets(
             scope: arg,
             userId: user.id,
             filter: current.filter,
@@ -100,13 +115,20 @@ class TicketListNotifier
             limit: pageSize,
           );
       if (id != _requestId) return; // filter changed meanwhile
-      state = AsyncData(current.copyWith(
-        items: [...current.items, ...page.items],
-        total: page.total,
-        isLoadingMore: false,
-      ));
+      state = AsyncData(
+        current.copyWith(
+          items: [...current.items, ...page.items],
+          total: page.total,
+          isLoadingMore: false,
+        ),
+      );
     } catch (e, st) {
-      if (id == _requestId) state = AsyncError<TicketListState>(e, st).copyWithPrevious(AsyncData(current));
+      if (id == _requestId) {
+        state = AsyncError<TicketListState>(
+          e,
+          st,
+        ).copyWithPrevious(AsyncData(current));
+      }
     }
   }
 
@@ -120,33 +142,64 @@ class TicketListNotifier
 
 final ticketListProvider = AsyncNotifierProvider.autoDispose
     .family<TicketListNotifier, TicketListState, TicketScope>(
-  TicketListNotifier.new,
-);
+      TicketListNotifier.new,
+    );
 
 // ---------------------------------------------------------------------------
 // Read models
 // ---------------------------------------------------------------------------
 
 /// 'mine' | 'assigned' | 'all' — counts computed server-side under RLS.
-final ticketStatsProvider =
-    FutureProvider.autoDispose.family<TicketStats, String>((ref, scope) async {
-  final user = await ref.watch(currentUserProvider.future);
-  if (user == null) return const TicketStats();
-  return ref.watch(ticketRepositoryProvider).fetchStats(scope);
-});
+final ticketStatsProvider = FutureProvider.autoDispose
+    .family<TicketStats, String>((ref, scope) async {
+      final user = await ref.watch(currentUserProvider.future);
+      if (user == null) return const TicketStats();
+      return ref.watch(ticketRepositoryProvider).fetchStats(scope);
+    });
 
-final recentActivityProvider =
-    FutureProvider.autoDispose<List<ActivityModel>>((ref) async {
+final recentActivityProvider = FutureProvider.autoDispose<List<ActivityModel>>((
+  ref,
+) async {
   final user = await ref.watch(currentUserProvider.future);
   if (user == null) return const [];
   return ref.watch(ticketRepositoryProvider).fetchRecentActivity();
 });
 
-final ticketDetailProvider =
-    FutureProvider.autoDispose.family<TicketDetail, String>((ref, id) async {
-  await ref.watch(currentUserProvider.future);
-  return ref.watch(ticketRepositoryProvider).fetchDetail(id);
+final ticketDetailProvider = FutureProvider.autoDispose
+    .family<TicketDetail, String>((ref, id) async {
+      await ref.watch(currentUserProvider.future);
+      return ref.watch(ticketRepositoryProvider).fetchDetail(id);
+    });
+
+/// The caller's 5 newest own tickets (Beranda "Tiket Terbaru"), independent
+/// of the filters chosen on the ticket list.
+final recentMyTicketsProvider = FutureProvider.autoDispose<List<TicketModel>>((
+  ref,
+) async {
+  final user = await ref.watch(currentUserProvider.future);
+  if (user == null) return const [];
+  final page = await ref
+      .watch(ticketRepositoryProvider)
+      .fetchTickets(
+        scope: TicketScope.mine,
+        userId: user.id,
+        filter: const TicketFilter(),
+        offset: 0,
+        limit: 5,
+      );
+  return page.items;
 });
+
+/// In-app notifications (ticket events + comments by others).
+final notificationsProvider = FutureProvider.autoDispose<List<AppNotification>>(
+  (ref) async {
+    final user = await ref.watch(currentUserProvider.future);
+    if (user == null) return const [];
+    return ref
+        .watch(ticketRepositoryProvider)
+        .fetchNotifications(userId: user.id);
+  },
+);
 
 final categoriesProvider = FutureProvider.autoDispose<List<CategoryModel>>(
   (ref) => ref.watch(ticketRepositoryProvider).fetchCategories(),
@@ -169,6 +222,8 @@ class TicketActions {
     _ref.invalidate(ticketListProvider);
     _ref.invalidate(ticketStatsProvider);
     _ref.invalidate(recentActivityProvider);
+    _ref.invalidate(notificationsProvider);
+    _ref.invalidate(recentMyTicketsProvider);
     if (ticketId != null) _ref.invalidate(ticketDetailProvider(ticketId));
     _repo.kickNotifications();
   }
@@ -192,7 +247,11 @@ class TicketActions {
     return id;
   }
 
-  Future<void> addComment(String ticketId, String content, {bool isInternal = false}) async {
+  Future<void> addComment(
+    String ticketId,
+    String content, {
+    bool isInternal = false,
+  }) async {
     final user = await _ref.read(currentUserProvider.future);
     if (user == null) throw StateError('Not signed in');
     await _repo.addComment(
@@ -216,10 +275,18 @@ class TicketActions {
     _refresh(ticketId: ticketId);
   }
 
-  Future<void> changeStatus(String ticketId, String status, {String? resolution}) async {
+  Future<void> changeStatus(
+    String ticketId,
+    String status, {
+    String? resolution,
+  }) async {
     // "Return to queue" (-> open) also releases the current assignee.
-    await _repo.updateTicket(ticketId,
-        status: status, resolution: resolution, unassign: status == 'open');
+    await _repo.updateTicket(
+      ticketId,
+      status: status,
+      resolution: resolution,
+      unassign: status == 'open',
+    );
     _refresh(ticketId: ticketId);
   }
 
