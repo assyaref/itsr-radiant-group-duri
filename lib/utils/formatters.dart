@@ -6,6 +6,9 @@ class Fmt {
   static final DateFormat _date = DateFormat('d MMM yyyy');
   static final DateFormat _dateTime = DateFormat('d MMM yyyy, HH:mm');
 
+  /// "Jan", "Feb", ... for chart axes.
+  static String monthShort(DateTime d) => DateFormat('MMM').format(d.toLocal());
+
   static String date(DateTime d) => _date.format(d.toLocal());
   static String dateTime(DateTime d) => _dateTime.format(d.toLocal());
 
@@ -29,7 +32,7 @@ class Fmt {
   };
 
   static const Map<String, String> _role = {
-    'employee': 'Employee',
+    'employee': 'Karyawan',
     'it_support': 'IT Support',
     'administrator': 'Administrator',
   };

@@ -30,6 +30,7 @@ class AdminActions {
     required String role,
     String? phoneNumber,
     required String password,
+    bool refresh = true,
   }) async {
     await _ref.read(adminRepositoryProvider).createUser(
           employeeNumber: employeeNumber,
@@ -40,7 +41,8 @@ class AdminActions {
           phoneNumber: phoneNumber,
           password: password,
         );
-    _ref.invalidate(usersProvider);
+    // Bulk import refreshes once at the end instead of after every row.
+    if (refresh) _ref.invalidate(usersProvider);
   }
 
   Future<void> updateUser(String userId, Map<String, dynamic> changes) async {

@@ -28,12 +28,20 @@ class TicketFilter {
   /// Ignored when [status] is set.
   final List<String>? statusIn;
 
+  /// Exact category name (Manajemen Tiket filter).
+  final String? category;
+
+  /// Profile id of the IT Support member the ticket is assigned to.
+  final String? assigneeId;
+
   const TicketFilter({
     this.search = '',
     this.status,
     this.priority,
     this.assignee,
     this.statusIn,
+    this.category,
+    this.assigneeId,
   });
 
   TicketFilter copyWith({
@@ -42,12 +50,16 @@ class TicketFilter {
     String? Function()? priority,
     String? Function()? assignee,
     List<String>? Function()? statusIn,
+    String? Function()? category,
+    String? Function()? assigneeId,
   }) => TicketFilter(
     search: search ?? this.search,
     status: status != null ? status() : this.status,
     priority: priority != null ? priority() : this.priority,
     assignee: assignee != null ? assignee() : this.assignee,
     statusIn: statusIn != null ? statusIn() : this.statusIn,
+    category: category != null ? category() : this.category,
+    assigneeId: assigneeId != null ? assigneeId() : this.assigneeId,
   );
 
   @override
@@ -57,7 +69,9 @@ class TicketFilter {
       other.status == status &&
       other.priority == priority &&
       other.assignee == assignee &&
-      _sameList(other.statusIn, statusIn);
+      _sameList(other.statusIn, statusIn) &&
+      other.category == category &&
+      other.assigneeId == assigneeId;
 
   /// Whether two status groups are the same (null = "all").
   static bool sameStatusGroup(List<String>? a, List<String>? b) =>
@@ -79,6 +93,8 @@ class TicketFilter {
     priority,
     assignee,
     Object.hashAll(statusIn ?? const []),
+    category,
+    assigneeId,
   );
 }
 
@@ -199,6 +215,10 @@ class SupabaseTicketRepository implements TicketRepository {
       q = q.inFilter('status', filter.statusIn!);
     }
     if (filter.priority != null) q = q.eq('priority', filter.priority!);
+    if (filter.category != null) q = q.eq('category', filter.category!);
+    if (filter.assigneeId != null) {
+      q = q.eq('assigned_to_id', filter.assigneeId!);
+    }
     final term = Validators.sanitizeSearch(filter.search);
     if (term.isNotEmpty) {
       q = q.or(

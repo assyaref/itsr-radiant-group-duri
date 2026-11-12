@@ -302,25 +302,30 @@ void main() {
     testWidgets('staff dashboard adds queue + assigned sections', (t) async {
       await pumpApp(t, const DashboardScreen(),
           auth: FakeAuthRepository(profile: user('it1', 'it_support')), size: desktop);
-      expect(find.text('Support queue'), findsOneWidget);
-      expect(find.text('Assigned to me'), findsOneWidget);
-      expect(find.text('Unassigned'), findsOneWidget);
+      expect(find.textContaining('Selamat Datang'), findsOneWidget);
+      for (final s in ['Total Tiket', 'Tiket Terbuka', 'Sedang Dikerjakan', 'Tiket Selesai',
+                       'Tren Tiket', 'Tiket per Kategori', 'Tiket Terbaru']) {
+        expect(find.text(s), findsOneWidget, reason: 'dashboard section "$s"');
+      }
     });
 
-    testWidgets('desktop uses a sidebar; phone uses a drawer', (t) async {
+    testWidgets('desktop uses a sidebar; phone uses a bottom bar with Menu', (t) async {
       final auth = FakeAuthRepository(profile: user('adm', 'administrator'));
       await pumpApp(t, const AppShell(location: '/dashboard', child: Text('body')),
           auth: auth, size: desktop);
       expect(find.byKey(const Key('desktop_sidebar')), findsOneWidget);
-      expect(find.text('Users'), findsOneWidget);
-      expect(find.byTooltip('Open navigation menu'), findsNothing);
+      expect(find.text('Karyawan'), findsOneWidget);
+      expect(find.byKey(const Key('global_search')), findsOneWidget);
 
       await t.pumpWidget(const SizedBox());
       await t.pump(const Duration(seconds: 1));
       await pumpApp(t, const AppShell(location: '/dashboard', child: Text('body')),
           auth: auth, size: phone);
       expect(find.byKey(const Key('desktop_sidebar')), findsNothing);
-      expect(find.byTooltip('Open navigation menu'), findsOneWidget);
+      expect(find.text('Menu'), findsOneWidget);
+      await t.tap(find.text('Menu'));
+      await t.pumpAndSettle();
+      expect(find.text('Keluar'), findsOneWidget, reason: 'sign-out in the phone menu');
     });
 
     testWidgets('navigation and sign-out are exposed to screen readers (desktop and phone)', (t) async {
@@ -328,7 +333,7 @@ void main() {
       final auth = FakeAuthRepository(profile: user('adm', 'administrator'));
       await pumpApp(t, const AppShell(location: '/dashboard', child: Text('body')),
           auth: auth, size: desktop);
-      for (final s in ['Dashboard', 'My Tickets', 'Support Queue', 'Users', 'Sign out']) {
+      for (final s in ['Dashboard', 'Tiket Saya', 'Manajemen Tiket', 'Karyawan', 'Laporan', 'Pengaturan', 'Akun']) {
         expect(find.bySemanticsLabel(RegExp(RegExp.escape(s))), findsWidgets,
             reason: 'desktop: "$s" must be reachable by assistive tech');
       }
@@ -336,7 +341,9 @@ void main() {
       await t.pump(const Duration(seconds: 1));
       await pumpApp(t, const AppShell(location: '/dashboard', child: Text('body')),
           auth: auth, size: phone);
-      expect(find.bySemanticsLabel(RegExp('Open navigation menu')), findsOneWidget);
+      for (final s in ['Beranda', 'Tiket', 'Buat Tiket', 'Notifikasi', 'Menu']) {
+        expect(find.bySemanticsLabel(s), findsWidgets, reason: 'phone: "$s"');
+      }
       handle.dispose();
     });
 

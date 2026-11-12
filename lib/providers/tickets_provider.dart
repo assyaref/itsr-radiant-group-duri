@@ -9,6 +9,7 @@ import '../models/attachment_model.dart';
 import '../models/category_model.dart';
 import '../models/ticket_model.dart';
 import '../models/ticket_stats.dart';
+import '../models/staff_dashboard.dart';
 import '../models/ticket_summary.dart';
 import '../utils/error_messages.dart';
 import 'auth_provider.dart';
@@ -218,6 +219,72 @@ final ticketSummaryProvider = FutureProvider.autoDispose
       return TicketSummary.of(tickets);
     });
 
+/// Administrator / IT Support dashboard for a period (all visible tickets).
+final staffDashboardProvider = FutureProvider.autoDispose
+    .family<StaffDashboard, SummaryPeriod>((ref, period) async {
+  final user = await ref.watch(currentUserProvider.future);
+  final repo = ref.watch(ticketRepositoryProvider);
+  if (user == null) {
+    return StaffDashboard(
+      period: period,
+      current: TicketSummary.of(const []),
+      previous: TicketSummary.of(const []),
+      latest: const [],
+    );
+  }
+  final prev = StaffDashboard.previousOf(period);
+  final results = await Future.wait([
+    repo.fetchTicketsInRange(scope: TicketScope.queue, userId: user.id, from: period.from, to: period.to),
+    repo.fetchTicketsInRange(scope: TicketScope.queue, userId: user.id, from: prev.from, to: prev.to),
+    repo
+        .fetchTickets(
+          scope: TicketScope.queue,
+          userId: user.id,
+          filter: const TicketFilter(),
+          offset: 0,
+          limit: 5,
+        )
+        .then((p) => p.items),
+  ]);
+  return StaffDashboard(
+    period: period,
+    current: TicketSummary.of(results[0]),
+    previous: TicketSummary.of(results[1]),
+    latest: results[2],
+  );
+});
+
+/// Status groups of the "Manajemen Tiket" tabs.
+class QueueTabs {
+  QueueTabs._();
+  static const tabs = <(String, List<String>?)>[
+    ('Semua', null),
+    ('Terbuka', ['open', 'reopened']),
+    ('Dikerjakan', ['assigned', 'in_progress']),
+    ('Pending', ['pending_user']),
+    ('Selesai', ['resolved', 'closed']),
+  ];
+}
+
+/// Ticket counts per Manajemen Tiket tab (all tickets the caller can see).
+final queueTabCountsProvider = FutureProvider.autoDispose<List<int>>((ref) async {
+  final user = await ref.watch(currentUserProvider.future);
+  if (user == null) return List.filled(QueueTabs.tabs.length, 0);
+  final repo = ref.watch(ticketRepositoryProvider);
+  return Future.wait([
+    for (final (_, statuses) in QueueTabs.tabs)
+      repo
+          .fetchTickets(
+            scope: TicketScope.queue,
+            userId: user.id,
+            filter: TicketFilter(statusIn: statuses),
+            offset: 0,
+            limit: 1,
+          )
+          .then((p) => p.total),
+  ]);
+});
+
 /// In-app notifications (ticket events + comments by others).
 final notificationsProvider = FutureProvider.autoDispose<List<AppNotification>>(
   (ref) async {
@@ -252,6 +319,9 @@ class TicketActions {
     _ref.invalidate(recentActivityProvider);
     _ref.invalidate(notificationsProvider);
     _ref.invalidate(recentMyTicketsProvider);
+    _ref.invalidate(staffDashboardProvider);
+    _ref.invalidate(queueTabCountsProvider);
+    _ref.invalidate(ticketSummaryProvider);
     if (ticketId != null) _ref.invalidate(ticketDetailProvider(ticketId));
     _repo.kickNotifications();
   }

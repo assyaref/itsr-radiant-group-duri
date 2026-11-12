@@ -144,6 +144,9 @@ class FakeTicketRepository implements TicketRepository {
       if (filter.status == null && filter.statusIn != null && !filter.statusIn!.contains(t.status)) {
         return false;
       }
+      if (filter.priority != null && t.priority != filter.priority) return false;
+      if (filter.category != null && t.category != filter.category) return false;
+      if (filter.assigneeId != null && t.assignedToId != filter.assigneeId) return false;
       if (filter.search.isNotEmpty && !t.subject.toLowerCase().contains(filter.search.toLowerCase())) {
         return false;
       }

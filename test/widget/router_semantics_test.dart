@@ -27,21 +27,24 @@ Future<void> pumpRouted(WidgetTester t, Size size, String role) async {
 }
 
 void main() {
-  testWidgets('desktop (routed): navigation and Sign out are in the semantics tree', (t) async {
+  testWidgets('desktop (routed): admin navigation and account menu are in the semantics tree', (t) async {
     final handle = t.ensureSemantics();
     await pumpRouted(t, const Size(1440, 900), 'administrator');
-    expect(find.text('Sign out'), findsOneWidget); // painted
-    for (final s in ['My Tickets', 'Support Queue', 'Users', 'Settings', 'Sign out']) {
+    for (final s in ['Tiket Saya', 'Manajemen Tiket', 'Karyawan', 'Pengaturan', 'Akun']) {
       expect(find.bySemanticsLabel(RegExp(RegExp.escape(s))), findsWidgets,
           reason: '"$s" must be reachable by assistive tech');
     }
+    await t.tap(find.byTooltip('Akun'));
+    await t.pumpAndSettle();
+    expect(find.text('Keluar'), findsOneWidget);
     handle.dispose();
   });
 
-  testWidgets('phone (routed): staff menu button is in the semantics tree', (t) async {
+  testWidgets('phone (routed): staff bottom bar has Menu', (t) async {
     final handle = t.ensureSemantics();
     await pumpRouted(t, const Size(390, 844), 'it_support');
-    expect(find.bySemanticsLabel(RegExp('Open navigation menu')), findsOneWidget);
+    expect(find.bySemanticsLabel('Menu'), findsOneWidget);
+    expect(find.byKey(const Key('desktop_sidebar')), findsNothing);
     handle.dispose();
   });
 

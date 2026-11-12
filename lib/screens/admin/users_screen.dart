@@ -2,15 +2,20 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../constants/app_constants.dart';
+import '../../models/user_import.dart';
 import '../../models/user_model.dart';
 import '../../providers/admin_provider.dart';
 import '../../providers/auth_provider.dart';
+import '../../utils/browser_files.dart';
 import '../../utils/error_messages.dart';
 import '../../utils/formatters.dart';
 import '../../utils/validators.dart';
 import '../../widgets/common.dart';
+import '../../widgets/employee_ui.dart';
 
-/// Administrator: employees, roles, IT Support staff, activation, passwords.
+/// "5. Manajemen Karyawan": employees, IT Support staff and administrators,
+/// with role tabs, search, department / status filters, bulk import from the
+/// Excel template, add / edit / reset password / (de)activate.
 /// All writes go through the `admin-users` Edge Function, which re-checks the
 /// caller's administrator role server-side.
 class UsersScreen extends ConsumerStatefulWidget {
@@ -23,72 +28,187 @@ class UsersScreen extends ConsumerStatefulWidget {
 class _UsersScreenState extends ConsumerState<UsersScreen> {
   String _query = '';
   String? _role;
+  String? _dept;
+  bool? _active;
+
+  Future<void> _downloadTemplate() async {
+    await downloadBytes(UserImport.template(), 'template-import-karyawan.xlsx',
+        'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    if (mounted) showSnack(context, 'Template diunduh: template-import-karyawan.xlsx');
+  }
+
+  Future<void> _import(List<UserModel> existing) async {
+    final files = await pickFiles(
+      accept: '.xlsx,.csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,text/csv',
+      multiple: false,
+    );
+    if (files.isEmpty || !mounted) return;
+    final f = files.first;
+    List<ImportRow> rows;
+    try {
+      rows = UserImport.parse(UserImport.readFile(f.name, f.bytes), existing);
+    } on FormatException catch (e) {
+      showSnack(context, e.message, error: true);
+      return;
+    }
+    if (rows.isEmpty) {
+      showSnack(context, 'Tidak ada baris data di ${f.name}', error: true);
+      return;
+    }
+    await showDialog<void>(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => _ImportDialog(fileName: f.name, rows: rows),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
     final users = ref.watch(usersProvider);
     final me = ref.watch(currentUserProvider).valueOrNull;
+    final desktop = isDesktop(context);
+    final list = users.valueOrNull ?? const <UserModel>[];
+    final departments = {for (final u in list) u.department}.toList()..sort();
+    final roleTabs = <(String, String?)>[
+      ('Semua', null),
+      ('Karyawan', AppConstants.roleEmployee),
+      ('IT Support', AppConstants.roleITSupport),
+      ('Administrator', AppConstants.roleAdministrator),
+    ];
 
-    return Scaffold(
-      floatingActionButton: FloatingActionButton.extended(
-        heroTag: 'add_user_fab',
-        onPressed: () => showDialog(context: context, builder: (_) => const _UserDialog()),
-        icon: const Icon(Icons.person_add),
-        label: const Text('Add user'),
+    final actions = Wrap(spacing: 8, runSpacing: 8, children: [
+      OutlinedButton.icon(
+        key: const Key('download_import_template'),
+        onPressed: _downloadTemplate,
+        icon: const Icon(Icons.description_outlined),
+        label: const Text('Template Import'),
       ),
-      body: Column(
+      OutlinedButton.icon(
+        key: const Key('import_users_button'),
+        onPressed: users.hasValue ? () => _import(list) : null,
+        icon: const Icon(Icons.upload_file_outlined),
+        label: const Text('Import Karyawan'),
+      ),
+      FilledButton.icon(
+        key: const Key('add_user_button'),
+        style: FilledButton.styleFrom(backgroundColor: EColors.blue),
+        onPressed: () => showDialog(context: context, builder: (_) => const _UserDialog()),
+        icon: const Icon(Icons.person_add_alt_1),
+        label: const Text('Tambah Karyawan'),
+      ),
+    ]);
+
+    Widget dropdown<T>(Key key, String hint, T? value, List<(T, String)> options, ValueChanged<T?> onChanged) =>
+        SizedBox(
+          width: desktop ? 200 : double.infinity,
+          child: DropdownButtonFormField<T?>(
+            key: key,
+            initialValue: value,
+            isExpanded: true,
+            decoration: eInput(),
+            hint: Text(hint, style: const TextStyle(fontSize: 13.5)),
+            items: [
+              DropdownMenuItem<T?>(value: null, child: Text(hint, style: const TextStyle(fontSize: 13.5))),
+              for (final (v, l) in options)
+                DropdownMenuItem<T?>(value: v, child: Text(l, overflow: TextOverflow.ellipsis)),
+            ],
+            onChanged: onChanged,
+          ),
+        );
+
+    final search = TextField(
+      key: const Key('users_search'),
+      decoration: eInput(
+        hint: 'Cari nama, employee number, email, atau departemen…',
+        prefix: const Icon(Icons.search, color: EColors.muted),
+      ),
+      onChanged: (v) => setState(() => _query = v.trim().toLowerCase()),
+    );
+    final filters = [
+      dropdown<String>(const Key('filter_department'), 'Semua Departemen', _dept,
+          [for (final d in departments) (d, d)], (v) => setState(() => _dept = v)),
+      dropdown<bool>(const Key('filter_status'), 'Semua Status', _active,
+          const [(true, 'Aktif'), (false, 'Nonaktif')], (v) => setState(() => _active = v)),
+    ];
+
+    return RefreshIndicator(
+      onRefresh: () async => ref.invalidate(usersProvider),
+      child: ListView(
+        padding: EdgeInsets.all(desktop ? 24 : 16),
         children: [
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
-            child: Row(children: [
-              Expanded(
-                flex: 2,
-                child: TextField(
-                  decoration: const InputDecoration(
-                      hintText: 'Search name, number, email, department',
-                      prefixIcon: Icon(Icons.search),
-                      isDense: true),
-                  onChanged: (v) => setState(() => _query = v.trim().toLowerCase()),
-                ),
-              ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: DropdownButtonFormField<String?>(
-                  initialValue: _role,
-                  isExpanded: true,
-                  decoration: const InputDecoration(labelText: 'Role', isDense: true),
-                  items: [
-                    const DropdownMenuItem(value: null, child: Text('All')),
-                    for (final r in AppConstants.roles)
-                      DropdownMenuItem(value: r, child: Text(Fmt.role(r))),
+          if (!desktop) const SizedBox(height: 8),
+          Wrap(
+            alignment: WrapAlignment.spaceBetween,
+            crossAxisAlignment: WrapCrossAlignment.center,
+            runSpacing: 12,
+            spacing: 12,
+            children: [
+              const Column(crossAxisAlignment: CrossAxisAlignment.start, mainAxisSize: MainAxisSize.min, children: [
+                Text('Manajemen Karyawan',
+                    style: TextStyle(fontSize: 22, fontWeight: FontWeight.w800, color: EColors.ink)),
+                SizedBox(height: 2),
+                Text('Kelola data karyawan dan akun akses aplikasi',
+                    style: TextStyle(color: EColors.muted, fontSize: 13)),
+              ]),
+              actions,
+            ],
+          ),
+          const SizedBox(height: 16),
+          ECard(
+            padding: EdgeInsets.all(desktop ? 18 : 12),
+            child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+              SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                child: Row(children: [
+                  for (final (label, role) in roleTabs) ...[
+                    ESegment(
+                      key: Key('role_tab_$label'),
+                      label: label,
+                      count: users.hasValue ? list.where((u) => role == null || u.role == role).length : null,
+                      selected: _role == role,
+                      onTap: () => setState(() => _role = role),
+                    ),
+                    const SizedBox(width: 8),
                   ],
-                  onChanged: (v) => setState(() => _role = v),
-                ),
+                ]),
+              ),
+              const SizedBox(height: 14),
+              if (desktop)
+                Row(children: [
+                  Expanded(child: search),
+                  for (final f in filters) ...[const SizedBox(width: 10), f],
+                ])
+              else ...[
+                search,
+                const SizedBox(height: 10),
+                for (final f in filters) ...[f, const SizedBox(height: 8)],
+              ],
+              const SizedBox(height: 14),
+              users.when(
+                loading: () => const SizedBox(height: 200, child: LoadingView()),
+                error: (e, _) => ErrorView(error: e, onRetry: () => ref.invalidate(usersProvider)),
+                data: (all) {
+                  final filtered = all.where((u) {
+                    if (_role != null && u.role != _role) return false;
+                    if (_dept != null && u.department != _dept) return false;
+                    if (_active != null && u.isActive != _active) return false;
+                    if (_query.isEmpty) return true;
+                    return [u.fullName, u.employeeNumber, u.email, u.department]
+                        .any((f) => f.toLowerCase().contains(_query));
+                  }).toList();
+                  if (filtered.isEmpty) {
+                    return const Padding(
+                      padding: EdgeInsets.symmetric(vertical: 32),
+                      child: EmptyView(icon: Icons.people_outline, title: 'Tidak ada karyawan yang cocok'),
+                    );
+                  }
+                  if (desktop) return _UsersTable(users: filtered, meId: me?.id);
+                  return Column(children: [
+                    for (final u in filtered) ...[_UserTile(user: u, isMe: u.id == me?.id), const SizedBox(height: 8)],
+                  ]);
+                },
               ),
             ]),
-          ),
-          Expanded(
-            child: users.when(
-              loading: () => const LoadingView(),
-              error: (e, _) => ErrorView(error: e, onRetry: () => ref.invalidate(usersProvider)),
-              data: (list) {
-                final filtered = list.where((u) {
-                  if (_role != null && u.role != _role) return false;
-                  if (_query.isEmpty) return true;
-                  return [u.fullName, u.employeeNumber, u.email, u.department]
-                      .any((f) => f.toLowerCase().contains(_query));
-                }).toList();
-                if (filtered.isEmpty) {
-                  return const EmptyView(icon: Icons.people_outline, title: 'No users found');
-                }
-                return ListView.separated(
-                  padding: const EdgeInsets.fromLTRB(16, 8, 16, 88),
-                  itemCount: filtered.length,
-                  separatorBuilder: (_, _) => const SizedBox(height: 8),
-                  itemBuilder: (_, i) => _UserTile(user: filtered[i], isMe: filtered[i].id == me?.id),
-                );
-              },
-            ),
           ),
         ],
       ),
@@ -96,88 +216,286 @@ class _UsersScreenState extends ConsumerState<UsersScreen> {
   }
 }
 
-class _UserTile extends ConsumerWidget {
+// ---------------------------------------------------------------------------
+// Row actions shared by the desktop table and the phone cards.
+Future<void> _toggleActive(BuildContext context, WidgetRef ref, UserModel user) async {
+  final activate = !user.isActive;
+  final ok = await showConfirmDialog(
+    context,
+    title: activate ? 'Aktifkan karyawan' : 'Nonaktifkan karyawan',
+    message: activate
+        ? 'Izinkan ${user.fullName} masuk lagi?'
+        : '${user.fullName} tidak akan bisa masuk. Tiket dan riwayatnya tetap disimpan.',
+    confirmLabel: activate ? 'Aktifkan' : 'Nonaktifkan',
+    destructive: !activate,
+  );
+  if (!ok || !context.mounted) return;
+  try {
+    await ref.read(adminActionsProvider).updateUser(user.id, {'is_active': activate});
+    if (context.mounted) showSnack(context, activate ? 'Karyawan diaktifkan' : 'Karyawan dinonaktifkan');
+  } catch (e) {
+    if (context.mounted) showSnack(context, friendlyError(e), error: true);
+  }
+}
+
+Future<void> _resetPassword(BuildContext context, WidgetRef ref, UserModel user) async {
+  final pw = await showDialog<String>(context: context, builder: (_) => const _PasswordDialog());
+  if (pw == null || !context.mounted) return;
+  try {
+    await ref.read(adminActionsProvider).resetPassword(user.id, pw);
+    if (context.mounted) {
+      showSnack(context, 'Password direset. Sampaikan password baru ke ${user.fullName} secara pribadi.');
+    }
+  } catch (e) {
+    if (context.mounted) showSnack(context, friendlyError(e), error: true);
+  }
+}
+
+Widget _statusTag(UserModel u) =>
+    u.isActive ? const ETag('Aktif', EColors.green) : const ETag('Nonaktif', EColors.red);
+
+class _UserActions extends ConsumerWidget {
+  const _UserActions({required this.user, required this.isMe});
+  final UserModel user;
+  final bool isMe;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) => Row(mainAxisSize: MainAxisSize.min, children: [
+        IconButton(
+          tooltip: 'Edit ${user.fullName}',
+          visualDensity: VisualDensity.compact,
+          onPressed: () => showDialog(context: context, builder: (_) => _UserDialog(existing: user)),
+          icon: const Icon(Icons.edit_outlined, size: 20, color: EColors.text),
+        ),
+        IconButton(
+          tooltip: 'Reset password',
+          visualDensity: VisualDensity.compact,
+          onPressed: () => _resetPassword(context, ref, user),
+          icon: const Icon(Icons.key_outlined, size: 20, color: EColors.text),
+        ),
+        PopupMenuButton<String>(
+          tooltip: 'Aksi lainnya',
+          icon: const Icon(Icons.more_vert, size: 20, color: EColors.text),
+          onSelected: (v) {
+            if (v == 'active') _toggleActive(context, ref, user);
+          },
+          itemBuilder: (_) => [
+            if (!isMe)
+              PopupMenuItem(value: 'active', child: Text(user.isActive ? 'Nonaktifkan' : 'Aktifkan')),
+            if (isMe) const PopupMenuItem(enabled: false, child: Text('Akun Anda sendiri')),
+          ],
+        ),
+      ]);
+}
+
+class _UsersTable extends StatelessWidget {
+  const _UsersTable({required this.users, required this.meId});
+  final List<UserModel> users;
+  final String? meId;
+
+  @override
+  Widget build(BuildContext context) {
+    const head = TextStyle(fontSize: 12.5, fontWeight: FontWeight.w700, color: EColors.ink);
+    const cell = TextStyle(fontSize: 13, color: EColors.text);
+    return LayoutBuilder(builder: (context, box) => SingleChildScrollView(
+          scrollDirection: Axis.horizontal,
+          child: ConstrainedBox(
+            constraints: BoxConstraints(minWidth: box.maxWidth),
+            child: DataTable(
+              headingRowHeight: 42,
+              dataRowMinHeight: 52,
+              dataRowMaxHeight: 58,
+              horizontalMargin: 12,
+              columnSpacing: 20,
+              headingRowColor: const WidgetStatePropertyAll(Color(0xFFF8FAFC)),
+              border: const TableBorder(horizontalInside: BorderSide(color: Color(0xFFF1F5F9))),
+              columns: const [
+                DataColumn(label: Text('Employee No.', style: head)),
+                DataColumn(label: Text('Nama', style: head)),
+                DataColumn(label: Text('Departemen', style: head)),
+                DataColumn(label: Text('Role', style: head)),
+                DataColumn(label: Text('Status', style: head)),
+                DataColumn(label: Text('Aksi', style: head)),
+              ],
+              rows: [
+                for (final u in users)
+                  DataRow(cells: [
+                    DataCell(Text(u.employeeNumber, style: cell.copyWith(fontWeight: FontWeight.w600))),
+                    DataCell(Row(mainAxisSize: MainAxisSize.min, children: [
+                      InitialsAvatar(u.fullName, size: 32),
+                      const SizedBox(width: 10),
+                      ConstrainedBox(
+                        constraints: const BoxConstraints(maxWidth: 220),
+                        child: Column(mainAxisAlignment: MainAxisAlignment.center, crossAxisAlignment: CrossAxisAlignment.start, children: [
+                          Text('${u.fullName}${u.id == meId ? ' (Anda)' : ''}',
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: cell.copyWith(color: EColors.ink, fontWeight: FontWeight.w600)),
+                          Text(u.email,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: const TextStyle(fontSize: 11.5, color: EColors.muted)),
+                        ]),
+                      ),
+                    ])),
+                    DataCell(Text(u.department, style: cell)),
+                    DataCell(Text(Fmt.role(u.role), style: cell)),
+                    DataCell(_statusTag(u)),
+                    DataCell(_UserActions(user: u, isMe: u.id == meId)),
+                  ]),
+              ],
+            ),
+          ),
+        ));
+  }
+}
+
+class _UserTile extends StatelessWidget {
   const _UserTile({required this.user, required this.isMe});
   final UserModel user;
   final bool isMe;
 
-  Future<void> _toggleActive(BuildContext context, WidgetRef ref) async {
-    final activate = !user.isActive;
-    final ok = await showConfirmDialog(
-      context,
-      title: activate ? 'Reactivate user' : 'Deactivate user',
-      message: activate
-          ? 'Allow ${user.fullName} to sign in again?'
-          : '${user.fullName} will be signed out of all data immediately and cannot sign in. '
-              'Their tickets and history are kept.',
-      confirmLabel: activate ? 'Reactivate' : 'Deactivate',
-      destructive: !activate,
-    );
-    if (!ok || !context.mounted) return;
-    try {
-      await ref.read(adminActionsProvider).updateUser(user.id, {'is_active': activate});
-      if (context.mounted) showSnack(context, activate ? 'User reactivated' : 'User deactivated');
-    } catch (e) {
-      if (context.mounted) showSnack(context, friendlyError(e), error: true);
-    }
-  }
+  @override
+  Widget build(BuildContext context) => ECard(
+        padding: const EdgeInsets.fromLTRB(12, 10, 4, 10),
+        child: Row(children: [
+          InitialsAvatar(user.fullName, size: 40),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              Text('${user.fullName}${isMe ? ' (Anda)' : ''}',
+                  style: const TextStyle(fontWeight: FontWeight.w700, color: EColors.ink)),
+              const SizedBox(height: 2),
+              Text('${user.employeeNumber} · ${Fmt.role(user.role)} · ${user.department}',
+                  style: const TextStyle(fontSize: 12, color: EColors.muted)),
+              const SizedBox(height: 4),
+              _statusTag(user),
+            ]),
+          ),
+          _UserActions(user: user, isMe: isMe),
+        ]),
+      );
+}
 
-  Future<void> _resetPassword(BuildContext context, WidgetRef ref) async {
-    final pw = await showDialog<String>(context: context, builder: (_) => const _PasswordDialog());
-    if (pw == null || !context.mounted) return;
-    try {
-      await ref.read(adminActionsProvider).resetPassword(user.id, pw);
-      if (context.mounted) {
-        showSnack(context, 'Password reset. Share the new password with ${user.fullName} securely.');
+// ---------------------------------------------------------------------------
+/// Preview + run of a bulk import.
+class _ImportDialog extends ConsumerStatefulWidget {
+  const _ImportDialog({required this.fileName, required this.rows});
+  final String fileName;
+  final List<ImportRow> rows;
+
+  @override
+  ConsumerState<_ImportDialog> createState() => _ImportDialogState();
+}
+
+class _ImportDialogState extends ConsumerState<_ImportDialog> {
+  bool _running = false;
+  bool _done = false;
+  int _progress = 0;
+  final Map<int, String> _failed = {}; // line -> reason
+  final Set<int> _created = {};
+
+  List<ImportRow> get _valid => widget.rows.where((r) => r.isValid).toList();
+
+  Future<void> _run() async {
+    setState(() => _running = true);
+    final actions = ref.read(adminActionsProvider);
+    for (final r in _valid) {
+      if (!mounted) return;
+      try {
+        await actions.createUser(
+          employeeNumber: r.employeeNumber,
+          fullName: r.fullName,
+          email: r.email,
+          department: r.department,
+          role: r.role,
+          phoneNumber: r.phone,
+          password: r.password,
+          refresh: false,
+        );
+        _created.add(r.line);
+      } catch (e) {
+        _failed[r.line] = friendlyError(e);
       }
-    } catch (e) {
-      if (context.mounted) showSnack(context, friendlyError(e), error: true);
+      if (mounted) setState(() => _progress++);
+    }
+    ref.invalidate(usersProvider);
+    if (mounted) {
+      setState(() {
+        _running = false;
+        _done = true;
+      });
     }
   }
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) => Card(
-        margin: EdgeInsets.zero,
-        child: ListTile(
-          leading: CircleAvatar(
-            backgroundColor: user.isActive ? null : Colors.grey[300],
-            child: Text(user.fullName.isEmpty ? '?' : user.fullName[0].toUpperCase()),
+  Widget build(BuildContext context) {
+    final valid = _valid.length;
+    final invalid = widget.rows.length - valid;
+    return AlertDialog(
+      title: Text(_done ? 'Hasil Import' : 'Pratinjau Import'),
+      content: SizedBox(
+        width: 720,
+        height: 460,
+        child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+          Text(
+            _done
+                ? '${_created.length} akun dibuat, ${_failed.length} gagal, $invalid dilewati (data tidak valid).'
+                : '${widget.fileName}: ${widget.rows.length} baris · $valid siap diimport · $invalid bermasalah.',
+            style: const TextStyle(fontWeight: FontWeight.w600),
           ),
-          title: Text(
-            '${user.fullName}${isMe ? ' (you)' : ''}',
-            style: TextStyle(
-              decoration: user.isActive ? null : TextDecoration.lineThrough,
+          if (_running) ...[
+            const SizedBox(height: 10),
+            LinearProgressIndicator(value: valid == 0 ? null : _progress / valid),
+            const SizedBox(height: 4),
+            Text('Membuat akun $_progress dari $valid…', style: const TextStyle(fontSize: 12, color: EColors.muted)),
+          ],
+          const SizedBox(height: 10),
+          Expanded(
+            child: ListView.separated(
+              itemCount: widget.rows.length,
+              separatorBuilder: (_, _) => const Divider(height: 1),
+              itemBuilder: (_, i) {
+                final r = widget.rows[i];
+                final (color, label, detail) = _created.contains(r.line)
+                    ? (EColors.green, 'Dibuat', '')
+                    : _failed.containsKey(r.line)
+                        ? (EColors.red, 'Gagal', _failed[r.line]!)
+                        : r.isValid
+                            ? (EColors.blue, 'Siap', '')
+                            : (EColors.amber, 'Dilewati', r.errors.join(' · '));
+                return ListTile(
+                  dense: true,
+                  leading: Text('#${r.line}', style: const TextStyle(color: EColors.muted)),
+                  title: Text(
+                    '${r.employeeNumber.isEmpty ? '—' : r.employeeNumber} · ${r.fullName.isEmpty ? '—' : r.fullName}',
+                    style: const TextStyle(fontWeight: FontWeight.w600),
+                  ),
+                  subtitle: Text(
+                    [r.email, Fmt.role(r.role), r.department, if (detail.isNotEmpty) detail].join(' · '),
+                    style: TextStyle(color: detail.isNotEmpty ? color : EColors.muted),
+                  ),
+                  trailing: ETag(label, color),
+                );
+              },
             ),
           ),
-          subtitle: Text(
-            '${user.employeeNumber} • ${Fmt.role(user.role)} • ${user.department}\n${user.email}'
-            '${user.isActive ? '' : '  —  DEACTIVATED'}',
-          ),
-          isThreeLine: true,
-          trailing: PopupMenuButton<String>(
-            tooltip: 'Actions',
-            onSelected: (v) {
-              switch (v) {
-                case 'edit':
-                  showDialog(context: context, builder: (_) => _UserDialog(existing: user));
-                case 'password':
-                  _resetPassword(context, ref);
-                case 'active':
-                  _toggleActive(context, ref);
-              }
-            },
-            itemBuilder: (_) => [
-              const PopupMenuItem(value: 'edit', child: Text('Edit details / role')),
-              const PopupMenuItem(value: 'password', child: Text('Reset password')),
-              if (!isMe)
-                PopupMenuItem(
-                  value: 'active',
-                  child: Text(user.isActive ? 'Deactivate' : 'Reactivate'),
-                ),
-            ],
-          ),
+        ]),
+      ),
+      actions: [
+        TextButton(
+          onPressed: _running ? null : () => Navigator.pop(context),
+          child: Text(_done ? 'Tutup' : 'Batal'),
         ),
-      );
+        if (!_done)
+          FilledButton(
+            key: const Key('run_import_button'),
+            onPressed: _running || valid == 0 ? null : _run,
+            child: Text('Import $valid akun'),
+          ),
+      ],
+    );
+  }
 }
 
 class _UserDialog extends ConsumerStatefulWidget {

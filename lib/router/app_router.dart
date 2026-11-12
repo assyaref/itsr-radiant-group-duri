@@ -6,6 +6,7 @@ import '../models/user_model.dart';
 import '../providers/auth_provider.dart';
 import '../screens/admin/categories_screen.dart';
 import '../screens/admin/email_notifications_screen.dart';
+import '../screens/admin/settings_hub_screen.dart';
 import '../screens/admin/settings_screen.dart';
 import '../screens/admin/users_screen.dart';
 import '../screens/create_ticket_screen.dart';
@@ -155,20 +156,42 @@ final goRouterProvider = Provider<GoRouter>((ref) {
           GoRoute(path: '/profile', builder: (_, _) => const ProfileScreen()),
           GoRoute(
             path: '/queue',
-            builder: (_, _) => const ITSupportQueueScreen(),
+            builder: (_, state) =>
+                ITSupportQueueScreen(initialSearch: state.uri.queryParameters['q']),
           ),
           GoRoute(path: '/admin/users', builder: (_, _) => const UsersScreen()),
           GoRoute(
             path: '/admin/categories',
-            builder: (_, _) => const CategoriesScreen(),
+            builder: (_, _) => const AdminPage(
+              title: 'Kategori',
+              subtitle: 'Kelola kategori masalah',
+              backTo: '/admin/settings',
+              child: CategoriesScreen(),
+            ),
           ),
           GoRoute(
             path: '/admin/settings',
-            builder: (_, _) => const SettingsScreen(),
+            builder: (_, _) => const SettingsHubScreen(),
+            routes: [
+              GoRoute(
+                path: 'system',
+                builder: (_, _) => const AdminPage(
+                  title: 'Pengaturan Sistem',
+                  subtitle: 'Email grup IT, email manajer, dan alamat aplikasi',
+                  backTo: '/admin/settings',
+                  child: SettingsScreen(),
+                ),
+              ),
+            ],
           ),
           GoRoute(
             path: '/admin/email-notifications',
-            builder: (_, _) => const EmailNotificationsScreen(),
+            builder: (_, _) => const AdminPage(
+              title: 'Email & Notifikasi',
+              subtitle: 'Server email (SMTP) dan pengiriman notifikasi',
+              backTo: '/admin/settings',
+              child: EmailNotificationsScreen(),
+            ),
           ),
         ],
       ),
