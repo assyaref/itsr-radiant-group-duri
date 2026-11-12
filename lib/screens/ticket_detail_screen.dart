@@ -617,7 +617,7 @@ class _StaffActionsState extends ConsumerState<_StaffActions>
             : 'Close ticket',
         label: status == AppConstants.statusResolved
             ? 'What was done to resolve it? (visible to the employee)'
-            : 'Reason for closing (e.g. duplicate of ITSR-00012)',
+            : 'Reason for closing (e.g. duplicate of ITSR-RGD-26110001)',
         confirmLabel: status == AppConstants.statusResolved
             ? 'Resolve'
             : 'Close',

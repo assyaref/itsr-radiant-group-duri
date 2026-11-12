@@ -96,7 +96,7 @@ begin
   values ('Laptop will not boot', 'Black screen after the BIOS logo appears.', 'Hardware', 'high', test.uid('A'));
 
   select * into t from public.tickets where subject = 'Laptop will not boot';
-  perform test.ok(t.ticket_number ~ '^ITSR-[0-9]{5}$', 'E01 ticket number generated server-side', t.ticket_number);
+  perform test.ok(t.ticket_number ~ '^ITSR-RGD-[0-9]{8,}$', 'E01 ticket number generated server-side', t.ticket_number);
   perform test.ok(t.status = 'open' and t.assigned_to_id is null, 'E02 new ticket is open and unassigned');
 
   select count(*) into n from public.ticket_activity_log where ticket_id = t.id and action = 'created' and actor_id = test.uid('A');
