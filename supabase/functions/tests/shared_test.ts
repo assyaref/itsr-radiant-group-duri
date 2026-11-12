@@ -93,7 +93,7 @@ Deno.test("status change -> reporter; actor not emailed about own action", () =>
   const e = buildEmail(ctx({ event: "status_changed", actor: tech, payload: { old_status: "open", new_status: "in_progress" },
     ticket: { ...ticket, status: "in_progress", assignee: tech } }), settings)!;
   assertEquals(e.to, ["rina@example.test"]);
-  assert(e.subject.includes("Open → In Progress"));
+  assert(e.subject.includes("Menunggu → Diproses"));
 });
 
 Deno.test("comment by reporter -> assignee; by tech -> reporter", () => {
@@ -105,6 +105,17 @@ Deno.test("comment by reporter -> assignee; by tech -> reporter", () => {
 Deno.test("no configured addresses and no recipients -> null (nothing invented)", () => {
   const none: Settings = { it_support_group_email: null, manager_email: null, app_base_url: null };
   assertEquals(buildEmail(ctx({ activeItStaff: [] }), none), null);
+});
+
+Deno.test("HTML email is a boxed form with Indonesian labels and a button", () => {
+  const e = buildEmail(ctx({}), settings)!;
+  for (const label of ["Informasi Tiket", "No. Tiket", "Judul", "Status", "Prioritas", "Kategori", "Pelapor",
+                       "Ditangani oleh", "Deskripsi Masalah", "Buka Tiket"]) {
+    assert(e.html.includes(label), `missing ${label}`);
+  }
+  assert(e.html.includes("border:1px solid #e2e8f0"), "boxed cells");
+  assert(e.html.includes('href="https://itsr.example.test/#/tickets/tid"'));
+  assert(e.text.includes("No. Tiket:    ITSR-00007"));
 });
 
 Deno.test("user-supplied content is escaped in HTML body", () => {
