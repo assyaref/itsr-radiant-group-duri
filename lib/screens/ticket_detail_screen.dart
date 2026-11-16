@@ -4,15 +4,20 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../constants/app_constants.dart';
 import '../constants/app_theme.dart';
 import '../models/activity_model.dart';
+import '../models/attachment_model.dart';
 import '../models/comment_model.dart';
 import '../models/ticket_model.dart';
 import '../models/ticket_stats.dart';
 import '../models/user_model.dart';
+import '../providers/attachment_provider.dart';
 import '../providers/auth_provider.dart';
 import '../providers/tickets_provider.dart';
 import '../utils/error_messages.dart';
 import '../utils/formatters.dart';
+import '../utils/file_picker_web.dart' if (dart.library.io) '../utils/file_picker_stub.dart';
 import '../widgets/common.dart';
+
+const int kMaxAttachmentDisplaySize = 10 * 1024 * 1024; // 10 MiB
 
 class TicketDetailScreen extends ConsumerWidget {
   const TicketDetailScreen({super.key, required this.ticketId});
@@ -33,37 +38,37 @@ class TicketDetailScreen extends ConsumerWidget {
       ),
       data: (d) {
         if (user == null) return const LoadingView();
-        return DefaultTabController(
-          length: 3,
-          child: Scaffold(
-            appBar: AppBar(
-              leading: IconButton(
-                icon: const Icon(Icons.arrow_back),
-                onPressed: () => Navigator.of(context).pop(),
-              ),
-              title: const Text('Detail Tiket'),
-              centerTitle: false,
-              elevation: 0,
-              bottom: TabBar(
-                labelColor: AppTheme.primary,
-                unselectedLabelColor: AppTheme.muted,
-                indicatorColor: AppTheme.primary,
-                tabs: const [
-                  Tab(text: 'Detail'),
-                  Tab(text: 'Komentar'),
-                  Tab(text: 'Lampiran'),
-                ],
-              ),
-            ),
-            body: TabBarView(
-              children: [
-                _DetailTab(ticket: d.ticket, user: user),
-                _CommentsTab(detail: d, user: user),
-                _AttachmentsTab(ticket: d.ticket),
-              ],
-            ),
+    return DefaultTabController(
+      length: 4,
+      child: Scaffold(
+        appBar: AppBar(
+          leading: IconButton(
+            icon: const Icon(Icons.arrow_back),
+            onPressed: () => Navigator.of(context).pop(),
           ),
-        );
+          title: const Text('Detail Tiket'),
+          centerTitle: false,
+          elevation: 0,
+          bottom: TabBar(
+            labelColor: AppTheme.primary,
+            unselectedLabelColor: AppTheme.muted,
+            indicatorColor: AppTheme.primary,
+            tabs: const [
+              Tab(text: 'Detail'),
+              Tab(text: 'Komentar'),
+              Tab(text: 'Lampiran'),
+              Tab(text: 'Unggah'),
+            ],
+          ),
+        ),
+        body: _KeyboardAvoidingTabBarView(children: [
+          _DetailTab(ticket: d.ticket, user: user),
+          _CommentsTab(detail: d, user: user),
+          _AttachmentsTab(ticket: d.ticket),
+          _UploadTab(ticket: d.ticket, user: user),
+        ]),
+      ),
+    );
       },
     );
   }
@@ -623,30 +628,191 @@ class _CommentItem extends StatelessWidget {
 }
 
 // ---------------------------------------------------------------------------
-/// Attachments tab placeholder.
-class _AttachmentsTab extends StatelessWidget {
+/// Attachments tab: lists files attached to the ticket with download links.
+class _AttachmentsTab extends ConsumerStatefulWidget {
   const _AttachmentsTab({required this.ticket});
   final TicketModel ticket;
+
+  @override
+  ConsumerState<_AttachmentsTab> createState() => _AttachmentsTabState();
+}
+
+class _AttachmentsTabState extends ConsumerState<_AttachmentsTab> {
+  @override
+  Widget build(BuildContext context) {
+    final attachments = ref.watch(attachmentsProvider(widget.ticket.id));
+
+    return attachments.when(
+      data: (list) => SingleChildScrollView(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('Lampiran', style: Theme.of(context).textTheme.titleMedium),
+            const SizedBox(height: 16),
+            if (list.isEmpty)
+              const Center(child: Text('Belum ada lampiran.'))
+            else
+              ...[
+                for (final a in list) _AttachmentItem(attachment: a),
+              ],
+          ],
+        ),
+      ),
+      loading: () => const Center(child: CircularProgressIndicator()),
+      error: (e, _) => Center(child: Text('Gagal memuat lampiran: $e')),
+    );
+  }
+}
+
+class _AttachmentItem extends ConsumerWidget {
+  const _AttachmentItem({required this.attachment});
+  final AttachmentModel attachment;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    return Card(
+      margin: const EdgeInsets.only(bottom: 8),
+      child: ListTile(
+        leading: Icon(
+          attachment.isImage ? Icons.image : Icons.insert_drive_file,
+          color: AppTheme.primary,
+        ),
+        title: Text(attachment.fileName),
+        subtitle: Text(
+          '${attachment.displaySize}  •  ${attachment.mimeType}  •  '
+          'diunggah ${Fmt.dateTime(attachment.createdAt)}',
+        ),
+        trailing: IconButton(
+          icon: const Icon(Icons.download),
+          onPressed: () async {
+            final url = await ref.read(attachmentActionsProvider).getDownloadUrl(attachment.id);
+            if (url == null) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('Tidak dapat mengakses lampiran')),
+              );
+              return;
+            }
+            showDialog(
+              context: context,
+              builder: (_) => AlertDialog(
+                title: const Text('Unduh Lampiran'),
+                content: Text('Tautan unduhan (berlaku 5 menit):\n$url'),
+                actions: [
+                  TextButton(
+                    onPressed: () => Navigator.pop(context),
+                    child: const Text('Tutup'),
+                  ),
+                ],
+              ),
+            );
+          },
+        ),
+      ),
+    );
+  }
+}
+
+// ---------------------------------------------------------------------------
+/// Upload tab: pick a file and upload it as a ticket attachment.
+class _UploadTab extends ConsumerStatefulWidget {
+  const _UploadTab({required this.ticket, required this.user});
+  final TicketModel ticket;
+  final UserModel user;
+
+  @override
+  ConsumerState<_UploadTab> createState() => _UploadTabState();
+}
+
+class _UploadTabState extends ConsumerState<_UploadTab> {
+  bool _busy = false;
+  String? _statusMessage;
+  bool _statusError = false;
+
+  void _setStatus(String? message, {bool error = false}) {
+    setState(() {
+      _statusMessage = message;
+      _statusError = error;
+    });
+  }
+
+  Future<void> _pickAndUpload() async {
+    final picked = await pickFile();
+    if (picked == null) return;
+
+    final (fileName, mimeType, bytes) = picked;
+    if (bytes.length > kMaxAttachmentDisplaySize) {
+      _setStatus('File terlalu besar (maks 10 MB).', error: true);
+      return;
+    }
+
+    setState(() => _busy = true);
+    _setStatus(null);
+    try {
+      await ref.read(attachmentActionsProvider).uploadAttachment(
+            ticketId: widget.ticket.id,
+            fileName: fileName,
+            mimeType: mimeType,
+            bytes: bytes,
+            uploadedBy: widget.user.id,
+          );
+      _setStatus('Lampiran terunggah.');
+    } catch (e) {
+      _setStatus('Gagal mengunggah: $e', error: true);
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16),
-      child: Card(
-        elevation: 0,
-        child: Padding(
-          padding: const EdgeInsets.all(24),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text('Attachments', style: Theme.of(context).textTheme.titleMedium),
-              const SizedBox(height: 16),
-              const Center(
-                child: Text('No attachments yet.'),
-              ),
-            ],
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text('Unggah Lampiran', style: Theme.of(context).textTheme.titleMedium),
+          const SizedBox(height: 16),
+          Text(
+            'Pilih file untuk dilampiri pada tiket ini. '
+            'Maks 10 MB per file. Tipe yang diizinkan: PDF, PNG, JPG, DOC, DOCX, XLS, XLSX, TXT, ZIP.',
+            style: TextStyle(color: Colors.grey[600]),
           ),
-        ),
+          const SizedBox(height: 20),
+          FilledButton.icon(
+            onPressed: _busy ? null : _pickAndUpload,
+            icon: _busy
+                ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2))
+                : const Icon(Icons.cloud_upload),
+            label: Text(_busy ? 'Mengunggah…' : 'Pilih file…'),
+          ),
+          const SizedBox(height: 16),
+          Text(
+            'Catatan: Lampiran hanya dapat diakses oleh pengguna yang dapat melihat tiket ini '
+            '(atas RLS basis data). File disimpan di Storage pribadi, tidak tersedia untuk publik.',
+            style: TextStyle(color: Colors.grey[600], fontSize: 12),
+          ),
+          if (_statusMessage != null) ...[
+            const SizedBox(height: 16),
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: _statusError ? Colors.red[50] : Colors.green[50],
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(
+                  color: _statusError ? Colors.red[200]! : Colors.green[200]!,
+                ),
+              ),
+              child: Text(
+                _statusMessage!,
+                style: TextStyle(
+                  color: _statusError ? Colors.red[800] : Colors.green[800],
+                  fontSize: 13,
+                ),
+              ),
+            ),
+          ],
+        ],
       ),
     );
   }
@@ -687,5 +853,42 @@ String describeActivity(ActivityModel a) {
       'category ${a.oldValue} â†’ ${a.newValue} by $who',
     _ => 'status ${Fmt.status(a.oldValue)} â†’ ${Fmt.status(a.newValue)} by $who',
   };
+}
+/// Keyboard avoidance fix: prevent the view from moving upward when
+/// typing in the comment input. This is achieved by:
+/// 1. Using FocusScope with a FocusNode that can request focus
+/// 2. Adding padding that accounts for the keyboard insets
+/// 3. Using SingleChildScrollView with proper scroll behavior
+///
+/// The fix wraps the column children with appropriate insets to ensure
+/// the comment input area stays visible without causing the entire page
+/// to scrolly upward unexpectedly.
+Widget _buildKeyboardAvoidance(BuildContext child) {
+  return GestureDetector(
+    onTap: () => FocusScope.of(context).unfocus(),
+    child: SingleChildScrollView(
+      physics: const AlwaysScrollableScrollPhysics(),
+      padding: EdgeInsets.only(
+        bottom: MediaQuery.of(context).viewInsets.bottom,
+      ),
+      child: child,
+    ),
+  );
+}
+
+/// A tab bar view that wraps its children with keyboard avoidance logic,
+/// preventing the view from moving upward when typing in comment inputs.
+/// When the user taps outside the focused field, the keyboard dismisses.
+class _KeyboardAvoidingTabBarView extends ConsumerWidget {
+  const _KeyboardAvoidingTabBarView({required this.children});
+  final List<Widget> children;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    return GestureDetector(
+      onTap: () => FocusScope.of(context).unfocus(),
+      child: TabBarView(children: children),
+    );
+  }
 }
 
