@@ -1,11 +1,11 @@
 {
-    "name": "itsr_radiant",
-    "short_name": "itsr_radiant",
+    "name": "ITSR - Radiant Group Duri",
+    "short_name": "ITSR",
     "start_url": ".",
     "display": "standalone",
-    "background_color": "#0175C2",
-    "theme_color": "#0175C2",
-    "description": "A new Flutter project.",
+    "background_color": "#F4F8FF",
+    "theme_color": "#082B70",
+    "description": "IT Support & Service Request",
     "orientation": "portrait-primary",
     "prefer_related_applications": false,
     "icons": [

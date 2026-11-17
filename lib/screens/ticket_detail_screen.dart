@@ -943,7 +943,10 @@ class _CommentsTabState extends ConsumerState<_CommentsTab> with _ActionRunner {
             color: Colors.white,
             shape: const Border(top: BorderSide(color: EColors.line)),
             child: Padding(
-              padding: const EdgeInsets.fromLTRB(12, 8, 12, 10),
+              // Extra bottom clearance: keeps the browser's caret
+              // scroll-into-view heuristic from nudging the page down
+              // on every keystroke.
+              padding: const EdgeInsets.fromLTRB(12, 8, 12, 22),
               child: SafeArea(
                 top: false,
                 child: Column(
@@ -974,6 +977,7 @@ class _CommentsTabState extends ConsumerState<_CommentsTab> with _ActionRunner {
                             minLines: 1,
                             maxLines: 5,
                             maxLength: 5000,
+                            scrollPadding: EdgeInsets.zero,
                             decoration:
                                 eInput(
                                   hint: 'Tulis komentar...',
