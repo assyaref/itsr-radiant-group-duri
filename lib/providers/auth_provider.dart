@@ -60,8 +60,27 @@ class AuthController extends AsyncNotifier<void> {
     }
   }
 
+  /// Never throws: the local session is always discarded, even when the
+  /// server cannot be reached to revoke the refresh token.
   Future<void> signOut() async {
-    await ref.read(authRepositoryProvider).signOut();
+    try {
+      await ref.read(authRepositoryProvider).signOut();
+    } catch (_) {
+      // Offline / server error: the SDK already removed the local session
+      // before calling the server, so the user is signed out on this device.
+    } finally {
+      ref.invalidate(currentUserProvider);
+    }
+  }
+
+  /// Changes the signed-in user's password: a 4–5 digit PIN or 8–128 characters.
+  Future<void> changePassword(String currentPassword, String newPassword) =>
+      ref.read(authRepositoryProvider).changePassword(currentPassword, newPassword);
+
+  /// Re-reads the profile after a failed load (e.g. the network was down
+  /// when the app started with a persisted session).
+  void retryProfile() {
+    ref.invalidate(authUserIdProvider);
     ref.invalidate(currentUserProvider);
   }
 }
