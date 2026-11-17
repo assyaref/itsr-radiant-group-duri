@@ -501,12 +501,33 @@ class _CommentsTabState extends ConsumerState<_CommentsTab> with _ActionRunner {
       for (final c in widget.detail.comments) (c.createdAt, _CommentItem(c)),
     ]..sort((x, y) => y.$1.compareTo(x.$1)); // newest first
 
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Card(
+    // Chat layout: history scrolls on top, the comment input is pinned to the
+    // bottom. Keeping the text field OUT of the scrollable stops Flutter's
+    // ensure-visible logic from nudging the page down on every keystroke.
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Expanded(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Text('History & comments', style: Theme.of(context).textTheme.titleMedium),
+                const SizedBox(height: 8),
+                if (events.isEmpty)
+                  const Padding(
+                    padding: EdgeInsets.all(16),
+                    child: Text('No activity yet.'),
+                  ),
+                for (final e in events) e.$2,
+              ],
+            ),
+          ),
+        ),
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+          child: Card(
             elevation: 0,
             child: Padding(
               padding: const EdgeInsets.all(16),
@@ -519,9 +540,10 @@ class _CommentsTabState extends ConsumerState<_CommentsTab> with _ActionRunner {
                     key: const Key('comment_field'),
                     controller: _text,
                     enabled: !busy,
-                    minLines: 3,
-                    maxLines: 8,
+                    minLines: 1,
+                    maxLines: 5,
                     maxLength: 5000,
+                    scrollPadding: const EdgeInsets.only(bottom: 80),
                     decoration: InputDecoration(
                       hintText: staff
                           ? 'Reply to the employee, or add a technical note'
@@ -553,17 +575,8 @@ class _CommentsTabState extends ConsumerState<_CommentsTab> with _ActionRunner {
               ),
             ),
           ),
-          const SizedBox(height: 16),
-          Text('History & comments', style: Theme.of(context).textTheme.titleMedium),
-          const SizedBox(height: 8),
-          if (events.isEmpty)
-            const Padding(
-              padding: EdgeInsets.all(16),
-              child: Text('No activity yet.'),
-            ),
-          for (final e in events) e.$2,
-        ],
-      ),
+        ),
+      ],
     );
   }
 }
@@ -854,28 +867,6 @@ String describeActivity(ActivityModel a) {
     _ => 'status ${Fmt.status(a.oldValue)} â†’ ${Fmt.status(a.newValue)} by $who',
   };
 }
-/// Keyboard avoidance fix: prevent the view from moving upward when
-/// typing in the comment input. This is achieved by:
-/// 1. Using FocusScope with a FocusNode that can request focus
-/// 2. Adding padding that accounts for the keyboard insets
-/// 3. Using SingleChildScrollView with proper scroll behavior
-///
-/// The fix wraps the column children with appropriate insets to ensure
-/// the comment input area stays visible without causing the entire page
-/// to scrolly upward unexpectedly.
-Widget _buildKeyboardAvoidance(BuildContext child) {
-  return GestureDetector(
-    onTap: () => FocusScope.of(context).unfocus(),
-    child: SingleChildScrollView(
-      physics: const AlwaysScrollableScrollPhysics(),
-      padding: EdgeInsets.only(
-        bottom: MediaQuery.of(context).viewInsets.bottom,
-      ),
-      child: child,
-    ),
-  );
-}
-
 /// A tab bar view that wraps its children with keyboard avoidance logic,
 /// preventing the view from moving upward when typing in comment inputs.
 /// When the user taps outside the focused field, the keyboard dismisses.
