@@ -33541,7 +33541,7 @@ s=$.b8E()
 if(!s.b.test(r))return"Use 2\u201320 letters or digits (e.g. EMP001)"
 return null},
 biB(a){if(a==null||a.length===0)return"Please enter your password"
-if(a.length<6)return"Password must be at least 6 characters"
+if(a.length<5)return"Password must be at least 5 characters"
 return null},
 biC(a){if(a==null||a.length<8)return"Password must be at least 8 characters"
 if(a.length>128)return"Password is too long"
@@ -107874,8 +107874,8 @@ q=A.tX(B.JC,1)
 B.b.K(k,A.b([A.dZ(o,A.dj(A.b([B.NB,B.f0,A.cL(A.an(s,B.a6H,o,o,o,o,B.a3K,o,o),1)],l),B.w,B.l,B.p,0),B.v,o,o,new A.cK(B.J9,o,q,r,o,o,B.ap),o,o,o,B.dE,o,o,o),B.a6],l))}l=t.VS
 s=p.x
 r=!p.at
-if(m)k.push(A.dH(!0,B.Rf,!1,s,B.Oi,!0,r,o,A.b([new A.zr(254,o)],l),B.a6C,B.cH,o,1,o,!1,o,new A.aJw(p),B.ad,B.kd,new A.aJx()))
-else k.push(A.dH(!0,B.S3,!1,s,B.Oj,!0,r,o,A.b([new A.G_(A.br("[A-Za-z0-9]",!0,!1,!1),!0,""),new A.zr(20,o)],l),B.a6E,o,o,1,o,!1,o,new A.aJy(p),B.DW,B.kd,A.b77()))
+if(m)k.push(A.dH(!0,B.Rf,!1,s,B.Oj,!0,r,o,A.b([new A.zr(254,o)],l),B.a6C,B.cH,o,1,o,!1,o,new A.aJw(p),B.ad,B.kd,new A.aJx()))
+else k.push(A.dH(!0,B.S3,!1,s,B.Oi,!0,r,o,A.b([new A.G_(A.br("[A-Za-z0-9]",!0,!1,!1),!0,""),new A.zr(20,o)],l),B.a6E,o,o,1,o,!1,o,new A.aJy(p),B.DW,B.kd,A.b77()))
 k.push(B.a6)
 l=p.at
 s=p.as
@@ -118374,11 +118374,11 @@ B.Oe=new A.cN(null,null,null,"Email (used for notifications) *",null,null,null,n
 B.Of=new A.cN(null,null,null,"Role",null,null,null,null,null,null,null,null,null,null,null,null,!0,!0,!1,null,null,null,null,null,null,!0,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,!0,null,null,null,null)
 B.Og=new A.cN(null,null,null,"Description *",null,null,null,null,null,null,"What happened? When did it start? Any error messages? Which device/location?",null,null,null,null,null,!0,!0,!1,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,!0,null,!0,null,null)
 B.Oh=new A.cN(null,null,null,"SMTP Port *",null,null,null,null,null,null,"465 or 587",null,null,null,null,null,!0,!0,!1,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,!0,null,null,null,null)
-B.N5=new A.cc(B.rl,null,null,null,null)
-B.Oi=new A.cN(null,null,null,"Email",null,null,null,null,null,null,"Email kantor Anda",null,null,null,null,null,!0,!0,!1,null,null,null,null,null,null,null,null,null,B.N5,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,!0,null,null,null,null)
 B.MT=new A.aT(61112,"MaterialIcons",null,!1)
 B.Ng=new A.cc(B.MT,null,null,null,null)
-B.Oj=new A.cN(null,null,null,"Employee Number",null,null,null,null,null,null,"contoh: EMP001",null,null,null,null,null,!0,!0,!1,null,null,null,null,null,null,null,null,null,B.Ng,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,!0,null,null,null,null)
+B.Oi=new A.cN(null,null,null,"Employee Number",null,null,null,null,null,null,"",null,null,null,null,null,!0,!0,!1,null,null,null,null,null,null,null,null,null,B.Ng,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,!0,null,null,null,null)
+B.N5=new A.cc(B.rl,null,null,null,null)
+B.Oj=new A.cN(null,null,null,"Email",null,null,null,null,null,null,"Email kantor Anda",null,null,null,null,null,!0,!0,!1,null,null,null,null,null,null,null,null,null,B.N5,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,!0,null,null,null,null)
 B.Ok=new A.cN(null,null,null,"Application URL (for links in emails)",null,null,null,null,null,null,"https://itsr.your-domain",null,null,null,null,null,!0,!0,!1,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,!0,null,null,null,null)
 B.Ol=new A.cN(null,null,null,null,null,null,null,null,null,null,"Search name, number, email, department",null,null,null,null,null,!0,!0,!1,null,null,null,null,null,null,!0,null,null,B.ry,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,!0,null,null,null,null)
 B.Om=new A.cN(null,null,null,"Role *",null,null,null,null,null,null,null,null,null,null,null,null,!0,!0,!1,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,!0,null,null,null,null)
