@@ -84,7 +84,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
               onEmail: () => _choose(LoginMethod.email),
               onCompany: () => _choose(LoginMethod.company),
             )
-          : _buildForm(context, showIllustration: !wide, showWatermark: false),
+          : _buildForm(context, showIllustration: !wide),
     );
 
     // No on-screen back arrow (design): the phone's / browser's Back gesture
