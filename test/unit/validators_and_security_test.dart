@@ -31,9 +31,12 @@ void main() {
     });
 
     test('passwords and emails', () {
-      expect(Validators.loginPassword('1234'), isNotNull);
+      expect(Validators.loginPassword('1234'), isNull);
       expect(Validators.loginPassword('12345'), isNull);
       expect(Validators.loginPassword('123456'), isNull);
+      expect(Validators.loginPassword('abcde'), isNotNull);
+      expect(Validators.newPassword('1234'), isNull);
+      expect(Validators.newPassword('abcde'), isNotNull);
       expect(Validators.newPassword('1234567'), isNotNull);
       expect(Validators.newPassword('12345678'), isNull);
       expect(Validators.email('a@b.co'), isNull);

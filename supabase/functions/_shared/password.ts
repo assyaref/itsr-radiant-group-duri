@@ -2,7 +2,7 @@
 //
 // Accounts may use either
 //   * a PIN of exactly 4 or 5 digits, or
-//   * a normal password of 8–128 characters (5–128 accepted at login for
+//   * a normal password of 8–128 characters (6–128 accepted at login for
 //     accounts created before this policy).
 //
 // Supabase Auth refuses passwords shorter than 6 characters, so a PIN is never
@@ -31,7 +31,7 @@ export function newPasswordError(p: unknown): string | null {
 
 /** Shape check for a password typed at LOGIN (no policy messages leak). */
 export function plausibleLoginPassword(p: unknown): p is string {
-  return typeof p === "string" && (isPin(p) || (p.length >= 5 && p.length <= 128));
+  return typeof p === "string" && (isPin(p) || (p.length >= 6 && p.length <= 128));
 }
 
 function b64url(bytes: Uint8Array): string {

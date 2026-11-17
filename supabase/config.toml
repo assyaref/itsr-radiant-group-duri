@@ -19,3 +19,6 @@ verify_jwt = false
 # smtp-config verifies an ACTIVE ADMINISTRATOR caller itself (verifyCaller + role check)
 [functions.smtp-config]
 verify_jwt = false
+
+[functions.account]
+verify_jwt = false

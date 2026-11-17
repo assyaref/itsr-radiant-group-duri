@@ -1,5 +1,6 @@
 // Pure input validation for admin-users (unit-tested).
 import { EMAIL_RE, normalizeEmployeeNumber, ROLES, type Role } from "../_shared/http.ts";
+import { newPasswordError } from "../_shared/password.ts";
 
 type Result<T> = { ok: true; value: T } | { ok: false; error: string };
 
@@ -21,7 +22,8 @@ export function validateCreate(b: Record<string, unknown>): Result<CreateInput> 
   const role = str(b.role) as Role;
   if (!ROLES.includes(role)) return { ok: false, error: "Invalid role" };
   const password = typeof b.password === "string" ? b.password : "";
-  if (password.length < 8 || password.length > 128) return { ok: false, error: "Password must be at least 8 characters" };
+  const pwError = newPasswordError(password);
+  if (pwError) return { ok: false, error: pwError };
   const phone = str(b.phone_number);
   return { ok: true, value: { employee_number, full_name, email, department, role, phone_number: phone || null, password } };
 }
@@ -69,8 +71,7 @@ export function validateResetPassword(b: Record<string, unknown>): Result<ResetP
   const user_id = str(b.user_id);
   if (!UUID_RE.test(user_id)) return { ok: false, error: "Invalid user id" };
   const password = typeof b.password === "string" ? b.password : "";
-  if (password.length < 8 || password.length > 128) {
-    return { ok: false, error: "Password must be 8–128 characters" };
-  }
+  const pwError = newPasswordError(password);
+  if (pwError) return { ok: false, error: pwError };
   return { ok: true, value: { user_id, password } };
 }

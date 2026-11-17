@@ -6,11 +6,12 @@
 //   { action: "create", employee_number, full_name, email, department, role, phone_number?, password }
 //   { action: "update", user_id, full_name?, email?, department?, role?, phone_number?, is_active? }
 //   { action: "reset_password", user_id, password }
-import { bearerToken, corsHeaders, json } from "../_shared/http.ts";
+import { bearerToken, corsHeaders, json, readJsonObject, withErrorBoundary } from "../_shared/http.ts";
 import { adminClient, verifyCaller } from "../_shared/supabase.ts";
+import { authPassword, isPin, PIN_NOT_CONFIGURED, pinSupported } from "../_shared/password.ts";
 import { validateCreate, validateResetPassword, validateUpdate } from "./validation.ts";
 
-Deno.serve(async (req) => {
+Deno.serve(withErrorBoundary("admin-users", async (req) => {
   const headers = corsHeaders(req.headers.get("origin"), Deno.env.get("ALLOWED_ORIGINS"));
   if (req.method === "OPTIONS") return new Response("ok", { headers });
   if (req.method !== "POST") return json({ error: "Method not allowed" }, 405, headers);
@@ -20,8 +21,11 @@ Deno.serve(async (req) => {
   if (!caller) return json({ error: "Not authenticated" }, 401, headers);
   if (caller.role !== "administrator") return json({ error: "Administrator access required" }, 403, headers);
 
-  let body: Record<string, unknown>;
-  try { body = await req.json(); } catch { return json({ error: "Invalid JSON body" }, 400, headers); }
+  const body = await readJsonObject(req);
+  if (!body) return json({ error: "Invalid JSON body" }, 400, headers);
+  if (typeof body.password === "string" && isPin(body.password) && !pinSupported(Deno.env.get("PIN_PEPPER"))) {
+    return json({ error: PIN_NOT_CONFIGURED }, 503, headers);
+  }
 
   try {
     switch (body.action) {
@@ -39,7 +43,7 @@ Deno.serve(async (req) => {
         }
 
         const { data: created, error: cErr } = await admin.auth.admin.createUser({
-          email: d.email, password: d.password, email_confirm: true,
+          email: d.email, password: await authPassword(d.password, Deno.env.get("PIN_PEPPER")), email_confirm: true,
         });
         if (cErr || !created.user) return json({ error: cErr?.message ?? "Could not create auth user" }, 400, headers);
 
@@ -48,8 +52,12 @@ Deno.serve(async (req) => {
           email: d.email, department: d.department, role: d.role, phone_number: d.phone_number,
         });
         if (pErr) {
-          await admin.auth.admin.deleteUser(created.user.id); // roll back the auth user
-          return json({ error: "Could not create profile: " + pErr.message }, 400, headers);
+          // Roll back the auth user so a retry is possible; log if that fails too.
+          const { error: delErr } = await admin.auth.admin.deleteUser(created.user.id);
+          if (delErr) console.error("admin-users rollback failed; orphan auth user", created.user.id, delErr.message);
+          const dup = pErr.code === "23505";
+          return json({ error: dup ? "Employee number or email already exists" : "Could not create profile: " + pErr.message },
+            dup ? 409 : 400, headers);
         }
         return json({ id: created.user.id }, 201, headers);
       }
@@ -94,7 +102,9 @@ Deno.serve(async (req) => {
         if (!v.ok) return json({ error: v.error }, 400, headers);
         const { data: target } = await admin.from("profiles").select("id").eq("id", v.value.user_id).maybeSingle();
         if (!target) return json({ error: "User not found" }, 404, headers);
-        const { error } = await admin.auth.admin.updateUserById(v.value.user_id, { password: v.value.password });
+        const { error } = await admin.auth.admin.updateUserById(v.value.user_id, {
+          password: await authPassword(v.value.password, Deno.env.get("PIN_PEPPER")),
+        });
         if (error) return json({ error: error.message }, 400, headers);
         return json({ ok: true }, 200, headers);
       }
@@ -106,4 +116,4 @@ Deno.serve(async (req) => {
     console.error("admin-users error", e instanceof Error ? e.message : e);
     return json({ error: "Internal error" }, 500, headers);
   }
-});
+}));

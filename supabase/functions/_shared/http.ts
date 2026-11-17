@@ -65,3 +65,75 @@ export function escapeHtml(s: string): string {
   return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
     .replace(/"/g, "&quot;").replace(/'/g, "&#39;");
 }
+
+// ---------------------------------------------------------------------------
+// Robustness helpers
+// ---------------------------------------------------------------------------
+
+/** Largest request body any ITSR function accepts (bytes). */
+export const MAX_BODY_BYTES = 64 * 1024;
+
+export function isJsonObject(v: unknown): v is Record<string, unknown> {
+  return typeof v === "object" && v !== null && !Array.isArray(v);
+}
+
+/**
+ * Parses the request body as a JSON object. Returns null for a missing,
+ * oversized, malformed or non-object body (e.g. `null`, `[]`, `"x"`), so
+ * handlers never dereference a property of null.
+ */
+export async function readJsonObject(req: Request, maxBytes = MAX_BODY_BYTES): Promise<Record<string, unknown> | null> {
+  const declared = Number(req.headers.get("content-length") ?? "0");
+  if (Number.isFinite(declared) && declared > maxBytes) return null;
+  let text: string;
+  try { text = await req.text(); } catch { return null; }
+  if (text.length > maxBytes) return null;
+  try {
+    const v: unknown = JSON.parse(text);
+    return isJsonObject(v) ? v : null;
+  } catch {
+    return null;
+  }
+}
+
+/** SMTP port as a strict integer 1–65535, or null. */
+export function parsePort(v: unknown): number | null {
+  const n = typeof v === "string" && v.trim() !== "" ? Number(v.trim()) : v;
+  return typeof n === "number" && Number.isInteger(n) && n >= 1 && n <= 65535 ? n : null;
+}
+
+/** Hostname or IP literal without scheme/path/spaces. */
+export function isValidHost(v: unknown): v is string {
+  return typeof v === "string" && v.length > 0 && v.length <= 253 &&
+    /^[A-Za-z0-9]([A-Za-z0-9.-]*[A-Za-z0-9])?$|^\[[0-9A-Fa-f:.]+\]$/.test(v);
+}
+
+/**
+ * Socket timeouts for every nodemailer transport. Without them a silent SMTP
+ * server can hold a request until the Edge Function wall-clock limit kills it.
+ */
+export const SMTP_TIMEOUTS = {
+  connectionTimeout: 10_000,
+  greetingTimeout: 10_000,
+  socketTimeout: 20_000,
+} as const;
+
+type Handler = (req: Request) => Promise<Response>;
+
+/**
+ * Wraps a Deno.serve handler: any unexpected exception (missing secret,
+ * network failure to Supabase, bug) becomes a JSON 500 that still carries the
+ * CORS headers, so the browser shows a readable error instead of an opaque
+ * "CORS/Failed to fetch". Details go to the function log only.
+ */
+export function withErrorBoundary(name: string, handler: Handler): Handler {
+  return async (req: Request) => {
+    try {
+      return await handler(req);
+    } catch (e) {
+      console.error(`${name} unhandled error`, e instanceof Error ? `${e.name}: ${e.message}` : String(e));
+      const headers = corsHeaders(req.headers.get("origin"), Deno.env.get("ALLOWED_ORIGINS"));
+      return json({ error: "Internal error. Please try again later." }, 500, headers);
+    }
+  };
+}
