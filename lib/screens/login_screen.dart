@@ -229,7 +229,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                 onFieldSubmitted: (_) => _passwordFocus.requestFocus(),
                 decoration: const InputDecoration(
                   labelText: 'Employee Number',
-                  hintText: '',
+                  hintText: 'contoh: EMP001',
                   prefixIcon: Icon(Icons.badge_outlined),
                 ),
                 validator: Validators.employeeNumber,

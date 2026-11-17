@@ -10,12 +10,18 @@ import '../screens/admin/settings_screen.dart';
 import '../screens/admin/users_screen.dart';
 import '../screens/create_ticket_screen.dart';
 import '../screens/dashboard_screen.dart';
+import '../screens/employee/employee_tickets_screen.dart';
+import '../screens/employee/notifications_screen.dart';
+import '../screens/employee/profile_screen.dart';
+import '../screens/employee/ticket_submitted_screen.dart';
 import '../screens/it_support_queue_screen.dart';
 import '../screens/login_screen.dart';
 import '../screens/my_tickets_screen.dart';
+import '../screens/summary_screen.dart';
 import '../screens/ticket_detail_screen.dart';
 import '../widgets/app_shell.dart';
 import '../widgets/common.dart';
+import '../widgets/employee_shell.dart';
 
 /// Pure redirect logic (unit-tested). Returns the location to go to, or null.
 ///
@@ -28,12 +34,16 @@ String? appRedirect(AsyncValue<UserModel?> auth, Uri uri) {
   final from = uri.queryParameters['from'];
   final isPublic = path == '/login' || path == '/splash';
   String withFrom(String target) {
-    if (isPublic) return from == null ? target : '$target?from=${Uri.encodeComponent(from)}';
+    if (isPublic) {
+      return from == null
+          ? target
+          : '$target?from=${Uri.encodeComponent(from)}';
+    }
     if (path == '/' || path == '/dashboard') return target;
     return '$target?from=${Uri.encodeComponent(uri.toString())}';
   }
 
-  if (auth.isLoading && !auth.hasValue) {
+  if (!auth.hasValue && (auth.isLoading || auth.hasError)) {
     return path == '/splash' ? null : withFrom('/splash');
   }
 
@@ -43,7 +53,8 @@ String? appRedirect(AsyncValue<UserModel?> auth, Uri uri) {
   }
 
   if (isPublic || path == '/') {
-    final target = (from != null && from.startsWith('/') && !from.startsWith('//'))
+    final target =
+        (from != null && from.startsWith('/') && !from.startsWith('//'))
         ? from
         : '/dashboard';
     final allowed = appRedirect(auth, Uri.parse(target));
@@ -52,6 +63,35 @@ String? appRedirect(AsyncValue<UserModel?> auth, Uri uri) {
   if (path.startsWith('/queue') && !user.isStaff) return '/dashboard';
   if (path.startsWith('/admin') && !user.isAdmin) return '/dashboard';
   return null;
+}
+
+class SplashScreen extends ConsumerWidget {
+  const SplashScreen({super.key});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final auth = ref.watch(currentUserProvider);
+    if (auth.hasError && !auth.hasValue && !auth.isLoading) {
+      return Scaffold(
+        body: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            ErrorView(
+              error: auth.error!,
+              onRetry: () =>
+                  ref.read(authControllerProvider.notifier).retryProfile(),
+            ),
+            TextButton(
+              onPressed: () =>
+                  ref.read(authControllerProvider.notifier).signOut(),
+              child: const Text('Sign out'),
+            ),
+          ],
+        ),
+      );
+    }
+    return const Scaffold(body: LoadingView(label: 'Loading…'));
+  }
 }
 
 final goRouterProvider = Provider<GoRouter>((ref) {
@@ -68,27 +108,70 @@ final goRouterProvider = Provider<GoRouter>((ref) {
     refreshListenable: auth,
     redirect: (context, state) => appRedirect(auth.value, state.uri),
     routes: [
-      GoRoute(
-        path: '/splash',
-        builder: (_, _) => const Scaffold(body: LoadingView(label: 'Loading…')),
-      ),
+      GoRoute(path: '/splash', builder: (_, _) => const SplashScreen()),
       GoRoute(path: '/login', builder: (_, _) => const LoginScreen()),
       GoRoute(path: '/', redirect: (_, _) => '/dashboard'),
       ShellRoute(
-        builder: (context, state, child) =>
-            AppShell(location: state.uri.path, child: child),
+        builder: (context, state, child) => Consumer(
+          builder: (context, ref, _) {
+            final user = ref.watch(currentUserProvider).valueOrNull;
+            return (user != null && !user.isStaff)
+                ? EmployeeShell(location: state.uri.path, child: child)
+                : AppShell(location: state.uri.path, child: child);
+          },
+        ),
         routes: [
-          GoRoute(path: '/dashboard', builder: (_, _) => const DashboardScreen()),
-          GoRoute(path: '/tickets', builder: (_, _) => const MyTicketsScreen()),
-          GoRoute(path: '/tickets/new', builder: (_, _) => const CreateTicketScreen()),
+          GoRoute(
+            path: '/dashboard',
+            builder: (_, _) => const DashboardScreen(),
+          ),
+          GoRoute(
+            path: '/tickets',
+            builder: (_, _) => Consumer(
+              builder: (context, ref, _) {
+                final user = ref.watch(currentUserProvider).valueOrNull;
+                return user != null && !user.isStaff
+                    ? const EmployeeTicketsScreen()
+                    : const MyTicketsScreen();
+              },
+            ),
+          ),
+          GoRoute(
+            path: '/tickets/new',
+            builder: (_, _) => const CreateTicketScreen(),
+          ),
           GoRoute(
             path: '/tickets/:id',
-            builder: (_, state) => TicketDetailScreen(ticketId: state.pathParameters['id']!),
+            builder: (_, state) =>
+                TicketDetailScreen(ticketId: state.pathParameters['id']!),
+            routes: [
+              GoRoute(
+                path: 'submitted',
+                builder: (_, state) => TicketSubmittedScreen(
+                  ticketId: state.pathParameters['id']!,
+                ),
+              ),
+            ],
           ),
-          GoRoute(path: '/queue', builder: (_, _) => const ITSupportQueueScreen()),
+          GoRoute(path: '/summary', builder: (_, _) => const SummaryScreen()),
+          GoRoute(
+            path: '/notifications',
+            builder: (_, _) => const NotificationsScreen(),
+          ),
+          GoRoute(path: '/profile', builder: (_, _) => const ProfileScreen()),
+          GoRoute(
+            path: '/queue',
+            builder: (_, _) => const ITSupportQueueScreen(),
+          ),
           GoRoute(path: '/admin/users', builder: (_, _) => const UsersScreen()),
-          GoRoute(path: '/admin/categories', builder: (_, _) => const CategoriesScreen()),
-          GoRoute(path: '/admin/settings', builder: (_, _) => const SettingsScreen()),
+          GoRoute(
+            path: '/admin/categories',
+            builder: (_, _) => const CategoriesScreen(),
+          ),
+          GoRoute(
+            path: '/admin/settings',
+            builder: (_, _) => const SettingsScreen(),
+          ),
           GoRoute(
             path: '/admin/email-notifications',
             builder: (_, _) => const EmailNotificationsScreen(),

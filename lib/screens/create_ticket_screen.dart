@@ -1,9 +1,10 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../constants/app_constants.dart';
 import '../constants/app_theme.dart';
+import '../providers/auth_provider.dart';
 import '../providers/tickets_provider.dart';
 import '../utils/error_messages.dart';
 import '../utils/formatters.dart';
@@ -38,15 +39,22 @@ class _CreateTicketScreenState extends ConsumerState<CreateTicketScreen> {
     if (_busy || !(_formKey.currentState?.validate() ?? false)) return;
     setState(() => _busy = true);
     try {
-      final id = await ref.read(ticketActionsProvider).createTicket(
+      final id = await ref
+          .read(ticketActionsProvider)
+          .createTicket(
             subject: _subject.text,
             description: _description.text,
             category: _category!,
             priority: _priority,
           );
       if (!mounted) return;
-      showSnack(context, 'Ticket submitted. IT Support has been notified.');
-      context.go('/tickets/$id');
+      final user = ref.read(currentUserProvider).valueOrNull;
+      if (user != null && !user.isStaff) {
+        context.go('/tickets/$id/submitted');
+      } else {
+        showSnack(context, 'Ticket submitted. IT Support has been notified.');
+        context.go('/tickets/$id');
+      }
     } catch (e) {
       if (mounted) showSnack(context, friendlyError(e), error: true);
     } finally {
@@ -60,8 +68,10 @@ class _CreateTicketScreenState extends ConsumerState<CreateTicketScreen> {
 
     return categories.when(
       loading: () => const LoadingView(),
-      error: (e, _) =>
-          ErrorView(error: e, onRetry: () => ref.invalidate(categoriesProvider)),
+      error: (e, _) => ErrorView(
+        error: e,
+        onRetry: () => ref.invalidate(categoriesProvider),
+      ),
       data: (cats) {
         if (cats.isEmpty) {
           return const EmptyView(
@@ -101,7 +111,9 @@ class _CreateTicketScreenState extends ConsumerState<CreateTicketScreen> {
                     Align(
                       alignment: Alignment.centerLeft,
                       child: Text(
-                        _step == 0 ? 'Informasi Masalah' : 'Upload Lampiran (Opsional)',
+                        _step == 0
+                            ? 'Informasi Masalah'
+                            : 'Upload Lampiran (Opsional)',
                         style: const TextStyle(
                           fontSize: 18,
                           fontWeight: FontWeight.bold,
@@ -109,8 +121,7 @@ class _CreateTicketScreenState extends ConsumerState<CreateTicketScreen> {
                         ),
                       ),
                     ),
-                    if (_step == 0)
-                      const SizedBox(height: 8),
+                    if (_step == 0) const SizedBox(height: 8),
                     if (_step == 0)
                       Text(
                         'Judul Masalah *',
@@ -145,40 +156,57 @@ class _CreateTicketScreenState extends ConsumerState<CreateTicketScreen> {
                             key: const Key('category_field'),
                             initialValue: _category,
                             isExpanded: true,
-                            decoration: const InputDecoration(labelText: 'Category *'),
+                            decoration: const InputDecoration(
+                              labelText: 'Category *',
+                            ),
                             items: [
                               for (final cat in cats)
                                 DropdownMenuItem(
                                   value: cat.name,
-                                  child: Text(cat.name, overflow: TextOverflow.ellipsis),
+                                  child: Text(
+                                    cat.name,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
                                 ),
                             ],
-                            onChanged: _busy ? null : (v) => setState(() => _category = v),
-                            validator: (v) => v == null ? 'Please select a category' : null,
+                            onChanged: _busy
+                                ? null
+                                : (v) => setState(() => _category = v),
+                            validator: (v) =>
+                                v == null ? 'Please select a category' : null,
                           ),
                           const SizedBox(height: 16),
                           DropdownButtonFormField<String>(
                             key: const Key('priority_field'),
                             initialValue: _priority,
                             isExpanded: true,
-                            decoration: const InputDecoration(labelText: 'Priority *'),
+                            decoration: const InputDecoration(
+                              labelText: 'Priority *',
+                            ),
                             items: [
                               for (final p in AppConstants.priorities)
                                 DropdownMenuItem(
-                                    value: p, child: Text(Fmt.priority(p))),
+                                  value: p,
+                                  child: Text(Fmt.priority(p)),
+                                ),
                             ],
-                            onChanged: _busy ? null : (v) => setState(() => _priority = v!),
+                            onChanged: _busy
+                                ? null
+                                : (v) => setState(() => _priority = v!),
                           ),
                           const SizedBox(height: 16),
                           TextFormField(
                             key: const Key('location_field'),
-                            controller: TextEditingController(text: _location ?? ''),
+                            controller: TextEditingController(
+                              text: _location ?? '',
+                            ),
                             enabled: !_busy,
                             decoration: const InputDecoration(
                               labelText: 'Location (Optional)',
                               hintText: 'e.g. Ruang Marketing',
                             ),
-                            onChanged: (v) => setState(() => _location = v.trim()),
+                            onChanged: (v) =>
+                                setState(() => _location = v.trim()),
                           ),
                           const SizedBox(height: 20),
                           TextFormField(
@@ -190,8 +218,7 @@ class _CreateTicketScreenState extends ConsumerState<CreateTicketScreen> {
                             maxLength: 5000,
                             decoration: const InputDecoration(
                               labelText: 'Description *',
-                              hintText:
-                                  'What happened? When did it start? Any error messages? Which device/location?',
+                              hintText: 'What happened? When did it start? Any error messages? Which device/location?',
                               alignLabelWithHint: true,
                             ),
                             validator: Validators.description,
@@ -208,12 +235,18 @@ class _CreateTicketScreenState extends ConsumerState<CreateTicketScreen> {
                               const SizedBox(width: 12),
                               Expanded(
                                 child: FilledButton(
-                                  onPressed: _busy ? null : () {
-                                    if (_formKey.currentState!.validate()) {
-                                      setState(() => _step = 1);
-                                    }
-                                  },
-                                  child: const Text('Lanjutan â†’'),
+                                  key: const Key(
+                                    'continue_ticket_details_button',
+                                  ),
+                                  onPressed: _busy
+                                      ? null
+                                      : () {
+                                          if (_formKey.currentState!
+                                              .validate()) {
+                                            setState(() => _step = 1);
+                                          }
+                                        },
+                                  child: const Text('Lanjutkan →'),
                                 ),
                               ),
                             ],
@@ -230,10 +263,14 @@ class _CreateTicketScreenState extends ConsumerState<CreateTicketScreen> {
                             ),
                             child: Column(
                               children: [
-                                const Icon(Icons.cloud_upload_outlined, size: 48, color: AppTheme.primary),
+                                const Icon(
+                                  Icons.cloud_upload_outlined,
+                                  size: 48,
+                                  color: AppTheme.primary,
+                                ),
                                 const SizedBox(height: 12),
                                 Text(
-                                  'Ketik untuk upload foto atau file',
+                                  'Ketuk untuk upload foto atau file',
                                   style: TextStyle(
                                     fontWeight: FontWeight.w600,
                                     color: AppTheme.ink,
@@ -242,7 +279,10 @@ class _CreateTicketScreenState extends ConsumerState<CreateTicketScreen> {
                                 const SizedBox(height: 6),
                                 Text(
                                   'Format: JPG, PNG, PDF (Maks. 10 MB)',
-                                  style: TextStyle(color: AppTheme.muted, fontSize: 13),
+                                  style: TextStyle(
+                                    color: AppTheme.muted,
+                                    fontSize: 13,
+                                  ),
                                 ),
                                 const SizedBox(height: 16),
                                 Row(
@@ -258,7 +298,9 @@ class _CreateTicketScreenState extends ConsumerState<CreateTicketScreen> {
                                     Expanded(
                                       child: OutlinedButton.icon(
                                         onPressed: () {},
-                                        icon: const Icon(Icons.camera_alt_outlined),
+                                        icon: const Icon(
+                                          Icons.camera_alt_outlined,
+                                        ),
                                         label: const Text('Kamera'),
                                       ),
                                     ),
@@ -272,15 +314,18 @@ class _CreateTicketScreenState extends ConsumerState<CreateTicketScreen> {
                             children: [
                               Expanded(
                                 child: OutlinedButton(
-                                  onPressed: _busy ? null : () => setState(() => _step = 0),
+                                  onPressed: _busy
+                                      ? null
+                                      : () => setState(() => _step = 0),
                                   child: const Text('Kembali'),
                                 ),
                               ),
                               const SizedBox(width: 12),
                               Expanded(
                                 child: FilledButton(
+                                  key: const Key('submit_ticket_button'),
                                   onPressed: _busy ? null : _submit,
-                                  child: const Text('Lanjutan â†’'),
+                                  child: const Text('Lanjutkan →'),
                                 ),
                               ),
                             ],
@@ -358,4 +403,3 @@ class _StepLine extends StatelessWidget {
     );
   }
 }
-

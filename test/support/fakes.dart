@@ -7,6 +7,7 @@ import 'package:itsr_radiant/data/admin_repository.dart';
 import 'package:itsr_radiant/data/auth_repository.dart';
 import 'package:itsr_radiant/data/ticket_repository.dart';
 import 'package:itsr_radiant/models/activity_model.dart';
+import 'package:itsr_radiant/models/app_notification.dart';
 import 'package:itsr_radiant/models/app_settings_model.dart';
 import 'package:itsr_radiant/models/category_model.dart';
 import 'package:itsr_radiant/models/comment_model.dart';
@@ -17,7 +18,8 @@ import 'package:itsr_radiant/providers/auth_provider.dart';
 
 final _t0 = DateTime.utc(2026, 11, 1, 8);
 
-UserModel user(String id, String role, {String? name, bool active = true}) => UserModel(
+UserModel user(String id, String role, {String? name, bool active = true}) =>
+    UserModel(
       id: id,
       employeeNumber: id.toUpperCase(),
       email: '$id@example.test',
@@ -36,23 +38,22 @@ TicketModel ticket(
   String? assignedToId,
   String? resolution,
   String subject = 'Printer broken',
-}) =>
-    TicketModel(
-      id: id,
-      ticketNumber: 'ITSR-${id.padLeft(5, '0')}',
-      subject: subject,
-      description: 'It does not print anything',
-      category: 'Hardware',
-      priority: 'medium',
-      status: status,
-      reporterId: reporterId,
-      assignedToId: assignedToId,
-      resolution: resolution,
-      createdAt: _t0,
-      updatedAt: _t0,
-      reporterName: 'Reporter Name',
-      assigneeName: assignedToId == null ? null : 'Tech Name',
-    );
+}) => TicketModel(
+  id: id,
+  ticketNumber: 'ITSR-${id.padLeft(5, '0')}',
+  subject: subject,
+  description: 'It does not print anything',
+  category: 'Hardware',
+  priority: 'medium',
+  status: status,
+  reporterId: reporterId,
+  assignedToId: assignedToId,
+  resolution: resolution,
+  createdAt: _t0,
+  updatedAt: _t0,
+  reporterName: 'Reporter Name',
+  assigneeName: assignedToId == null ? null : 'Tech Name',
+);
 
 class FakeAuthRepository implements AuthRepository {
   FakeAuthRepository({this.profile, this.signInError});
@@ -93,7 +94,10 @@ class FakeAuthRepository implements AuthRepository {
   }
 
   @override
-  Future<void> changePassword(String currentPassword, String newPassword) async {
+  Future<void> changePassword(
+    String currentPassword,
+    String newPassword,
+  ) async {
     calls.add('changePassword');
   }
 }
@@ -102,7 +106,9 @@ class FakeTicketRepository implements TicketRepository {
   FakeTicketRepository({List<TicketModel>? tickets}) : tickets = tickets ?? [];
   List<TicketModel> tickets;
   final calls = <String>[];
-  final List<({TicketScope scope, TicketFilter filter, int offset})> fetches = [];
+  final List<({TicketScope scope, TicketFilter filter, int offset})> fetches =
+      [];
+
   /// When set, fetches with a non-empty search wait for it (simulates a slow request).
   Completer<void>? searchGate;
   List<CategoryModel> categories = const [
@@ -110,7 +116,12 @@ class FakeTicketRepository implements TicketRepository {
     CategoryModel(id: 'c2', name: 'Network', isActive: true, sortOrder: 20),
   ];
   List<StaffMember> staff = const [
-    StaffMember(id: 'it1', fullName: 'Tech Name', employeeNumber: 'IT1', role: 'it_support'),
+    StaffMember(
+      id: 'it1',
+      fullName: 'Tech Name',
+      employeeNumber: 'IT1',
+      role: 'it_support',
+    ),
   ];
   List<CommentModel> comments = const [];
   List<ActivityModel> activities = const [];
@@ -125,11 +136,17 @@ class FakeTicketRepository implements TicketRepository {
     required int limit,
   }) async {
     fetches.add((scope: scope, filter: filter, offset: offset));
-    if (filter.search.isNotEmpty && searchGate != null) await searchGate!.future;
+    if (filter.search.isNotEmpty && searchGate != null) {
+      await searchGate!.future;
+    }
     var list = tickets.where((t) {
       if (scope == TicketScope.mine && t.reporterId != userId) return false;
       if (filter.status != null && t.status != filter.status) return false;
-      if (filter.search.isNotEmpty && !t.subject.toLowerCase().contains(filter.search.toLowerCase())) {
+      if (filter.statusIn != null && !filter.statusIn!.contains(t.status)) {
+        return false;
+      }
+      if (filter.search.isNotEmpty &&
+          !t.subject.toLowerCase().contains(filter.search.toLowerCase())) {
         return false;
       }
       return true;
@@ -150,15 +167,42 @@ class FakeTicketRepository implements TicketRepository {
   }
 
   @override
-  Future<TicketStats> fetchStats(String scope) async =>
-      TicketStats(total: tickets.length, open: tickets.where((t) => t.status == 'open').length);
+  Future<TicketStats> fetchStats(String scope) async => TicketStats(
+    total: tickets.length,
+    open: tickets.where((t) => t.status == 'open').length,
+  );
 
   @override
-  Future<List<ActivityModel>> fetchRecentActivity({int limit = 10}) async => activities;
+  Future<List<ActivityModel>> fetchRecentActivity({int limit = 10}) async =>
+      activities;
 
   @override
-  Future<List<CategoryModel>> fetchCategories({bool includeInactive = false}) async =>
-      categories.where((c) => includeInactive || c.isActive).toList();
+  Future<List<TicketModel>> fetchTicketsInRange({
+    required TicketScope scope,
+    required String userId,
+    required DateTime from,
+    required DateTime to,
+    int limit = 2000,
+  }) async => tickets
+      .where(
+        (t) =>
+            (scope != TicketScope.mine || t.reporterId == userId) &&
+            !t.createdAt.isBefore(from) &&
+            t.createdAt.isBefore(to),
+      )
+      .take(limit)
+      .toList();
+
+  @override
+  Future<List<AppNotification>> fetchNotifications({
+    required String userId,
+    int limit = 30,
+  }) async => const [];
+
+  @override
+  Future<List<CategoryModel>> fetchCategories({
+    bool includeInactive = false,
+  }) async => categories.where((c) => includeInactive || c.isActive).toList();
 
   @override
   Future<List<StaffMember>> fetchAssignableStaff() async => staff;
@@ -182,8 +226,7 @@ class FakeTicketRepository implements TicketRepository {
     required String authorId,
     required String content,
     required bool isInternal,
-  }) async =>
-      calls.add('comment:$ticketId:$content:$isInternal');
+  }) async => calls.add('comment:$ticketId:$content:$isInternal');
 
   @override
   Future<void> updateTicket(
@@ -195,12 +238,17 @@ class FakeTicketRepository implements TicketRepository {
     String? resolution,
   }) async {
     if (failWith != null) throw failWith!;
-    calls.add('update:$ticketId:status=$status:assignee=$assignedToId:unassign=$unassign:resolution=$resolution');
+    calls.add(
+      'update:$ticketId:status=$status:assignee=$assignedToId:unassign=$unassign:resolution=$resolution',
+    );
   }
 
   @override
-  Future<void> reporterAction(String ticketId, String action, {String? note}) async =>
-      calls.add('reporter:$ticketId:$action:$note');
+  Future<void> reporterAction(
+    String ticketId,
+    String action, {
+    String? note,
+  }) async => calls.add('reporter:$ticketId:$action:$note');
 
   @override
   Future<void> kickNotifications() async => calls.add('kick');
@@ -211,8 +259,11 @@ class FakeAdminRepository implements AdminRepository {
   List<UserModel> users = [];
 
   @override
-  Future<void> createCategory(String name, String? description, int sortOrder) async =>
-      calls.add('createCategory:$name');
+  Future<void> createCategory(
+    String name,
+    String? description,
+    int sortOrder,
+  ) async => calls.add('createCategory:$name');
   @override
   Future<void> createUser({
     required String employeeNumber,
@@ -222,15 +273,15 @@ class FakeAdminRepository implements AdminRepository {
     required String role,
     String? phoneNumber,
     required String password,
-  }) async =>
-      calls.add('createUser:$employeeNumber:$role');
+  }) async => calls.add('createUser:$employeeNumber:$role');
   @override
   Future<AppSettingsModel> fetchSettings() async =>
       const AppSettingsModel(notificationsEnabled: true);
   @override
   Future<List<UserModel>> fetchUsers() async => users;
   @override
-  Future<void> resetPassword(String userId, String password) async => calls.add('reset:$userId');
+  Future<void> resetPassword(String userId, String password) async =>
+      calls.add('reset:$userId');
   @override
   Future<void> updateCategory(String id, Map<String, dynamic> changes) async =>
       calls.add('updateCategory:$id:$changes');
@@ -240,8 +291,9 @@ class FakeAdminRepository implements AdminRepository {
     String? managerEmail,
     required bool notificationsEnabled,
     String? appBaseUrl,
-  }) async =>
-      calls.add('settings:$itSupportGroupEmail:$managerEmail:$notificationsEnabled');
+  }) async => calls.add(
+    'settings:$itSupportGroupEmail:$managerEmail:$notificationsEnabled',
+  );
   @override
   Future<void> updateUser(String userId, Map<String, dynamic> changes) async =>
       calls.add('updateUser:$userId:$changes');
@@ -259,16 +311,22 @@ Future<ProviderContainer> pumpApp(
   tester.view.physicalSize = size;
   tester.view.devicePixelRatio = 1;
   addTearDown(tester.view.reset);
-  final container = ProviderContainer(overrides: [
-    authRepositoryProvider.overrideWithValue(auth),
-    ticketRepositoryProvider.overrideWithValue(tickets ?? FakeTicketRepository()),
-    adminRepositoryProvider.overrideWithValue(admin ?? FakeAdminRepository()),
-  ]);
+  final container = ProviderContainer(
+    overrides: [
+      authRepositoryProvider.overrideWithValue(auth),
+      ticketRepositoryProvider.overrideWithValue(
+        tickets ?? FakeTicketRepository(),
+      ),
+      adminRepositoryProvider.overrideWithValue(admin ?? FakeAdminRepository()),
+    ],
+  );
   addTearDown(container.dispose);
-  await tester.pumpWidget(UncontrolledProviderScope(
-    container: container,
-    child: MaterialApp(home: Scaffold(body: child)),
-  ));
+  await tester.pumpWidget(
+    UncontrolledProviderScope(
+      container: container,
+      child: MaterialApp(home: Scaffold(body: child)),
+    ),
+  );
   await tester.pumpAndSettle();
   return container;
 }
