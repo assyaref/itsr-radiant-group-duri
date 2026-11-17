@@ -50,15 +50,15 @@ class SupabaseAuthRepository implements AuthRepository {
             : {'employeeNumber': employeeNumber, 'password': password},
       );
     } on FunctionException catch (e) {
-      if (e.status == 429) throw const RateLimited();
+      if (e.status == 429) throw RateLimited();
       // 5xx / gateway problems are not a wrong password: say so, so users do
       // not lock themselves out by retrying a correct password.
-      if (e.status >= 500) throw const ServiceUnavailable();
-      throw const InvalidCredentials();
+      if (e.status >= 500) throw ServiceUnavailable();
+      throw InvalidCredentials();
     }
     final data = response.data;
     if (data is! Map || data['refresh_token'] is! String) {
-      throw const InvalidCredentials();
+      throw InvalidCredentials();
     }
     await _client.auth.setSession(
       data['refresh_token'] as String,
@@ -78,7 +78,7 @@ class SupabaseAuthRepository implements AuthRepository {
     }
     if (profile == null) {
       await _safeLocalSignOut();
-      throw const InvalidCredentials();
+      throw InvalidCredentials();
     }
   }
 
