@@ -1,4 +1,6 @@
-﻿import 'package:flutter/material.dart';
+﻿import 'dart:typed_data';
+
+import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../constants/app_constants.dart';
@@ -473,6 +475,9 @@ class _CommentsTab extends ConsumerStatefulWidget {
 class _CommentsTabState extends ConsumerState<_CommentsTab> with _ActionRunner {
   final _text = TextEditingController();
   bool _internal = false;
+  String? _pickedFileName;
+  String? _pickedMimeType;
+  Uint8List? _pickedBytes;
 
   @override
   void dispose() {
@@ -482,13 +487,34 @@ class _CommentsTabState extends ConsumerState<_CommentsTab> with _ActionRunner {
 
   Future<void> _post() async {
     final content = _text.text.trim();
-    if (content.isEmpty) {
-      showSnack(context, 'Please write a comment first', error: true);
+    if (content.isEmpty && _pickedBytes == null) {
+      showSnack(context, 'Please write a comment or pick a file first', error: true);
       return;
     }
     await run(() async {
-      await ref.read(ticketActionsProvider).addComment(widget.detail.ticket.id, content, isInternal: _internal);
-      _text.clear();
+      // Upload attachment first if a file was picked (same bucket as ticket creation attachments).
+      if (_pickedBytes != null) {
+        await ref.read(attachmentActionsProvider).uploadAttachment(
+              ticketId: widget.detail.ticket.id,
+              fileName: _pickedFileName!,
+              mimeType: _pickedMimeType!,
+              bytes: _pickedBytes!,
+              uploadedBy: widget.user.id,
+            );
+        setState(() {
+          _pickedFileName = null;
+          _pickedMimeType = null;
+          _pickedBytes = null;
+        });
+      }
+      if (content.isNotEmpty) {
+        await ref.read(ticketActionsProvider).addComment(
+              widget.detail.ticket.id,
+              content,
+              isInternal: _internal,
+            );
+        _text.clear();
+      }
       setState(() => _internal = false);
     }, _internal ? 'Internal note added' : 'Comment posted');
   }
@@ -555,7 +581,23 @@ class _CommentsTabState extends ConsumerState<_CommentsTab> with _ActionRunner {
                           ),
                         ),
                       ),
-                      const SizedBox(width: 8),
+                      const SizedBox(width: 6),
+                      IconButton(
+                        key: const Key('pick_attachment_button'),
+                        onPressed: busy ? null : () async {
+                          final picked = await pickFile();
+                          if (picked != null) {
+                            setState(() {
+                              _pickedFileName = picked.$1;
+                              _pickedMimeType = picked.$2;
+                              _pickedBytes = picked.$3;
+                            });
+                          }
+                        },
+                        icon: const Icon(Icons.attach_file, size: 20),
+                        tooltip: 'Lampiran',
+                      ),
+                      const SizedBox(width: 6),
                       FilledButton.icon(
                         key: const Key('post_comment_button'),
                         onPressed: busy ? null : _post,
@@ -566,6 +608,32 @@ class _CommentsTabState extends ConsumerState<_CommentsTab> with _ActionRunner {
                       ),
                     ],
                   ),
+                  if (_pickedBytes != null)
+                    Padding(
+                      padding: const EdgeInsets.only(top: 8),
+                      child: Row(
+                        children: [
+                          const Icon(Icons.insert_drive_file, size: 16, color: AppTheme.primary),
+                          const SizedBox(width: 6),
+                          Expanded(
+                            child: Text(
+                              _pickedFileName!,
+                              style: const TextStyle(fontSize: 12, color: AppTheme.primary),
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                          const SizedBox(width: 6),
+                          InkWell(
+                            onTap: () => setState(() {
+                              _pickedFileName = null;
+                              _pickedMimeType = null;
+                              _pickedBytes = null;
+                            }),
+                            child: const Icon(Icons.close, size: 18, color: AppTheme.primary),
+                          ),
+                        ],
+                      ),
+                    ),
                   if (staff)
                     CheckboxListTile(
                       contentPadding: EdgeInsets.zero,
