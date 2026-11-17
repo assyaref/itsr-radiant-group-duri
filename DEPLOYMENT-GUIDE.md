@@ -58,11 +58,13 @@ If data already exists, restore from the §1 backup instead of dropping.
 supabase secrets set GMAIL_USER="<sender@your-domain>" GMAIL_APP_PASSWORD="<16-char app password>"
 supabase secrets set ALLOWED_ORIGINS="https://<your-itsr-host>"          # comma-separated
 supabase secrets set NOTIFICATIONS_CRON_SECRET="$(openssl rand -hex 32)"  # optional, for the scheduler
+supabase secrets set PIN_PEPPER="<stable random secret, at least 32 characters>" # required for 4–5 digit PIN login
 supabase functions deploy login
 supabase functions deploy admin-users
 supabase functions deploy send-notifications
 ```
 `SUPABASE_URL`, `SUPABASE_ANON_KEY` and `SUPABASE_SERVICE_ROLE_KEY` are injected by Supabase. `verify_jwt=false` comes from `supabase/config.toml`; each function authorises requests itself.
+Generate `PIN_PEPPER` in a secure secret manager and never commit it. Keep it stable: changing it invalidates existing PINs, which must then be reset.
 
 **Retry scheduler (recommended; NOT configured on staging yet).** In Dashboard → Integrations → Cron, create a job that runs every minute. It should POST `https://<ref>.supabase.co/functions/v1/send-notifications` with header `x-cron-secret: <secret>`.
 - The app also triggers delivery right after each action.
