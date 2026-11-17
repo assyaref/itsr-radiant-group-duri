@@ -84,7 +84,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
               onEmail: () => _choose(LoginMethod.email),
               onCompany: () => _choose(LoginMethod.company),
             )
-          : _buildForm(context, showIllustration: !wide),
+          : _buildForm(context, showIllustration: !wide, showWatermark: false),
     );
 
     // No on-screen back arrow (design): the phone's / browser's Back gesture
@@ -229,7 +229,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                 onFieldSubmitted: (_) => _passwordFocus.requestFocus(),
                 decoration: const InputDecoration(
                   labelText: 'Employee Number',
-                  hintText: 'contoh: EMP001',
+                  hintText: '',
                   prefixIcon: Icon(Icons.badge_outlined),
                 ),
                 validator: Validators.employeeNumber,
