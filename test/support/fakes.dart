@@ -91,6 +91,11 @@ class FakeAuthRepository implements AuthRepository {
     profile = null;
     _ctrl.add(null);
   }
+
+  @override
+  Future<void> changePassword(String currentPassword, String newPassword) async {
+    calls.add('changePassword');
+  }
 }
 
 class FakeTicketRepository implements TicketRepository {

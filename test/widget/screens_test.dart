@@ -19,6 +19,8 @@ void main() {
     testWidgets('validates empty form without calling the server', (t) async {
       final auth = FakeAuthRepository();
       await pumpApp(t, const LoginScreen(), auth: auth, size: phone);
+      await t.tap(find.byKey(const Key('company_login_entry')));
+      await t.pumpAndSettle();
       await t.tap(find.byKey(const Key('login_button')));
       await t.pump();
       expect(find.text('Please enter your employee number'), findsOneWidget);
@@ -29,6 +31,8 @@ void main() {
     testWidgets('invalid credentials show a generic, safe message', (t) async {
       final auth = FakeAuthRepository(signInError: const InvalidCredentials());
       await pumpApp(t, const LoginScreen(), auth: auth, size: phone);
+      await t.tap(find.byKey(const Key('company_login_entry')));
+      await t.pumpAndSettle();
       await t.enterText(find.byKey(const Key('employee_number_field')), 'emp001');
       await t.enterText(find.byKey(const Key('password_field')), 'wrongpass');
       await t.tap(find.byKey(const Key('login_button')));
@@ -38,9 +42,24 @@ void main() {
       expect(find.textContaining('Authentication failed'), findsOneWidget);
     });
 
+    testWidgets('5-digit NIK with 5-character password is accepted', (t) async {
+      final auth = FakeAuthRepository();
+      await pumpApp(t, const LoginScreen(), auth: auth, size: phone);
+      await t.tap(find.byKey(const Key('company_login_entry')));
+      await t.pumpAndSettle();
+      await t.enterText(find.byKey(const Key('employee_number_field')), '12345');
+      await t.enterText(find.byKey(const Key('password_field')), '54321');
+      await t.tap(find.byKey(const Key('login_button')));
+      await t.pumpAndSettle();
+      expect(auth.calls, ['signIn:12345']);
+      expect(find.text('Password must be at least 5 characters'), findsNothing);
+    });
+
     testWidgets('rate limiting message is shown', (t) async {
       final auth = FakeAuthRepository(signInError: const RateLimited());
       await pumpApp(t, const LoginScreen(), auth: auth, size: desktop);
+      await t.tap(find.byKey(const Key('company_login_entry')));
+      await t.pumpAndSettle();
       await t.enterText(find.byKey(const Key('employee_number_field')), 'EMP001');
       await t.enterText(find.byKey(const Key('password_field')), 'whatever1');
       await t.tap(find.byKey(const Key('login_button')));

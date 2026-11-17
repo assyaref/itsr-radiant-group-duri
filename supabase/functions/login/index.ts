@@ -28,7 +28,9 @@ Deno.serve(async (req) => {
 
   const employeeNumber = normalizeEmployeeNumber(body.employeeNumber);
   const password = typeof body.password === "string" ? body.password : "";
-  if (!employeeNumber || password.length < 6 || password.length > 128) return fail(401, GENERIC);
+  // 5-character passwords are allowed (the client mirrors this rule);
+  // anything shorter is treated the same as a wrong password.
+  if (!employeeNumber || password.length < 5 || password.length > 128) return fail(401, GENERIC);
 
   const ip = clientIp(req);
   try {
