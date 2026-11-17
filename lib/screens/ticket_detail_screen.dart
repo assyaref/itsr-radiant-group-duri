@@ -536,19 +536,35 @@ class _CommentsTabState extends ConsumerState<_CommentsTab> with _ActionRunner {
                 children: [
                   Text('Add a comment', style: Theme.of(context).textTheme.titleMedium),
                   const SizedBox(height: 12),
-                  TextField(
-                    key: const Key('comment_field'),
-                    controller: _text,
-                    enabled: !busy,
-                    minLines: 1,
-                    maxLines: 5,
-                    maxLength: 5000,
-                    scrollPadding: const EdgeInsets.only(bottom: 80),
-                    decoration: InputDecoration(
-                      hintText: staff
-                          ? 'Reply to the employee, or add a technical note'
-                          : 'Add details or reply to IT Support',
-                    ),
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: [
+                      Expanded(
+                        child: TextField(
+                          key: const Key('comment_field'),
+                          controller: _text,
+                          enabled: !busy,
+                          minLines: 1,
+                          maxLines: 5,
+                          maxLength: 5000,
+                          scrollPadding: const EdgeInsets.only(bottom: 80),
+                          decoration: InputDecoration(
+                            hintText: staff
+                                ? 'Reply to the employee, or add a technical note'
+                                : 'Add details or reply to IT Support',
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      FilledButton.icon(
+                        key: const Key('post_comment_button'),
+                        onPressed: busy ? null : _post,
+                        icon: busy
+                            ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2))
+                            : const Icon(Icons.send),
+                        label: Text(_internal ? 'Add note' : 'Post comment'),
+                      ),
+                    ],
                   ),
                   if (staff)
                     CheckboxListTile(
@@ -559,18 +575,6 @@ class _CommentsTabState extends ConsumerState<_CommentsTab> with _ActionRunner {
                       title: const Text('Internal work note'),
                       subtitle: const Text('Only visible to IT Support and Administrators; no email is sent'),
                     ),
-                  const SizedBox(height: 8),
-                  Align(
-                    alignment: Alignment.centerRight,
-                    child: FilledButton.icon(
-                      key: const Key('post_comment_button'),
-                      onPressed: busy ? null : _post,
-                      icon: busy
-                          ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2))
-                          : const Icon(Icons.send),
-                      label: Text(_internal ? 'Add note' : 'Post comment'),
-                    ),
-                  ),
                 ],
               ),
             ),
