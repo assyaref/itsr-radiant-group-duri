@@ -1,7 +1,8 @@
-﻿import 'dart:typed_data';
+import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import '../constants/app_constants.dart';
 import '../models/activity_model.dart';
@@ -16,7 +17,8 @@ import '../providers/tickets_provider.dart';
 import '../utils/browser_files.dart' show downloadBytes;
 import '../utils/error_messages.dart';
 import '../utils/formatters.dart';
-import '../utils/file_picker_web.dart' if (dart.library.io) '../utils/file_picker_stub.dart';
+import '../utils/file_picker_web.dart'
+    if (dart.library.io) '../utils/file_picker_stub.dart';
 import '../widgets/common.dart';
 import '../widgets/employee_ui.dart';
 
@@ -30,8 +32,7 @@ class TicketDetailScreen extends ConsumerStatefulWidget {
   final String ticketId;
 
   @override
-  ConsumerState<TicketDetailScreen> createState() =>
-      _TicketDetailScreenState();
+  ConsumerState<TicketDetailScreen> createState() => _TicketDetailScreenState();
 }
 
 class _TicketDetailScreenState extends ConsumerState<TicketDetailScreen> {
@@ -55,8 +56,7 @@ class _TicketDetailScreenState extends ConsumerState<TicketDetailScreen> {
         appBar: const EHeader(title: 'Detail Tiket'),
         body: ErrorView(
           error: e,
-          onRetry: () =>
-              ref.invalidate(ticketDetailProvider(widget.ticketId)),
+          onRetry: () => ref.invalidate(ticketDetailProvider(widget.ticketId)),
         ),
       ),
       data: (d) {
@@ -249,6 +249,10 @@ class _DetailTab extends StatelessWidget {
             const SizedBox(height: 12),
             _ReporterActions(ticket: t),
           ],
+          if (user.isSuperAdmin) ...[
+            const SizedBox(height: 12),
+            _DeleteTicketCard(ticket: t),
+          ],
         ],
       ),
     );
@@ -263,25 +267,18 @@ class _SummaryCard extends StatelessWidget {
   final List<ActivityModel> activities;
 
   (Color bg, Color accent) get _tint => switch (ticket.priority) {
-        'critical' || 'high' => (
-            const Color(0xFFFEF2F2),
-            EColors.red,
-          ),
-        'medium' => (
-            const Color(0xFFFFFBEB),
-            const Color(0xFFD97706),
-          ),
-        'low' => (
-            const Color(0xFFF0FDF4),
-            const Color(0xFF16A34A),
-          ),
-        _ => (EColors.blueSoft, EColors.blue),
-      };
+    'critical' || 'high' => (const Color(0xFFFEF2F2), EColors.red),
+    'medium' => (const Color(0xFFFFFBEB), const Color(0xFFD97706)),
+    'low' => (const Color(0xFFF0FDF4), const Color(0xFF16A34A)),
+    _ => (EColors.blueSoft, EColors.blue),
+  };
 
   bool get _processedReached {
-    if (const ['assigned', 'in_progress', 'pending_user'].contains(
-      ticket.status,
-    )) {
+    if (const [
+      'assigned',
+      'in_progress',
+      'pending_user',
+    ].contains(ticket.status)) {
       return true;
     }
     if (ticket.isFinished) return true;
@@ -290,10 +287,10 @@ class _SummaryCard extends StatelessWidget {
           a.action == ActivityModel.actionAssigned ||
           (a.action == ActivityModel.actionStatusChanged &&
               const [
-            'assigned',
-            'in_progress',
-            'pending_user',
-          ].contains(a.newValue)),
+                'assigned',
+                'in_progress',
+                'pending_user',
+              ].contains(a.newValue)),
     );
   }
 
@@ -499,7 +496,8 @@ class _InfoCard extends StatelessWidget {
       ('Ditugaskan', t.assigneeName ?? 'Belum ditugaskan'),
       ('Dibuat', Fmt.dateTime(t.createdAt)),
       ('Pembaruan', Fmt.dateTime(t.updatedAt)),
-      if (t.resolvedAt != null) ('Diproses selesai', Fmt.dateTime(t.resolvedAt!)),
+      if (t.resolvedAt != null)
+        ('Diproses selesai', Fmt.dateTime(t.resolvedAt!)),
       if (t.closedAt != null) ('Ditutup', Fmt.dateTime(t.closedAt!)),
     ];
     return ECard(
@@ -587,10 +585,7 @@ class _InfoCard extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(height: 4),
-                  Text(
-                    t.resolution!,
-                    style: const TextStyle(height: 1.4),
-                  ),
+                  Text(t.resolution!, style: const TextStyle(height: 1.4)),
                 ],
               ),
             ),
@@ -673,6 +668,90 @@ mixin _ActionRunner<T extends ConsumerStatefulWidget> on ConsumerState<T> {
   }
 }
 
+/// Superadmin-only "danger zone": permanently delete the ticket.
+/// The `delete_ticket` RPC re-checks the superadmin role server-side.
+class _DeleteTicketCard extends ConsumerStatefulWidget {
+  const _DeleteTicketCard({required this.ticket});
+  final TicketModel ticket;
+
+  @override
+  ConsumerState<_DeleteTicketCard> createState() => _DeleteTicketCardState();
+}
+
+class _DeleteTicketCardState extends ConsumerState<_DeleteTicketCard> {
+  bool _busy = false;
+
+  Future<void> _delete() async {
+    final t = widget.ticket;
+    final ok = await showConfirmDialog(
+      context,
+      title: 'Hapus tiket ${t.ticketNumber}?',
+      message:
+          'Tiket beserta komentar, riwayat aktivitas, dan data lampirannya '
+          'akan dihapus permanen. Tindakan ini tidak dapat dibatalkan.',
+      confirmLabel: 'Hapus permanen',
+      destructive: true,
+    );
+    if (!ok || !mounted) return;
+    setState(() => _busy = true);
+    try {
+      await ref.read(ticketActionsProvider).deleteTicket(t.id);
+      if (!mounted) return;
+      showSnack(context, 'Tiket ${t.ticketNumber} dihapus');
+      GoRouter.maybeOf(context)?.go('/queue');
+    } catch (e) {
+      if (mounted) showSnack(context, friendlyError(e), error: true);
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) => Container(
+    padding: const EdgeInsets.all(14),
+    decoration: BoxDecoration(
+      color: const Color(0xFFFEF2F2),
+      borderRadius: BorderRadius.circular(16),
+      border: Border.all(color: const Color(0xFFFECACA)),
+    ),
+    child: Row(
+      children: [
+        const Icon(Icons.shield_outlined, color: Color(0xFFDC2626)),
+        const SizedBox(width: 10),
+        const Expanded(
+          child: Text(
+            'Super Admin · hapus tiket ini secara permanen',
+            style: TextStyle(
+              color: Color(0xFF991B1B),
+              fontWeight: FontWeight.w600,
+              fontSize: 13,
+            ),
+          ),
+        ),
+        const SizedBox(width: 8),
+        FilledButton.icon(
+          key: const Key('delete_ticket_button'),
+          style: FilledButton.styleFrom(
+            backgroundColor: const Color(0xFFDC2626),
+          ),
+          onPressed: _busy ? null : _delete,
+          icon: _busy
+              ? const SizedBox(
+                  width: 16,
+                  height: 16,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    color: Colors.white,
+                  ),
+                )
+              : const Icon(Icons.delete_forever, size: 18),
+          label: const Text('Hapus'),
+        ),
+      ],
+    ),
+  );
+}
+
 class _StaffActions extends ConsumerStatefulWidget {
   const _StaffActions({required this.ticket, required this.user});
   final TicketModel ticket;
@@ -682,13 +761,17 @@ class _StaffActions extends ConsumerStatefulWidget {
   ConsumerState<_StaffActions> createState() => _StaffActionsState();
 }
 
-class _StaffActionsState extends ConsumerState<_StaffActions> with _ActionRunner {
+class _StaffActionsState extends ConsumerState<_StaffActions>
+    with _ActionRunner {
   TicketActions get _actions => ref.read(ticketActionsProvider);
   TicketModel get t => widget.ticket;
 
   static const _statusLabels = {
     AppConstants.statusInProgress: ('Mulai Kerjakan', Icons.play_arrow),
-    AppConstants.statusPendingUser: ('Menunggu Pengguna', Icons.hourglass_bottom),
+    AppConstants.statusPendingUser: (
+      'Menunggu Pengguna',
+      Icons.hourglass_bottom,
+    ),
     AppConstants.statusResolved: ('Selesaikan', Icons.check_circle),
     AppConstants.statusClosed: ('Tutup', Icons.lock),
     AppConstants.statusReopened: ('Buka Ulang', Icons.replay),
@@ -756,9 +839,7 @@ class _StaffActionsState extends ConsumerState<_StaffActions> with _ActionRunner
                       : Icons.person_outline,
                 ),
                 title: Text(s.fullName),
-                subtitle: Text(
-                  '${s.employeeNumber} • ${Fmt.role(s.role)}',
-                ),
+                subtitle: Text('${s.employeeNumber} • ${Fmt.role(s.role)}'),
               ),
             ),
         ],
@@ -885,8 +966,7 @@ class _ReporterActionsState extends ConsumerState<_ReporterActions>
 
     switch (t.status) {
       case AppConstants.statusResolved:
-        message =
-            'IT Support menandai tiket ini selesai. Apakah masalah Anda sudah teratasi?';
+        message = 'IT Support menandai tiket ini selesai. Apakah masalah Anda sudah teratasi?';
         buttons.add(
           FilledButton.icon(
             onPressed: busy
@@ -913,11 +993,9 @@ class _ReporterActionsState extends ConsumerState<_ReporterActions>
       case AppConstants.statusClosed:
         message = 'Tiket ini sudah ditutup.';
       case AppConstants.statusPendingUser:
-        message =
-            'IT Support menunggu informasi dari Anda. Silakan balas lewat tab Komentar.';
+        message = 'IT Support menunggu informasi dari Anda. Silakan balas lewat tab Komentar.';
       default:
-        message =
-            'IT Support akan memperbarui tiket ini; Anda akan diberitahu lewat email.';
+        message = 'IT Support akan memperbarui tiket ini; Anda akan diberitahu lewat email.';
     }
     if (t.isFinished) {
       buttons.add(
@@ -1006,13 +1084,15 @@ class _CommentsTabState extends ConsumerState<_CommentsTab> with _ActionRunner {
     await run(() async {
       // Upload attachment first if a file was picked (same bucket as ticket creation attachments).
       if (_pickedBytes != null) {
-        await ref.read(attachmentActionsProvider).uploadAttachment(
-          ticketId: widget.detail.ticket.id,
-          fileName: _pickedFileName!,
-          mimeType: _pickedMimeType!,
-          bytes: _pickedBytes!,
-          uploadedBy: widget.user.id,
-        );
+        await ref
+            .read(attachmentActionsProvider)
+            .uploadAttachment(
+              ticketId: widget.detail.ticket.id,
+              fileName: _pickedFileName!,
+              mimeType: _pickedMimeType!,
+              bytes: _pickedBytes!,
+              uploadedBy: widget.user.id,
+            );
         setState(() {
           _pickedFileName = null;
           _pickedMimeType = null;
@@ -1020,11 +1100,13 @@ class _CommentsTabState extends ConsumerState<_CommentsTab> with _ActionRunner {
         });
       }
       if (content.isNotEmpty) {
-        await ref.read(ticketActionsProvider).addComment(
-          widget.detail.ticket.id,
-          content,
-          isInternal: _internal,
-        );
+        await ref
+            .read(ticketActionsProvider)
+            .addComment(
+              widget.detail.ticket.id,
+              content,
+              isInternal: _internal,
+            );
         _text.clear();
       }
       setState(() => _internal = false);
@@ -1034,35 +1116,52 @@ class _CommentsTabState extends ConsumerState<_CommentsTab> with _ActionRunner {
   @override
   Widget build(BuildContext context) {
     final staff = widget.user.isStaff;
+    final reporterId = widget.detail.ticket.reporterId;
     final events = <(DateTime, Widget)>[
       for (final a in widget.detail.activities) (a.createdAt, _ActivityItem(a)),
-      for (final c in widget.detail.comments) (c.createdAt, _CommentItem(c)),
+      for (final c in widget.detail.comments)
+        (
+          c.createdAt,
+          _CommentItem(
+            c,
+            fromReporter: c.authorId == reporterId,
+            mine: c.authorId == widget.user.id,
+          ),
+        ),
     ]..sort((x, y) => y.$1.compareTo(x.$1)); // newest first
+
+    // The list is reversed: newest at the bottom and opened scrolled to it.
+    // A day chip sits above the first (oldest) entry of each day.
+    final rows = <Widget>[];
+    for (var i = 0; i < events.length; i++) {
+      rows.add(events[i].$2);
+      final day = DateUtils.dateOnly(events[i].$1.toLocal());
+      final olderDay = i + 1 < events.length
+          ? DateUtils.dateOnly(events[i + 1].$1.toLocal())
+          : null;
+      if (olderDay != day) rows.add(_DayChip(day));
+    }
 
     // Chat layout: history scrolls on top, the composer stays pinned below.
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         Expanded(
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                if (events.isEmpty)
-                  const Padding(
-                    padding: EdgeInsets.all(24),
-                    child: Center(
-                      child: Text(
-                        'Belum ada aktivitas.',
-                        style: TextStyle(color: EColors.muted),
-                      ),
-                    ),
-                  )
-                else
-                  for (final e in events) e.$2,
-              ],
+          child: DecoratedBox(
+            decoration: const BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                colors: [Color(0xFFEFF4FF), EColors.page],
+              ),
             ),
+            child: events.isEmpty
+                ? const _EmptyChat()
+                : ListView(
+                    reverse: true,
+                    padding: const EdgeInsets.fromLTRB(12, 12, 12, 12),
+                    children: rows,
+                  ),
           ),
         ),
         Padding(
@@ -1113,16 +1212,18 @@ class _CommentsTabState extends ConsumerState<_CommentsTab> with _ActionRunner {
                       const SizedBox(width: 4),
                       IconButton(
                         key: const Key('pick_attachment_button'),
-                        onPressed: busy ? null : () async {
-                          final picked = await pickFile();
-                          if (picked != null) {
-                            setState(() {
-                              _pickedFileName = picked.$1;
-                              _pickedMimeType = picked.$2;
-                              _pickedBytes = picked.$3;
-                            });
-                          }
-                        },
+                        onPressed: busy
+                            ? null
+                            : () async {
+                                final picked = await pickFile();
+                                if (picked != null) {
+                                  setState(() {
+                                    _pickedFileName = picked.$1;
+                                    _pickedMimeType = picked.$2;
+                                    _pickedBytes = picked.$3;
+                                  });
+                                }
+                              },
                         icon: const Icon(Icons.attach_file, size: 20),
                         tooltip: 'Lampirkan file',
                       ),
@@ -1213,175 +1314,378 @@ class _CommentsTabState extends ConsumerState<_CommentsTab> with _ActionRunner {
   }
 }
 
-/// Compact system line for an activity event (created/assigned/resolved/...).
+/// Centered system pill for an activity event (created/assigned/resolved/...).
 class _ActivityItem extends StatelessWidget {
   const _ActivityItem(this.a);
   final ActivityModel a;
 
   @override
-  Widget build(BuildContext context) => Padding(
-    padding: const EdgeInsets.symmetric(vertical: 6),
-    child: Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Container(
-          width: 30,
-          height: 30,
-          margin: const EdgeInsets.only(top: 2),
-          decoration: BoxDecoration(
-            color: activityColor(a.action).withValues(alpha: 0.12),
-            shape: BoxShape.circle,
-          ),
-          child: Icon(
-            activityIcon(a.action),
-            size: 15,
-            color: activityColor(a.action),
-          ),
-        ),
-        const SizedBox(width: 10),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              RichText(
-                text: TextSpan(
-                  style: const TextStyle(
-                    fontSize: 13,
-                    color: EColors.text,
-                    height: 1.4,
-                  ),
-                  children: [
-                    TextSpan(
-                      text: describeActivity(a),
-                      style: const TextStyle(
-                        fontWeight: FontWeight.w600,
-                        color: EColors.ink,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 2),
-              Text(
-                Fmt.dateTime(a.createdAt),
-                style: const TextStyle(fontSize: 11, color: EColors.muted),
-              ),
-              if (a.note != null && a.note!.isNotEmpty)
-                Padding(
-                  padding: const EdgeInsets.only(top: 2),
-                  child: Text(
-                    '“${a.note}”',
-                    style: const TextStyle(
-                      fontStyle: FontStyle.italic,
-                      fontSize: 12.5,
-                      color: EColors.text,
-                    ),
-                  ),
-                ),
-            ],
-          ),
-        ),
-      ],
-    ),
-  );
-}
-
-class _CommentItem extends StatelessWidget {
-  const _CommentItem(this.c);
-  final CommentModel c;
-
-  @override
   Widget build(BuildContext context) {
-    final name = c.authorName ?? 'User';
+    final color = activityColor(a.action);
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 6),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          InitialsAvatar(name, size: 36),
-          const SizedBox(width: 10),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+      child: Center(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 440),
+          child: Container(
+            padding: const EdgeInsets.fromLTRB(6, 5, 12, 5),
+            decoration: BoxDecoration(
+              color: Colors.white.withValues(alpha: 0.9),
+              borderRadius: BorderRadius.circular(999),
+              border: Border.all(color: color.withValues(alpha: 0.28)),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
               children: [
-                Row(
-                  crossAxisAlignment: CrossAxisAlignment.center,
-                  children: [
-                    Flexible(
-                      child: Text(
-                        name,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
-                          fontWeight: FontWeight.w700,
-                          fontSize: 13,
-                          color: EColors.ink,
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    Text(
-                      Fmt.dateTime(c.createdAt),
-                      style: const TextStyle(
-                        fontSize: 11,
-                        color: EColors.muted,
-                      ),
-                    ),
-                    if (c.isInternal) ...[
-                      const SizedBox(width: 8),
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 6,
-                          vertical: 1,
-                        ),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFFFEF3C7),
-                          borderRadius: BorderRadius.circular(6),
-                        ),
-                        child: const Text(
-                          'CATATAN INTERNAL',
-                          style: TextStyle(
-                            color: Color(0xFFB45309),
-                            fontSize: 9,
-                            fontWeight: FontWeight.w800,
-                            letterSpacing: 0.4,
+                Container(
+                  width: 22,
+                  height: 22,
+                  decoration: BoxDecoration(
+                    color: color.withValues(alpha: 0.14),
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(activityIcon(a.action), size: 12, color: color),
+                ),
+                const SizedBox(width: 8),
+                Flexible(
+                  child: Text.rich(
+                    TextSpan(
+                      children: [
+                        TextSpan(
+                          text: describeActivity(a),
+                          style: const TextStyle(
+                            fontWeight: FontWeight.w600,
+                            color: EColors.ink,
                           ),
                         ),
-                      ),
-                    ],
-                  ],
-                ),
-                const SizedBox(height: 4),
-                DecoratedBox(
-                  decoration: BoxDecoration(
-                    color: c.isInternal
-                        ? const Color(0xFFFFFBEB)
-                        : Colors.white,
-                    borderRadius: BorderRadius.circular(10),
-                    border: Border.all(
-                      color: c.isInternal
-                          ? const Color(0xFFFDE68A)
-                          : EColors.line,
-                    ),
-                  ),
-                  child: Padding(
-                    padding: const EdgeInsets.all(10),
-                    child: SelectionArea(
-                      child: Text(
-                        c.content,
-                        style: const TextStyle(
-                          fontSize: 13.5,
-                          height: 1.45,
-                          color: EColors.text,
+                        if (a.note != null && a.note!.isNotEmpty)
+                          TextSpan(
+                            text: ' · “${a.note}”',
+                            style: const TextStyle(fontStyle: FontStyle.italic),
+                          ),
+                        TextSpan(
+                          text: '  ${Fmt.time(a.createdAt)}',
+                          style: const TextStyle(
+                            color: EColors.muted,
+                            fontSize: 10.5,
+                          ),
                         ),
-                      ),
+                      ],
                     ),
+                    style: const TextStyle(fontSize: 11.5, color: EColors.text),
                   ),
                 ),
               ],
             ),
           ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Date separator between chat days.
+class _DayChip extends StatelessWidget {
+  const _DayChip(this.day);
+  final DateTime day;
+
+  @override
+  Widget build(BuildContext context) {
+    final today = DateUtils.dateOnly(DateTime.now());
+    final label = day == today
+        ? 'Hari ini'
+        : day == today.subtract(const Duration(days: 1))
+        ? 'Kemarin'
+        : Fmt.date(day);
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 10),
+      child: Row(
+        children: [
+          const Expanded(child: Divider(color: EColors.line)),
+          Container(
+            margin: const EdgeInsets.symmetric(horizontal: 10),
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+            decoration: BoxDecoration(
+              color: const Color(0xFFE0E7FF),
+              borderRadius: BorderRadius.circular(999),
+            ),
+            child: Text(
+              label,
+              style: const TextStyle(
+                fontSize: 11,
+                fontWeight: FontWeight.w700,
+                color: Color(0xFF3730A3),
+                letterSpacing: 0.2,
+              ),
+            ),
+          ),
+          const Expanded(child: Divider(color: EColors.line)),
         ],
+      ),
+    );
+  }
+}
+
+class _EmptyChat extends StatelessWidget {
+  const _EmptyChat();
+
+  @override
+  Widget build(BuildContext context) => Center(
+    child: Padding(
+      padding: const EdgeInsets.all(24),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            width: 64,
+            height: 64,
+            decoration: const BoxDecoration(
+              gradient: LinearGradient(
+                colors: [EColors.blue, Color(0xFF7C3AED)],
+              ),
+              shape: BoxShape.circle,
+            ),
+            child: const Icon(
+              Icons.forum_rounded,
+              color: Colors.white,
+              size: 30,
+            ),
+          ),
+          const SizedBox(height: 12),
+          const Text(
+            'Belum ada percakapan',
+            style: TextStyle(fontWeight: FontWeight.w700, color: EColors.ink),
+          ),
+          const SizedBox(height: 4),
+          const Text(
+            'Mulai diskusi dengan mengirim pesan di bawah.',
+            style: TextStyle(color: EColors.muted, fontSize: 12.5),
+          ),
+        ],
+      ),
+    ),
+  );
+}
+
+/// Chat bubble. The ticket reporter (user) sits on the RIGHT in a blue
+/// gradient bubble; IT Support / Admin replies sit on the LEFT in a white
+/// bubble with a role badge. Internal notes are amber and always on the left.
+class _CommentItem extends StatelessWidget {
+  const _CommentItem(this.c, {required this.fromReporter, required this.mine});
+  final CommentModel c;
+  final bool fromReporter;
+  final bool mine;
+
+  static const _userGradient = LinearGradient(
+    begin: Alignment.topLeft,
+    end: Alignment.bottomRight,
+    colors: [Color(0xFF3B82F6), Color(0xFF4F46E5)],
+  );
+  static const _badgeGradient = LinearGradient(
+    colors: [Color(0xFF0EA5E9), Color(0xFF6366F1)],
+  );
+
+  @override
+  Widget build(BuildContext context) {
+    final name = c.authorName ?? 'User';
+    final internal = c.isInternal;
+    final right = fromReporter && !internal;
+    const r = Radius.circular(18);
+    const tail = Radius.circular(4);
+
+    final textColor = right ? Colors.white : EColors.text;
+    final metaColor = right
+        ? Colors.white.withValues(alpha: 0.8)
+        : EColors.muted;
+
+    final bubble = Container(
+      padding: const EdgeInsets.fromLTRB(14, 10, 14, 8),
+      decoration: BoxDecoration(
+        gradient: right ? _userGradient : null,
+        color: right
+            ? null
+            : internal
+            ? const Color(0xFFFFFBEB)
+            : Colors.white,
+        borderRadius: BorderRadius.only(
+          topLeft: r,
+          topRight: r,
+          bottomLeft: right ? r : tail,
+          bottomRight: right ? tail : r,
+        ),
+        border: right
+            ? null
+            : Border.all(
+                color: internal ? const Color(0xFFFCD34D) : EColors.line,
+              ),
+        boxShadow: [
+          BoxShadow(
+            color: right
+                ? const Color(0xFF4F46E5).withValues(alpha: 0.25)
+                : const Color(0xFF0F172A).withValues(alpha: 0.06),
+            blurRadius: right ? 14 : 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: right
+            ? CrossAxisAlignment.end
+            : CrossAxisAlignment.start,
+        children: [
+          if (internal)
+            Padding(
+              padding: const EdgeInsets.only(bottom: 6),
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFFEF3C7),
+                  borderRadius: BorderRadius.circular(6),
+                ),
+                child: const Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      Icons.lock_rounded,
+                      size: 10,
+                      color: Color(0xFFB45309),
+                    ),
+                    SizedBox(width: 4),
+                    Text(
+                      'CATATAN INTERNAL',
+                      style: TextStyle(
+                        color: Color(0xFFB45309),
+                        fontSize: 9,
+                        fontWeight: FontWeight.w800,
+                        letterSpacing: 0.4,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          SelectionArea(
+            child: Text(
+              c.content,
+              style: TextStyle(fontSize: 14, height: 1.45, color: textColor),
+            ),
+          ),
+          const SizedBox(height: 4),
+          Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                Fmt.time(c.createdAt),
+                style: TextStyle(fontSize: 10.5, color: metaColor),
+              ),
+              if (mine) ...[
+                const SizedBox(width: 4),
+                Icon(Icons.done_all_rounded, size: 13, color: metaColor),
+              ],
+            ],
+          ),
+        ],
+      ),
+    );
+
+    final header = Padding(
+      padding: const EdgeInsets.only(bottom: 4, left: 4, right: 4),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Flexible(
+            child: Text(
+              mine ? 'Anda' : name,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(
+                fontWeight: FontWeight.w700,
+                fontSize: 12,
+                color: EColors.ink,
+              ),
+            ),
+          ),
+          if (!fromReporter) ...[
+            const SizedBox(width: 6),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
+              decoration: BoxDecoration(
+                gradient: _badgeGradient,
+                borderRadius: BorderRadius.circular(6),
+              ),
+              child: const Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(Icons.verified_rounded, size: 10, color: Colors.white),
+                  SizedBox(width: 3),
+                  Text(
+                    'IT SUPPORT',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 8.5,
+                      fontWeight: FontWeight.w800,
+                      letterSpacing: 0.5,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+
+    final Widget avatar = right
+        ? InitialsAvatar(name, size: 32)
+        : Stack(
+            clipBehavior: Clip.none,
+            children: [
+              InitialsAvatar(name, size: 32),
+              Positioned(
+                right: -2,
+                bottom: -2,
+                child: Container(
+                  width: 14,
+                  height: 14,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF6366F1),
+                    shape: BoxShape.circle,
+                    border: Border.all(color: Colors.white, width: 1.5),
+                  ),
+                  child: const Icon(
+                    Icons.headset_mic_rounded,
+                    size: 8,
+                    color: Colors.white,
+                  ),
+                ),
+              ),
+            ],
+          );
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 6),
+      child: LayoutBuilder(
+        builder: (context, box) {
+          final maxBubble = box.maxWidth * (box.maxWidth > 700 ? 0.62 : 0.78);
+          final column = ConstrainedBox(
+            constraints: BoxConstraints(maxWidth: maxBubble),
+            child: Column(
+              crossAxisAlignment: right
+                  ? CrossAxisAlignment.end
+                  : CrossAxisAlignment.start,
+              children: [header, bubble],
+            ),
+          );
+          return Row(
+            mainAxisAlignment: right
+                ? MainAxisAlignment.end
+                : MainAxisAlignment.start,
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: right
+                ? [Flexible(child: column), const SizedBox(width: 8), avatar]
+                : [avatar, const SizedBox(width: 8), Flexible(child: column)],
+          );
+        },
       ),
     );
   }
@@ -1423,13 +1727,15 @@ class _AttachmentsTabState extends ConsumerState<_AttachmentsTab> {
     setState(() => _busy = true);
     _setStatus(null);
     try {
-      await ref.read(attachmentActionsProvider).uploadAttachment(
-        ticketId: widget.ticket.id,
-        fileName: fileName,
-        mimeType: mimeType,
-        bytes: bytes,
-        uploadedBy: widget.user.id,
-      );
+      await ref
+          .read(attachmentActionsProvider)
+          .uploadAttachment(
+            ticketId: widget.ticket.id,
+            fileName: fileName,
+            mimeType: mimeType,
+            bytes: bytes,
+            uploadedBy: widget.user.id,
+          );
       _setStatus('Lampiran terunggah.');
     } catch (e) {
       _setStatus('Gagal mengunggah: ${friendlyError(e)}', error: true);
@@ -1515,9 +1821,7 @@ class _AttachmentsTabState extends ConsumerState<_AttachmentsTab> {
               padding: EdgeInsets.all(24),
               child: Center(child: CircularProgressIndicator()),
             ),
-            error: (e, _) => Center(
-              child: Text('Gagal memuat lampiran: $e'),
-            ),
+            error: (e, _) => Center(child: Text('Gagal memuat lampiran: $e')),
           ),
           const SizedBox(height: 8),
           const Text(
@@ -1580,9 +1884,7 @@ class _AttachmentItem extends ConsumerWidget {
             width: 46,
             height: 46,
             decoration: BoxDecoration(
-              color: isImage
-                  ? EColors.blueSoft
-                  : const Color(0xFFF1F5F9),
+              color: isImage ? EColors.blueSoft : const Color(0xFFF1F5F9),
               borderRadius: BorderRadius.circular(10),
             ),
             child: Icon(
@@ -1609,10 +1911,7 @@ class _AttachmentItem extends ConsumerWidget {
                 const SizedBox(height: 3),
                 Text(
                   '${a.displaySize} · ${Fmt.dateTime(a.createdAt)}',
-                  style: const TextStyle(
-                    fontSize: 11.5,
-                    color: EColors.muted,
-                  ),
+                  style: const TextStyle(fontSize: 11.5, color: EColors.muted),
                 ),
               ],
             ),
@@ -1644,24 +1943,24 @@ class _AttachmentItem extends ConsumerWidget {
 }
 
 IconData activityIcon(String action) => switch (action) {
-      ActivityModel.actionCreated => Icons.add_circle_outline,
-      ActivityModel.actionAssigned => Icons.person_add_alt,
-      ActivityModel.actionResolved => Icons.check_circle_outline,
-      ActivityModel.actionReopened => Icons.replay,
-      ActivityModel.actionClosed => Icons.lock_outline,
-      ActivityModel.actionPriorityChanged => Icons.flag_outlined,
-      ActivityModel.actionCategoryChanged => Icons.category_outlined,
-      _ => Icons.sync_alt,
-    };
+  ActivityModel.actionCreated => Icons.add_circle_outline,
+  ActivityModel.actionAssigned => Icons.person_add_alt,
+  ActivityModel.actionResolved => Icons.check_circle_outline,
+  ActivityModel.actionReopened => Icons.replay,
+  ActivityModel.actionClosed => Icons.lock_outline,
+  ActivityModel.actionPriorityChanged => Icons.flag_outlined,
+  ActivityModel.actionCategoryChanged => Icons.category_outlined,
+  _ => Icons.sync_alt,
+};
 
 Color activityColor(String action) => switch (action) {
-      ActivityModel.actionCreated => EColors.blue,
-      ActivityModel.actionAssigned => const Color(0xFF7C3AED),
-      ActivityModel.actionResolved => const Color(0xFF10B981),
-      ActivityModel.actionReopened => const Color(0xFFEF4444),
-      ActivityModel.actionClosed => const Color(0xFF6B7280),
-      _ => const Color(0xFFF59E0B),
-    };
+  ActivityModel.actionCreated => EColors.blue,
+  ActivityModel.actionAssigned => const Color(0xFF7C3AED),
+  ActivityModel.actionResolved => const Color(0xFF10B981),
+  ActivityModel.actionReopened => const Color(0xFFEF4444),
+  ActivityModel.actionClosed => const Color(0xFF6B7280),
+  _ => const Color(0xFFF59E0B),
+};
 
 String describeActivity(ActivityModel a) {
   final who = a.actorName ?? 'Sistem';
@@ -1678,6 +1977,7 @@ String describeActivity(ActivityModel a) {
       'Prioritas ${Fmt.priority(a.oldValue)} → ${Fmt.priority(a.newValue)} oleh $who',
     ActivityModel.actionCategoryChanged =>
       'Kategori ${a.oldValue} → ${a.newValue} oleh $who',
-    _ => 'Status ${Fmt.statusId(a.oldValue)} → ${Fmt.statusId(a.newValue)} oleh $who',
+    _ =>
+      'Status ${Fmt.statusId(a.oldValue)} → ${Fmt.statusId(a.newValue)} oleh $who',
   };
 }

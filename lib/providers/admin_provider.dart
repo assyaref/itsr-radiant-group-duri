@@ -51,6 +51,17 @@ class AdminActions {
     _ref.invalidate(currentUserProvider);
   }
 
+  Future<Map<String, dynamic>> exportBackup() =>
+      _ref.read(adminRepositoryProvider).exportBackup();
+
+  Future<Map<String, dynamic>> purgeTickets(String confirmPhrase) async {
+    final res =
+        await _ref.read(adminRepositoryProvider).purgeTickets(confirmPhrase);
+    // Every ticket list / stat / detail is now stale.
+    _ref.read(ticketActionsProvider).refreshAll();
+    return res;
+  }
+
   Future<void> resetPassword(String userId, String password) =>
       _ref.read(adminRepositoryProvider).resetPassword(userId, password);
 

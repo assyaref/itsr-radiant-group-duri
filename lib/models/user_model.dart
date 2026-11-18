@@ -30,8 +30,12 @@ class UserModel {
     required this.updatedAt,
   });
 
-  bool get isStaff => role == 'it_support' || role == 'administrator';
-  bool get isAdmin => role == 'administrator';
+  bool get isStaff =>
+      role == 'it_support' || role == 'administrator' || role == 'superadmin';
+  bool get isAdmin => role == 'administrator' || role == 'superadmin';
+
+  /// Only a superadmin may permanently delete tickets.
+  bool get isSuperAdmin => role == 'superadmin';
 
   factory UserModel.fromJson(Map<String, dynamic> json) =>
       _$UserModelFromJson(json);

@@ -45,11 +45,17 @@ class AppConstants {
   static const String roleEmployee = 'employee';
   static const String roleITSupport = 'it_support';
   static const String roleAdministrator = 'administrator';
+  static const String roleSuperAdmin = 'superadmin';
+
+  /// Roles an administrator may assign. A superadmin may also assign
+  /// [roleSuperAdmin] (see [assignableRoles]).
   static const List<String> roles = [
     roleEmployee,
     roleITSupport,
     roleAdministrator,
   ];
+  static List<String> assignableRoles({required bool superAdmin}) =>
+      superAdmin ? const [...roles, roleSuperAdmin] : roles;
 
   // Ticket priorities
   static const String priorityLow = 'low';

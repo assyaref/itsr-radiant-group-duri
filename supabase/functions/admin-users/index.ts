@@ -19,7 +19,13 @@ Deno.serve(withErrorBoundary("admin-users", async (req) => {
   const admin = adminClient();
   const caller = await verifyCaller(admin, bearerToken(req));
   if (!caller) return json({ error: "Not authenticated" }, 401, headers);
-  if (caller.role !== "administrator") return json({ error: "Administrator access required" }, 403, headers);
+  const callerIsSuper = caller.role === "superadmin";
+  if (caller.role !== "administrator" && !callerIsSuper) {
+    return json({ error: "Administrator access required" }, 403, headers);
+  }
+  // Only a superadmin may create, change or reset a superadmin account.
+  const SUPER_ONLY = { error: "Only a superadmin can manage superadmin accounts" };
+  const isAdminRole = (r: unknown) => r === "administrator" || r === "superadmin";
 
   const body = await readJsonObject(req);
   if (!body) return json({ error: "Invalid JSON body" }, 400, headers);
@@ -33,6 +39,7 @@ Deno.serve(withErrorBoundary("admin-users", async (req) => {
         const v = validateCreate(body);
         if (!v.ok) return json({ error: v.error }, 400, headers);
         const d = v.value;
+        if (d.role === "superadmin" && !callerIsSuper) return json(SUPER_ONLY, 403, headers);
 
         const { count: dupNo } = await admin.from("profiles").select("id", { count: "exact", head: true })
           .eq("employee_number", d.employee_number);
@@ -71,14 +78,18 @@ Deno.serve(withErrorBoundary("admin-users", async (req) => {
           .eq("id", user_id).maybeSingle();
         if (!target) return json({ error: "User not found" }, 404, headers);
 
-        const demoting = changes.role !== undefined && changes.role !== "administrator" && target.role === "administrator";
+        if ((target.role === "superadmin" || changes.role === "superadmin") && !callerIsSuper) {
+          return json(SUPER_ONLY, 403, headers);
+        }
+        const demoting = changes.role !== undefined && changes.role !== target.role && isAdminRole(target.role)
+          && (target.role === "superadmin" || !isAdminRole(changes.role));
         const deactivating = changes.is_active === false && target.is_active;
         if (user_id === caller.id && (demoting || deactivating)) {
           return json({ error: "You cannot remove your own administrator access" }, 400, headers);
         }
-        if ((demoting || deactivating) && target.role === "administrator") {
+        if ((demoting || deactivating) && isAdminRole(target.role)) {
           const { count } = await admin.from("profiles").select("id", { count: "exact", head: true })
-            .eq("role", "administrator").eq("is_active", true);
+            .eq("role", target.role).eq("is_active", true);
           if ((count ?? 0) <= 1) return json({ error: "At least one active administrator is required" }, 400, headers);
         }
 
@@ -100,8 +111,9 @@ Deno.serve(withErrorBoundary("admin-users", async (req) => {
       case "reset_password": {
         const v = validateResetPassword(body);
         if (!v.ok) return json({ error: v.error }, 400, headers);
-        const { data: target } = await admin.from("profiles").select("id").eq("id", v.value.user_id).maybeSingle();
+        const { data: target } = await admin.from("profiles").select("id, role").eq("id", v.value.user_id).maybeSingle();
         if (!target) return json({ error: "User not found" }, 404, headers);
+        if (target.role === "superadmin" && !callerIsSuper) return json(SUPER_ONLY, 403, headers);
         const { error } = await admin.auth.admin.updateUserById(v.value.user_id, {
           password: await authPassword(v.value.password, Deno.env.get("PIN_PEPPER")),
         });

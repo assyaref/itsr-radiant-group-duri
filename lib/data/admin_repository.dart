@@ -30,6 +30,13 @@ abstract class AdminRepository {
     required bool notificationsEnabled,
     String? appBaseUrl,
   });
+
+  /// Full JSON export of the application data (administrator + superadmin).
+  Future<Map<String, dynamic>> exportBackup();
+
+  /// Deletes ALL ticket data. [confirmPhrase] must be `HAPUS SEMUA DATA`.
+  /// Returns the deleted counts (tickets, comments, attachments).
+  Future<Map<String, dynamic>> purgeTickets(String confirmPhrase);
 }
 
 class SupabaseAdminRepository implements AdminRepository {
@@ -120,5 +127,20 @@ class SupabaseAdminRepository implements AdminRepository {
     if (rows.isEmpty) {
       throw const PostgrestException(message: 'denied', code: '42501');
     }
+  }
+
+  @override
+  Future<Map<String, dynamic>> exportBackup() async {
+    final res = await _client.rpc('admin_backup');
+    return Map<String, dynamic>.from(res as Map);
+  }
+
+  @override
+  Future<Map<String, dynamic>> purgeTickets(String confirmPhrase) async {
+    final res = await _client.rpc(
+      'admin_purge_tickets',
+      params: {'p_confirm': confirmPhrase},
+    );
+    return Map<String, dynamic>.from(res as Map);
   }
 }

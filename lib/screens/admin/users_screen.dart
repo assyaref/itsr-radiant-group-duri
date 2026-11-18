@@ -59,7 +59,7 @@ class _UsersScreenState extends ConsumerState<UsersScreen> {
                   decoration: const InputDecoration(labelText: 'Role', isDense: true),
                   items: [
                     const DropdownMenuItem(value: null, child: Text('All')),
-                    for (final r in AppConstants.roles)
+                    for (final r in AppConstants.assignableRoles(superAdmin: true))
                       DropdownMenuItem(value: r, child: Text(Fmt.role(r))),
                   ],
                   onChanged: (v) => setState(() => _role = v),
@@ -215,7 +215,8 @@ class _UserDialogState extends ConsumerState<_UserDialog> {
     if (_editing &&
         widget.existing!.id == me?.id &&
         widget.existing!.role == AppConstants.roleAdministrator &&
-        _role != AppConstants.roleAdministrator) {
+        _role != AppConstants.roleAdministrator &&
+        _role != AppConstants.roleSuperAdmin) {
       showSnack(context, 'You cannot remove your own administrator role', error: true);
       return;
     }
@@ -306,7 +307,12 @@ class _UserDialogState extends ConsumerState<_UserDialog> {
                     initialValue: _role,
                     decoration: const InputDecoration(labelText: 'Role *'),
                     items: [
-                      for (final r in AppConstants.roles)
+                      for (final r in {
+                        ...AppConstants.assignableRoles(
+                          superAdmin: ref.read(currentUserProvider).valueOrNull?.isSuperAdmin ?? false,
+                        ),
+                        _role,
+                      })
                         DropdownMenuItem(value: r, child: Text(Fmt.role(r))),
                     ],
                     onChanged: _busy ? null : (v) => setState(() => _role = v!),

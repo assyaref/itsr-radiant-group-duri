@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import '../models/user_model.dart';
 import '../providers/auth_provider.dart';
 import '../screens/admin/categories_screen.dart';
+import '../screens/admin/data_management_screen.dart';
 import '../screens/admin/email_notifications_screen.dart';
 import '../screens/admin/settings_screen.dart';
 import '../screens/admin/users_screen.dart';
@@ -175,6 +176,10 @@ final goRouterProvider = Provider<GoRouter>((ref) {
           GoRoute(
             path: '/admin/email-notifications',
             builder: (_, _) => const EmailNotificationsScreen(),
+          ),
+          GoRoute(
+            path: '/admin/data',
+            builder: (_, _) => const DataManagementScreen(),
           ),
         ],
       ),

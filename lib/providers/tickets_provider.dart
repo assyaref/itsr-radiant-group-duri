@@ -284,6 +284,18 @@ class TicketActions {
     _refresh(ticketId: ticketId);
   }
 
+  /// Invalidates every cached ticket list / stat (e.g. after a purge).
+  void refreshAll() {
+    _ref.invalidate(ticketDetailProvider);
+    _refresh();
+  }
+
+  Future<void> deleteTicket(String ticketId) async {
+    await _repo.deleteTicket(ticketId);
+    // The open detail screen navigates away itself; only lists are refreshed.
+    _refresh();
+  }
+
   Future<void> assignTicket(String ticketId, String staffId) async {
     await _repo.updateTicket(ticketId, assignedToId: staffId);
     _refresh(ticketId: ticketId);

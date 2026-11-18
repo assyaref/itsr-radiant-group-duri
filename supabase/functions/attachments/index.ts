@@ -52,7 +52,8 @@ async function driveToken(cfg: DriveConfig): Promise<string> {
   return data.access_token;
 }
 
-const isStaff = (c: CallerProfile) => c.role === "it_support" || c.role === "administrator";
+const isStaff = (c: CallerProfile) =>
+  c.role === "it_support" || c.role === "administrator" || c.role === "superadmin";
 
 Deno.serve(withErrorBoundary("attachments", async (req) => {
   const headers = corsHeaders(req.headers.get("origin"), Deno.env.get("ALLOWED_ORIGINS"));

@@ -8,6 +8,8 @@ class Fmt {
 
   static String date(DateTime d) => _date.format(d.toLocal());
   static String dateTime(DateTime d) => _dateTime.format(d.toLocal());
+  static String time(DateTime d) => _time.format(d.toLocal());
+  static final DateFormat _time = DateFormat('HH:mm');
 
   static String relative(DateTime d, {DateTime? now}) {
     final diff = (now ?? DateTime.now()).difference(d.toLocal());
@@ -32,6 +34,7 @@ class Fmt {
     'employee': 'Employee',
     'it_support': 'IT Support',
     'administrator': 'Administrator',
+    'superadmin': 'Super Admin',
   };
 
   static String status(String? s) => _status[s] ?? (s ?? 'Unknown');

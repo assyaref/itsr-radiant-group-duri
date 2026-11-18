@@ -18,7 +18,7 @@ import nodemailer from "npm:nodemailer@6.9.16";
 import { bearerToken, corsHeaders, json } from "../_shared/http.ts";
 import { adminClient, verifyCaller, type CallerProfile } from "../_shared/supabase.ts";
 
-const ADMIN_ROLE = "administrator";
+const ADMIN_ROLES: readonly string[] = ["administrator", "superadmin"];
 
 type SmtpConfig = {
   host?: string;
@@ -31,7 +31,7 @@ type SmtpConfig = {
 };
 
 function isAdmin(profile: CallerProfile | null): boolean {
-  return !!profile && profile.role === ADMIN_ROLE && profile.is_active;
+  return !!profile && ADMIN_ROLES.includes(profile.role) && profile.is_active;
 }
 
 function buildTransport(cfg: SmtpConfig) {

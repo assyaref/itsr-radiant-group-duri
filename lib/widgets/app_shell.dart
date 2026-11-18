@@ -72,6 +72,12 @@ List<NavItem> navItemsFor(UserModel? user) => [
       Icons.email_outlined,
       Icons.email,
     ),
+    NavItem(
+      '/admin/data',
+      'Backup & Data',
+      Icons.backup_outlined,
+      Icons.backup,
+    ),
   ],
 ];
 

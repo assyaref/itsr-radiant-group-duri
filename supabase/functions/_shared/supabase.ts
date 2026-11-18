@@ -24,7 +24,7 @@ export function publicClient(): SupabaseClient {
 
 export interface CallerProfile {
   id: string; employee_number: string; full_name: string; email: string;
-  role: "employee" | "it_support" | "administrator"; is_active: boolean;
+  role: "employee" | "it_support" | "administrator" | "superadmin"; is_active: boolean;
 }
 
 /** Verifies the caller's access token with Supabase Auth and loads the profile. */

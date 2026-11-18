@@ -131,6 +131,9 @@ abstract class TicketRepository {
   Future<void> reporterAction(String ticketId, String action, {String? note});
 
   /// Ask the server to deliver queued email notifications. Never throws.
+  /// Permanently deletes a ticket and everything attached to it.
+  /// Superadmin only (enforced by the `delete_ticket` RPC).
+  Future<void> deleteTicket(String ticketId);
   Future<void> kickNotifications();
 }
 
@@ -380,6 +383,11 @@ class SupabaseTicketRepository implements TicketRepository {
       'reporter_ticket_action',
       params: {'p_ticket_id': ticketId, 'p_action': action, 'p_note': note},
     );
+  }
+
+  @override
+  Future<void> deleteTicket(String ticketId) async {
+    await _client.rpc('delete_ticket', params: {'p_ticket_id': ticketId});
   }
 
   @override

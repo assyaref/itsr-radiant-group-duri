@@ -252,6 +252,12 @@ class FakeTicketRepository implements TicketRepository {
 
   @override
   Future<void> kickNotifications() async => calls.add('kick');
+
+  @override
+  Future<void> deleteTicket(String ticketId) async {
+    if (failWith != null) throw failWith!;
+    calls.add('delete:$ticketId');
+  }
 }
 
 class FakeAdminRepository implements AdminRepository {
@@ -297,6 +303,17 @@ class FakeAdminRepository implements AdminRepository {
   @override
   Future<void> updateUser(String userId, Map<String, dynamic> changes) async =>
       calls.add('updateUser:$userId:$changes');
+  @override
+  Future<Map<String, dynamic>> exportBackup() async {
+    calls.add('backup');
+    return {'format': 'itsr-backup', 'tables': <String, dynamic>{}};
+  }
+
+  @override
+  Future<Map<String, dynamic>> purgeTickets(String confirmPhrase) async {
+    calls.add('purge:$confirmPhrase');
+    return {'tickets': 0, 'comments': 0, 'attachments': 0};
+  }
 }
 
 /// Pumps [child] inside a ProviderScope wired to fakes, at a given screen size.
