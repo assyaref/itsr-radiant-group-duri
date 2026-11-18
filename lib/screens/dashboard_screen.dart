@@ -275,7 +275,7 @@ class _HeroBanner extends ConsumerWidget {
         ),
         const SizedBox(height: 14),
         Text(
-          '${_greeting(now.hour)}, $first 👋',
+          '${_greeting(now.hour)}, $first',
           style: const TextStyle(
             color: Colors.white,
             fontSize: 26,
