@@ -47,17 +47,8 @@ class AttachmentActions {
     return result;
   }
 
-  Future<String?> getDownloadUrl(String attachmentId, {int expiresIn = 300}) async {
-    return _ref.read(attachmentRepositoryProvider).getDownloadUrl(
-          attachmentId,
-          expiresIn: expiresIn,
-        );
-  }
-
-  Future<void> deleteAttachment(String attachmentId, String ticketId) async {
-    await _ref.read(attachmentRepositoryProvider).deleteAttachment(attachmentId);
-    _ref.invalidate(attachmentsProvider(ticketId));
-  }
+  Future<Uint8List> downloadAttachment(String attachmentId) =>
+      _ref.read(attachmentRepositoryProvider).downloadAttachment(attachmentId);
 }
 
 final attachmentActionsProvider = Provider<AttachmentActions>((ref) => AttachmentActions(ref));

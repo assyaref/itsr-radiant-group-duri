@@ -8,7 +8,7 @@ Future<(String fileName, String mimeType, Uint8List bytes)?> pickFile({
 }) async {
   final input = FileUploadInputElement()
     ..accept = (allowedExtensions ?? const {
-      '.pdf', '.png', '.jpg', '.jpeg', '.doc', '.docx', '.xls', '.xlsx', '.txt', '.zip'
+      '.pdf', '.png', '.jpg', '.jpeg'
     }).join(',')
     ..multiple = false;
 

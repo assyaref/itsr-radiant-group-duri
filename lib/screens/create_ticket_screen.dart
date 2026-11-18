@@ -50,7 +50,7 @@ class _CreateTicketScreenState extends ConsumerState<CreateTicketScreen> {
   Future<void> _pickFiles() async {
     setState(() => _pickError = null);
     final files = await pickFiles(
-      accept: '.jpg,.jpeg,.png,.pdf,.doc,.docx,.xls,.xlsx,.txt,.zip',
+      accept: kAttachmentAccept,
       multiple: true,
     );
     if (files.isEmpty) return;

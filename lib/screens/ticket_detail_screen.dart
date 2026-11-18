@@ -13,6 +13,7 @@ import '../models/user_model.dart';
 import '../providers/attachment_provider.dart';
 import '../providers/auth_provider.dart';
 import '../providers/tickets_provider.dart';
+import '../utils/browser_files.dart' show downloadBytes;
 import '../utils/error_messages.dart';
 import '../utils/formatters.dart';
 import '../utils/file_picker_web.dart' if (dart.library.io) '../utils/file_picker_stub.dart';
@@ -1431,7 +1432,7 @@ class _AttachmentsTabState extends ConsumerState<_AttachmentsTab> {
       );
       _setStatus('Lampiran terunggah.');
     } catch (e) {
-      _setStatus('Gagal mengunggah: $e', error: true);
+      _setStatus('Gagal mengunggah: ${friendlyError(e)}', error: true);
     } finally {
       if (mounted) setState(() => _busy = false);
     }
@@ -1494,7 +1495,7 @@ class _AttachmentsTabState extends ConsumerState<_AttachmentsTab> {
                           ),
                           SizedBox(height: 4),
                           Text(
-                            'Maks 10 MB · PDF, PNG, JPG, DOC, DOCX, XLS, XLSX, TXT, ZIP',
+                            'Maks 10 MB · JPG, PNG, PDF',
                             textAlign: TextAlign.center,
                             style: TextStyle(
                               color: EColors.muted,
@@ -1521,7 +1522,7 @@ class _AttachmentsTabState extends ConsumerState<_AttachmentsTab> {
           const SizedBox(height: 8),
           const Text(
             'Catatan: Lampiran hanya dapat diakses oleh pengguna yang dapat melihat tiket ini '
-            '(atas RLS basis data). File disimpan di Storage pribadi, tidak tersedia untuk publik.',
+            '(atas RLS basis data). File disimpan di folder Google Drive IT Support, tidak tersedia untuk publik.',
             style: TextStyle(color: EColors.muted, fontSize: 11, height: 1.5),
           ),
           if (_statusMessage != null) ...[
@@ -1620,33 +1621,20 @@ class _AttachmentItem extends ConsumerWidget {
             tooltip: 'Unduh',
             icon: const Icon(Icons.download_rounded, color: EColors.blue),
             onPressed: () async {
-              final url = await ref
-                  .read(attachmentActionsProvider)
-                  .getDownloadUrl(a.id);
-              if (url == null) {
+              try {
+                final bytes = await ref
+                    .read(attachmentActionsProvider)
+                    .downloadAttachment(a.id);
+                await downloadBytes(bytes, a.fileName, a.mimeType);
+              } catch (e) {
                 if (context.mounted) {
                   showSnack(
                     context,
-                    'Tidak dapat mengakses lampiran',
+                    'Gagal mengunduh lampiran: ${friendlyError(e)}',
                     error: true,
                   );
                 }
-                return;
               }
-              if (!context.mounted) return;
-              showDialog(
-                context: context,
-                builder: (_) => AlertDialog(
-                  title: const Text('Unduh Lampiran'),
-                  content: Text('Tautan unduhan (berlaku 5 menit):\n$url'),
-                  actions: [
-                    TextButton(
-                      onPressed: () => Navigator.pop(context),
-                      child: const Text('Tutup'),
-                    ),
-                  ],
-                ),
-              );
             },
           ),
         ],
