@@ -3,6 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:itsr_radiant/constants/app_constants.dart';
 import 'package:itsr_radiant/models/comment_model.dart';
 import 'package:itsr_radiant/screens/admin/data_management_screen.dart';
+import 'package:itsr_radiant/screens/admin/users_screen.dart';
 import 'package:itsr_radiant/screens/ticket_detail_screen.dart';
 
 import '../support/fakes.dart';
@@ -18,14 +19,7 @@ void main() {
       expect(s.isAdmin, isTrue);
       expect(s.isSuperAdmin, isTrue);
       expect(user('a', 'administrator').isSuperAdmin, isFalse);
-      expect(
-        AppConstants.assignableRoles(superAdmin: false),
-        isNot(contains('superadmin')),
-      );
-      expect(
-        AppConstants.assignableRoles(superAdmin: true),
-        contains('superadmin'),
-      );
+      expect(AppConstants.roles, isNot(contains('superadmin')));
     });
   });
 
@@ -142,6 +136,37 @@ void main() {
       expect(find.text('IT SUPPORT'), findsOneWidget);
       expect(find.text('Anda'), findsOneWidget);
       expect(t.takeException(), isNull);
+    });
+  });
+
+  group('superadmin is hidden and locked', () {
+    final people = [
+      user('ad1', 'administrator', name: 'Admin One'),
+      user('su1', 'superadmin', name: 'Super Admin'),
+    ];
+
+    testWidgets('administrator never sees the superadmin', (t) async {
+      final admin = FakeAdminRepository()..users = people;
+      await pumpApp(
+        t,
+        const UsersScreen(),
+        auth: FakeAuthRepository(profile: people[0]),
+        admin: admin,
+      );
+      expect(find.textContaining('Super Admin'), findsNothing);
+      expect(find.textContaining('Admin One'), findsOneWidget);
+    });
+
+    testWidgets('superadmin row has no edit actions', (t) async {
+      final admin = FakeAdminRepository()..users = people;
+      await pumpApp(
+        t,
+        const UsersScreen(),
+        auth: FakeAuthRepository(profile: people[1]),
+        admin: admin,
+      );
+      expect(find.byIcon(Icons.lock_outline), findsOneWidget);
+      expect(find.byType(PopupMenuButton<String>), findsOneWidget);
     });
   });
 }

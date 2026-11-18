@@ -46,7 +46,8 @@ export function bearerToken(req: Request): string | null {
 
 export const EMPLOYEE_NUMBER_RE = /^[A-Z0-9]{2,20}$/;
 export const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-export const ROLES = ["employee", "it_support", "administrator", "superadmin"] as const;
+// `superadmin` is deliberately absent: it can never be assigned through the app.
+export const ROLES = ["employee", "it_support", "administrator"] as const;
 export type Role = typeof ROLES[number];
 
 export function normalizeEmployeeNumber(v: unknown): string | null {
