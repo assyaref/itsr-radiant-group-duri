@@ -10,9 +10,9 @@ class ITSupportQueueScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => const TicketListView(
-        scope: TicketScope.queue,
-        showAssigneeFilter: true,
-        emptyTitle: 'The queue is empty',
-        emptyMessage: 'New tickets from employees will appear here.',
-      );
+    scope: TicketScope.queue,
+    showAssigneeFilter: true,
+    emptyTitle: 'The queue is empty',
+    emptyMessage: 'New tickets from employees will appear here.',
+  );
 }

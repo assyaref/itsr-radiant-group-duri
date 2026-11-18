@@ -9,6 +9,7 @@ import '../../utils/error_messages.dart';
 import '../../utils/formatters.dart';
 import '../../utils/validators.dart';
 import '../../widgets/common.dart';
+import 'user_import_dialog.dart';
 
 /// Administrator: employees, roles, IT Support staff, activation, passwords.
 /// All writes go through the `admin-users` Edge Function, which re-checks the
@@ -40,7 +41,33 @@ class _UsersScreenState extends ConsumerState<UsersScreen> {
       body: Column(
         children: [
           Padding(
-            padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+            padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+            child: Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              alignment: WrapAlignment.end,
+              children: [
+                OutlinedButton.icon(
+                  key: const Key('user_template_button'),
+                  onPressed: () => downloadUserTemplate(context),
+                  icon: const Icon(Icons.description_outlined),
+                  label: const Text('Unduh template'),
+                ),
+                FilledButton.tonalIcon(
+                  key: const Key('user_import_button'),
+                  onPressed: () => showDialog(
+                    context: context,
+                    barrierDismissible: false,
+                    builder: (_) => const UserImportDialog(),
+                  ),
+                  icon: const Icon(Icons.upload_file),
+                  label: const Text('Import user'),
+                ),
+              ],
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
             child: Row(
               children: [
                 Expanded(

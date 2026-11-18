@@ -18,15 +18,24 @@ class CategoriesScreen extends ConsumerWidget {
     return Scaffold(
       floatingActionButton: FloatingActionButton.extended(
         heroTag: 'add_category_fab',
-        onPressed: () => showDialog(context: context, builder: (_) => const _CategoryDialog()),
+        onPressed: () => showDialog(
+          context: context,
+          builder: (_) => const _CategoryDialog(),
+        ),
         icon: const Icon(Icons.add),
         label: const Text('Add category'),
       ),
       body: cats.when(
         loading: () => const LoadingView(),
-        error: (e, _) => ErrorView(error: e, onRetry: () => ref.invalidate(allCategoriesProvider)),
+        error: (e, _) => ErrorView(
+          error: e,
+          onRetry: () => ref.invalidate(allCategoriesProvider),
+        ),
         data: (list) => list.isEmpty
-            ? const EmptyView(icon: Icons.category_outlined, title: 'No categories yet')
+            ? const EmptyView(
+                icon: Icons.category_outlined,
+                title: 'No categories yet',
+              )
             : ListView.separated(
                 padding: const EdgeInsets.fromLTRB(16, 16, 16, 88),
                 itemCount: list.length,
@@ -44,44 +53,62 @@ class _CategoryTile extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) => Card(
-        margin: EdgeInsets.zero,
-        child: ListTile(
-          leading: Icon(Icons.label_outline,
-              color: category.isActive ? Theme.of(context).colorScheme.primary : Colors.grey),
-          title: Text(category.name),
-          subtitle: Text([
-            if ((category.description ?? '').isNotEmpty) category.description!,
-            'Order ${category.sortOrder}',
-            if (!category.isActive) 'INACTIVE',
-          ].join(' • ')),
-          trailing: Wrap(spacing: 4, children: [
-            IconButton(
-              tooltip: 'Edit',
-              icon: const Icon(Icons.edit_outlined),
-              onPressed: () =>
-                  showDialog(context: context, builder: (_) => _CategoryDialog(existing: category)),
+    margin: EdgeInsets.zero,
+    child: ListTile(
+      leading: Icon(
+        Icons.label_outline,
+        color: category.isActive
+            ? Theme.of(context).colorScheme.primary
+            : Colors.grey,
+      ),
+      title: Text(category.name),
+      subtitle: Text(
+        [
+          if ((category.description ?? '').isNotEmpty) category.description!,
+          'Order ${category.sortOrder}',
+          if (!category.isActive) 'INACTIVE',
+        ].join(' • '),
+      ),
+      trailing: Wrap(
+        spacing: 4,
+        children: [
+          IconButton(
+            tooltip: 'Edit',
+            icon: const Icon(Icons.edit_outlined),
+            onPressed: () => showDialog(
+              context: context,
+              builder: (_) => _CategoryDialog(existing: category),
             ),
-            Switch(
-              value: category.isActive,
-              onChanged: (v) async {
-                if (!v) {
-                  final ok = await showConfirmDialog(context,
-                      title: 'Deactivate category',
-                      message:
-                          'Employees will no longer be able to choose "${category.name}". Existing tickets keep it.',
-                      confirmLabel: 'Deactivate');
-                  if (!ok) return;
+          ),
+          Switch(
+            value: category.isActive,
+            onChanged: (v) async {
+              if (!v) {
+                final ok = await showConfirmDialog(
+                  context,
+                  title: 'Deactivate category',
+                  message:
+                      'Employees will no longer be able to choose "${category.name}". Existing tickets keep it.',
+                  confirmLabel: 'Deactivate',
+                );
+                if (!ok) return;
+              }
+              try {
+                await ref.read(adminActionsProvider).updateCategory(
+                  category.id,
+                  {'is_active': v},
+                );
+              } catch (e) {
+                if (context.mounted) {
+                  showSnack(context, friendlyError(e), error: true);
                 }
-                try {
-                  await ref.read(adminActionsProvider).updateCategory(category.id, {'is_active': v});
-                } catch (e) {
-                  if (context.mounted) showSnack(context, friendlyError(e), error: true);
-                }
-              },
-            ),
-          ]),
-        ),
-      );
+              }
+            },
+          ),
+        ],
+      ),
+    ),
+  );
 }
 
 class _CategoryDialog extends ConsumerStatefulWidget {
@@ -96,7 +123,9 @@ class _CategoryDialogState extends ConsumerState<_CategoryDialog> {
   final _form = GlobalKey<FormState>();
   late final _name = TextEditingController(text: widget.existing?.name);
   late final _desc = TextEditingController(text: widget.existing?.description);
-  late final _order = TextEditingController(text: '${widget.existing?.sortOrder ?? 100}');
+  late final _order = TextEditingController(
+    text: '${widget.existing?.sortOrder ?? 100}',
+  );
   bool _busy = false;
 
   @override
@@ -132,41 +161,51 @@ class _CategoryDialogState extends ConsumerState<_CategoryDialog> {
 
   @override
   Widget build(BuildContext context) => AlertDialog(
-        title: Text(widget.existing == null ? 'Add category' : 'Edit category'),
-        content: SizedBox(
-          width: 420,
-          child: Form(
-            key: _form,
-            child: Column(mainAxisSize: MainAxisSize.min, children: [
-              TextFormField(
-                controller: _name,
-                decoration: const InputDecoration(labelText: 'Name *'),
-                validator: (v) => Validators.requiredText(v, 'Name', max: 60),
-              ),
-              if (widget.existing != null)
-                const Padding(
-                  padding: EdgeInsets.only(top: 4),
-                  child: Text('Renaming also updates existing tickets in this category.',
-                      style: TextStyle(fontSize: 12)),
+    title: Text(widget.existing == null ? 'Add category' : 'Edit category'),
+    content: SizedBox(
+      width: 420,
+      child: Form(
+        key: _form,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TextFormField(
+              controller: _name,
+              decoration: const InputDecoration(labelText: 'Name *'),
+              validator: (v) => Validators.requiredText(v, 'Name', max: 60),
+            ),
+            if (widget.existing != null)
+              const Padding(
+                padding: EdgeInsets.only(top: 4),
+                child: Text(
+                  'Renaming also updates existing tickets in this category.',
+                  style: TextStyle(fontSize: 12),
                 ),
-              const SizedBox(height: 12),
-              TextFormField(
-                controller: _desc,
-                decoration: const InputDecoration(labelText: 'Description'),
               ),
-              const SizedBox(height: 12),
-              TextFormField(
-                controller: _order,
-                keyboardType: TextInputType.number,
-                decoration: const InputDecoration(labelText: 'Sort order'),
-                validator: (v) => int.tryParse(v?.trim() ?? '') == null ? 'Enter a number' : null,
-              ),
-            ]),
-          ),
+            const SizedBox(height: 12),
+            TextFormField(
+              controller: _desc,
+              decoration: const InputDecoration(labelText: 'Description'),
+            ),
+            const SizedBox(height: 12),
+            TextFormField(
+              controller: _order,
+              keyboardType: TextInputType.number,
+              decoration: const InputDecoration(labelText: 'Sort order'),
+              validator: (v) => int.tryParse(v?.trim() ?? '') == null
+                  ? 'Enter a number'
+                  : null,
+            ),
+          ],
         ),
-        actions: [
-          TextButton(onPressed: _busy ? null : () => Navigator.pop(context), child: const Text('Cancel')),
-          FilledButton(onPressed: _busy ? null : _save, child: const Text('Save')),
-        ],
-      );
+      ),
+    ),
+    actions: [
+      TextButton(
+        onPressed: _busy ? null : () => Navigator.pop(context),
+        child: const Text('Cancel'),
+      ),
+      FilledButton(onPressed: _busy ? null : _save, child: const Text('Save')),
+    ],
+  );
 }

@@ -16,20 +16,17 @@ class LoadingView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Center(
-        child: Semantics(
-          label: label ?? 'Loading',
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const CircularProgressIndicator(),
-              if (label != null) ...[
-                const SizedBox(height: 12),
-                Text(label!),
-              ],
-            ],
-          ),
-        ),
-      );
+    child: Semantics(
+      label: label ?? 'Loading',
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const CircularProgressIndicator(),
+          if (label != null) ...[const SizedBox(height: 12), Text(label!)],
+        ],
+      ),
+    ),
+  );
 }
 
 class EmptyView extends StatelessWidget {
@@ -47,27 +44,31 @@ class EmptyView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Center(
-        child: Padding(
-          padding: const EdgeInsets.all(32),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(icon, size: 56, color: Colors.grey[400]),
-              const SizedBox(height: 12),
-              Text(title,
-                  style: Theme.of(context).textTheme.titleMedium,
-                  textAlign: TextAlign.center),
-              if (message != null) ...[
-                const SizedBox(height: 6),
-                Text(message!,
-                    textAlign: TextAlign.center,
-                    style: TextStyle(color: Colors.grey[600])),
-              ],
-              if (action != null) ...[const SizedBox(height: 16), action!],
-            ],
+    child: Padding(
+      padding: const EdgeInsets.all(32),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 56, color: Colors.grey[400]),
+          const SizedBox(height: 12),
+          Text(
+            title,
+            style: Theme.of(context).textTheme.titleMedium,
+            textAlign: TextAlign.center,
           ),
-        ),
-      );
+          if (message != null) ...[
+            const SizedBox(height: 6),
+            Text(
+              message!,
+              textAlign: TextAlign.center,
+              style: TextStyle(color: Colors.grey[600]),
+            ),
+          ],
+          if (action != null) ...[const SizedBox(height: 16), action!],
+        ],
+      ),
+    ),
+  );
 }
 
 class ErrorView extends StatelessWidget {
@@ -77,28 +78,30 @@ class ErrorView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Center(
-        child: Padding(
-          padding: const EdgeInsets.all(32),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(Icons.error_outline, size: 56, color: Colors.red[400]),
-              const SizedBox(height: 12),
-              Text(friendlyError(error),
-                  textAlign: TextAlign.center,
-                  style: Theme.of(context).textTheme.bodyLarge),
-              if (onRetry != null) ...[
-                const SizedBox(height: 16),
-                OutlinedButton.icon(
-                  onPressed: onRetry,
-                  icon: const Icon(Icons.refresh),
-                  label: const Text('Try again'),
-                ),
-              ],
-            ],
+    child: Padding(
+      padding: const EdgeInsets.all(32),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(Icons.error_outline, size: 56, color: Colors.red[400]),
+          const SizedBox(height: 12),
+          Text(
+            friendlyError(error),
+            textAlign: TextAlign.center,
+            style: Theme.of(context).textTheme.bodyLarge,
           ),
-        ),
-      );
+          if (onRetry != null) ...[
+            const SizedBox(height: 16),
+            OutlinedButton.icon(
+              onPressed: onRetry,
+              icon: const Icon(Icons.refresh),
+              label: const Text('Try again'),
+            ),
+          ],
+        ],
+      ),
+    ),
+  );
 }
 
 class _Pill extends StatelessWidget {
@@ -109,24 +112,29 @@ class _Pill extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Container(
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-        decoration: BoxDecoration(
-          color: color.withValues(alpha: 0.12),
-          borderRadius: BorderRadius.circular(20),
+    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+    decoration: BoxDecoration(
+      color: color.withValues(alpha: 0.12),
+      borderRadius: BorderRadius.circular(20),
+    ),
+    child: Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        if (icon != null) ...[
+          Icon(icon, size: 14, color: color),
+          const SizedBox(width: 4),
+        ],
+        Text(
+          text,
+          style: TextStyle(
+            color: color,
+            fontSize: 12,
+            fontWeight: FontWeight.w600,
+          ),
         ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            if (icon != null) ...[
-              Icon(icon, size: 14, color: color),
-              const SizedBox(width: 4),
-            ],
-            Text(text,
-                style: TextStyle(
-                    color: color, fontSize: 12, fontWeight: FontWeight.w600)),
-          ],
-        ),
-      );
+      ],
+    ),
+  );
 }
 
 class StatusChip extends StatelessWidget {
@@ -142,10 +150,10 @@ class PriorityChip extends StatelessWidget {
   final String priority;
   @override
   Widget build(BuildContext context) => _Pill(
-        Fmt.priority(priority),
-        AppTheme.getPriorityColor(priority),
-        icon: Icons.flag,
-      );
+    Fmt.priority(priority),
+    AppTheme.getPriorityColor(priority),
+    icon: Icons.flag,
+  );
 }
 
 class StatCard extends StatelessWidget {
@@ -165,43 +173,45 @@ class StatCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Card(
-        margin: EdgeInsets.zero,
-        child: InkWell(
-          borderRadius: BorderRadius.circular(12),
-          onTap: onTap,
-          child: Semantics(
-            label: '$label: $value',
-            excludeSemantics: true,
-            child: Padding(
-              padding: const EdgeInsets.all(16),
-              child: Row(
-                children: [
-                  CircleAvatar(
-                    backgroundColor: color.withValues(alpha: 0.12),
-                    child: Icon(icon, color: color),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text('$value',
-                            style: Theme.of(context)
-                                .textTheme
-                                .headlineSmall
-                                ?.copyWith(fontWeight: FontWeight.bold)),
-                        Text(label,
-                            overflow: TextOverflow.ellipsis,
-                            style: TextStyle(color: Colors.grey[600])),
-                      ],
-                    ),
-                  ),
-                ],
+    margin: EdgeInsets.zero,
+    child: InkWell(
+      borderRadius: BorderRadius.circular(12),
+      onTap: onTap,
+      child: Semantics(
+        label: '$label: $value',
+        excludeSemantics: true,
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Row(
+            children: [
+              CircleAvatar(
+                backgroundColor: color.withValues(alpha: 0.12),
+                child: Icon(icon, color: color),
               ),
-            ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      '$value',
+                      style: Theme.of(context).textTheme.headlineSmall
+                          ?.copyWith(fontWeight: FontWeight.bold),
+                    ),
+                    Text(
+                      label,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(color: Colors.grey[600]),
+                    ),
+                  ],
+                ),
+              ),
+            ],
           ),
         ),
-      );
+      ),
+    ),
+  );
 }
 
 /// Responsive grid of stat cards: 2 columns on phones, 4 on wide screens.
@@ -211,17 +221,19 @@ class StatGrid extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => LayoutBuilder(
-        builder: (context, c) {
-          final cols = c.maxWidth >= 700 ? 4 : 2;
-          const gap = 12.0;
-          final w = (c.maxWidth - gap * (cols - 1)) / cols;
-          return Wrap(
-            spacing: gap,
-            runSpacing: gap,
-            children: [for (final child in children) SizedBox(width: w, child: child)],
-          );
-        },
+    builder: (context, c) {
+      final cols = c.maxWidth >= 700 ? 4 : 2;
+      const gap = 12.0;
+      final w = (c.maxWidth - gap * (cols - 1)) / cols;
+      return Wrap(
+        spacing: gap,
+        runSpacing: gap,
+        children: [
+          for (final child in children) SizedBox(width: w, child: child),
+        ],
       );
+    },
+  );
 }
 
 /// Centered, width-limited page body for readable desktop layouts.
@@ -232,22 +244,24 @@ class PageBody extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Align(
-        alignment: Alignment.topCenter,
-        child: ConstrainedBox(
-          constraints: BoxConstraints(maxWidth: maxWidth),
-          child: child,
-        ),
-      );
+    alignment: Alignment.topCenter,
+    child: ConstrainedBox(
+      constraints: BoxConstraints(maxWidth: maxWidth),
+      child: child,
+    ),
+  );
 }
 
 void showSnack(BuildContext context, String message, {bool error = false}) {
   ScaffoldMessenger.of(context)
     ..hideCurrentSnackBar()
-    ..showSnackBar(SnackBar(
-      content: Text(message),
-      backgroundColor: error ? Colors.red[700] : null,
-      behavior: SnackBarBehavior.floating,
-    ));
+    ..showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: error ? Colors.red[700] : null,
+        behavior: SnackBarBehavior.floating,
+      ),
+    );
 }
 
 Future<bool> showConfirmDialog(
@@ -264,8 +278,9 @@ Future<bool> showConfirmDialog(
       content: Text(message),
       actions: [
         TextButton(
-            onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('Cancel')),
+          onPressed: () => Navigator.pop(ctx, false),
+          child: const Text('Cancel'),
+        ),
         FilledButton(
           style: destructive
               ? FilledButton.styleFrom(backgroundColor: Colors.red[700])
@@ -303,7 +318,10 @@ Future<String?> showTextInputDialog(
             autofocus: true,
             maxLines: 4,
             maxLength: 2000,
-            decoration: InputDecoration(labelText: label, alignLabelWithHint: true),
+            decoration: InputDecoration(
+              labelText: label,
+              alignLabelWithHint: true,
+            ),
             validator: (v) => (v ?? '').trim().length < minLength
                 ? 'Please enter at least $minLength characters'
                 : null,
@@ -312,7 +330,9 @@ Future<String?> showTextInputDialog(
       ),
       actions: [
         TextButton(
-            onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
+          onPressed: () => Navigator.pop(ctx),
+          child: const Text('Cancel'),
+        ),
         FilledButton(
           onPressed: () {
             if (formKey.currentState!.validate()) {

@@ -37,10 +37,18 @@ void main() {
 
   test('TicketModel tolerates null embedded assignee', () {
     final t = TicketModel.fromJson({
-      'id': 'a1', 'ticket_number': 'ITSR-00002', 'subject': 's', 'description': 'd',
-      'category': 'Network', 'priority': 'low', 'status': 'resolved', 'reporter_id': 'u1',
-      'created_at': '2026-11-08T00:00:00Z', 'updated_at': '2026-11-08T00:00:00Z',
-      'reporter': {'full_name': 'Employee A'}, 'assignee': null,
+      'id': 'a1',
+      'ticket_number': 'ITSR-00002',
+      'subject': 's',
+      'description': 'd',
+      'category': 'Network',
+      'priority': 'low',
+      'status': 'resolved',
+      'reporter_id': 'u1',
+      'created_at': '2026-11-08T00:00:00Z',
+      'updated_at': '2026-11-08T00:00:00Z',
+      'reporter': {'full_name': 'Employee A'},
+      'assignee': null,
     });
     expect(t.assigneeName, isNull);
     expect(t.isFinished, isTrue);
@@ -48,9 +56,16 @@ void main() {
 
   test('UserModel parses profile row and derives role flags', () {
     final u = UserModel.fromJson({
-      'id': 'u1', 'employee_number': 'IT001', 'email': 'it@example.test', 'full_name': 'IT One',
-      'department': 'IT', 'role': 'it_support', 'phone_number': null, 'is_active': true,
-      'created_at': '2026-11-08T00:00:00Z', 'updated_at': '2026-11-08T00:00:00Z',
+      'id': 'u1',
+      'employee_number': 'IT001',
+      'email': 'it@example.test',
+      'full_name': 'IT One',
+      'department': 'IT',
+      'role': 'it_support',
+      'phone_number': null,
+      'is_active': true,
+      'created_at': '2026-11-08T00:00:00Z',
+      'updated_at': '2026-11-08T00:00:00Z',
     });
     expect(u.isStaff, isTrue);
     expect(u.isAdmin, isFalse);
@@ -58,16 +73,27 @@ void main() {
 
   test('CommentModel and ActivityModel parse embedded names', () {
     final c = CommentModel.fromJson({
-      'id': 'c1', 'ticket_id': 'a1', 'author_id': 'u1', 'content': 'hi', 'is_internal': true,
-      'created_at': '2026-11-08T00:00:00Z', 'author': {'full_name': 'IT One'},
+      'id': 'c1',
+      'ticket_id': 'a1',
+      'author_id': 'u1',
+      'content': 'hi',
+      'is_internal': true,
+      'created_at': '2026-11-08T00:00:00Z',
+      'author': {'full_name': 'IT One'},
     });
     expect(c.authorName, 'IT One');
     expect(c.isInternal, isTrue);
 
     final a = ActivityModel.fromJson({
-      'id': 'x', 'ticket_id': 'a1', 'actor_id': null, 'action': 'status_changed',
-      'old_value': 'open', 'new_value': 'in_progress', 'note': null,
-      'created_at': '2026-11-08T00:00:00Z', 'actor': null,
+      'id': 'x',
+      'ticket_id': 'a1',
+      'actor_id': null,
+      'action': 'status_changed',
+      'old_value': 'open',
+      'new_value': 'in_progress',
+      'note': null,
+      'created_at': '2026-11-08T00:00:00Z',
+      'actor': null,
       'ticket': {'ticket_number': 'ITSR-00001', 'subject': 'Laptop'},
     });
     expect(a.actorId, isNull, reason: 'system actions have no actor');
@@ -77,7 +103,12 @@ void main() {
 
   test('TicketStats parses bigint counts (PostgREST may send numbers)', () {
     final s = TicketStats.fromJson({
-      'total': 7, 'open': 3, 'in_progress': 2, 'resolved': 1, 'closed': 1, 'unassigned': '2',
+      'total': 7,
+      'open': 3,
+      'in_progress': 2,
+      'resolved': 1,
+      'closed': 1,
+      'unassigned': '2',
     });
     expect(s.total, 7);
     expect(s.inProgress, 2);

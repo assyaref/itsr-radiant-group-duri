@@ -35,13 +35,15 @@ class SmtpActions {
     required String username,
     required String password,
   }) async {
-    await _ref.read(smtpRepositoryProvider).testSmtpConnection(
-      host: host,
-      port: port,
-      secure: secure,
-      username: username,
-      password: password,
-    );
+    await _ref
+        .read(smtpRepositoryProvider)
+        .testSmtpConnection(
+          host: host,
+          port: port,
+          secure: secure,
+          username: username,
+          password: password,
+        );
     _ref.invalidate(smtpConfigProvider);
   }
 
@@ -56,17 +58,19 @@ class SmtpActions {
     required String recipient,
     required bool confirm,
   }) async {
-    await _ref.read(smtpRepositoryProvider).sendTestEmail(
-      host: host,
-      port: port,
-      secure: secure,
-      username: username,
-      password: password,
-      senderName: senderName,
-      senderEmail: senderEmail,
-      recipient: recipient,
-      confirm: confirm,
-    );
+    await _ref
+        .read(smtpRepositoryProvider)
+        .sendTestEmail(
+          host: host,
+          port: port,
+          secure: secure,
+          username: username,
+          password: password,
+          senderName: senderName,
+          senderEmail: senderEmail,
+          recipient: recipient,
+          confirm: confirm,
+        );
     _ref.invalidate(smtpConfigProvider);
   }
 }

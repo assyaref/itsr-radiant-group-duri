@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
@@ -58,9 +58,9 @@ class MyTicketsScreen extends ConsumerWidget {
                   // Apply the filter when the tab index changes.
                   WidgetsBinding.instance.addPostFrameCallback((_) {
                     if (!context.mounted) return;
-                    ref.read(ticketListProvider(TicketScope.mine).notifier).setFilter(
-                          TicketFilter(status: status),
-                        );
+                    ref
+                        .read(ticketListProvider(TicketScope.mine).notifier)
+                        .setFilter(TicketFilter(status: status));
                   });
                   return _TabContent(
                     scope: TicketScope.mine,
@@ -100,6 +100,7 @@ class _TabContent extends ConsumerWidget {
   final String? emptyMessage;
   final Widget? emptyAction;
 
+  @override
   Widget build(BuildContext context, WidgetRef ref) {
     return TicketListView(
       scope: scope,

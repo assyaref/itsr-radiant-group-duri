@@ -35,7 +35,8 @@ class _EmailNotificationsForm extends ConsumerStatefulWidget {
       _EmailNotificationsFormState();
 }
 
-class _EmailNotificationsFormState extends ConsumerState<_EmailNotificationsForm> {
+class _EmailNotificationsFormState
+    extends ConsumerState<_EmailNotificationsForm> {
   final _form = GlobalKey<FormState>();
   bool _busy = false;
   String? _statusMessage;
@@ -61,14 +62,21 @@ class _EmailNotificationsFormState extends ConsumerState<_EmailNotificationsForm
   void initState() {
     super.initState();
     _host = TextEditingController(text: widget.config.smtpHost);
-    _port = TextEditingController(text: widget.config.smtpPort?.toString() ?? '');
+    _port = TextEditingController(
+      text: widget.config.smtpPort?.toString() ?? '',
+    );
     _username = TextEditingController(text: widget.config.smtpUsername);
     _senderName = TextEditingController(text: widget.config.smtpSenderName);
     _senderEmail = TextEditingController(text: widget.config.smtpSenderEmail);
-    _itSupportEmail = TextEditingController(text: widget.config.itSupportGroupEmail);
+    _itSupportEmail = TextEditingController(
+      text: widget.config.itSupportGroupEmail,
+    );
     _managerEmail = TextEditingController(text: widget.config.managerEmail);
     _testRecipient = TextEditingController(
-      text: widget.config.itSupportGroupEmail ?? widget.config.smtpSenderEmail ?? '',
+      text:
+          widget.config.itSupportGroupEmail ??
+          widget.config.smtpSenderEmail ??
+          '',
     );
     _secure = widget.config.smtpSecure ?? false;
     _notificationsEnabled = widget.config.notificationsEnabled;
@@ -101,17 +109,21 @@ class _EmailNotificationsFormState extends ConsumerState<_EmailNotificationsForm
     setState(() => _busy = true);
     _setStatus(null);
     try {
-      await ref.read(smtpActionsProvider).saveSmtpConfig(
-        SmtpConfigInput(
-          host: _host.text.trim(),
-          port: int.tryParse(_port.text.trim()) ?? 0,
-          secure: _secure,
-          username: _username.text.trim(),
-          password: _password ?? '',
-          senderName: _senderName.text.trim().isEmpty ? null : _senderName.text.trim(),
-          senderEmail: _senderEmail.text.trim(),
-        ),
-      );
+      await ref
+          .read(smtpActionsProvider)
+          .saveSmtpConfig(
+            SmtpConfigInput(
+              host: _host.text.trim(),
+              port: int.tryParse(_port.text.trim()) ?? 0,
+              secure: _secure,
+              username: _username.text.trim(),
+              password: _password ?? '',
+              senderName: _senderName.text.trim().isEmpty
+                  ? null
+                  : _senderName.text.trim(),
+              senderEmail: _senderEmail.text.trim(),
+            ),
+          );
       _password = null;
       _passwordCtl.clear();
       _setStatus('SMTP configuration saved. Credential stored securely.');
@@ -160,13 +172,15 @@ class _EmailNotificationsFormState extends ConsumerState<_EmailNotificationsForm
     setState(() => _busy = true);
     _setStatus(null);
     try {
-      await ref.read(smtpActionsProvider).testSmtpConnection(
-        host: host,
-        port: port,
-        secure: _secure,
-        username: username,
-        password: _password!,
-      );
+      await ref
+          .read(smtpActionsProvider)
+          .testSmtpConnection(
+            host: host,
+            port: port,
+            secure: _secure,
+            username: username,
+            password: _password!,
+          );
       _setStatus('SMTP connection test successful.');
     } catch (e) {
       _setStatus(friendlyError(e), error: true);
@@ -193,17 +207,21 @@ class _EmailNotificationsFormState extends ConsumerState<_EmailNotificationsForm
     setState(() => _busy = true);
     _setStatus(null);
     try {
-      await ref.read(smtpActionsProvider).sendTestEmail(
-        host: _host.text.trim(),
-        port: int.tryParse(_port.text.trim()) ?? 0,
-        secure: _secure,
-        username: _username.text.trim(),
-        password: _password ?? '',
-        senderName: _senderName.text.trim().isEmpty ? null : _senderName.text.trim(),
-        senderEmail: _senderEmail.text.trim(),
-        recipient: recipient,
-        confirm: true,
-      );
+      await ref
+          .read(smtpActionsProvider)
+          .sendTestEmail(
+            host: _host.text.trim(),
+            port: int.tryParse(_port.text.trim()) ?? 0,
+            secure: _secure,
+            username: _username.text.trim(),
+            password: _password ?? '',
+            senderName: _senderName.text.trim().isEmpty
+                ? null
+                : _senderName.text.trim(),
+            senderEmail: _senderEmail.text.trim(),
+            recipient: recipient,
+            confirm: true,
+          );
       _setStatus('Test email sent successfully.');
     } catch (e) {
       _setStatus(friendlyError(e), error: true);
@@ -217,16 +235,18 @@ class _EmailNotificationsFormState extends ConsumerState<_EmailNotificationsForm
     setState(() => _busy = true);
     _setStatus(null);
     try {
-      await ref.read(adminActionsProvider).saveSettings(
-        itSupportGroupEmail: _itSupportEmail.text.trim().isEmpty
-            ? null
-            : _itSupportEmail.text.trim(),
-        managerEmail: _managerEmail.text.trim().isEmpty
-            ? null
-            : _managerEmail.text.trim(),
-        notificationsEnabled: _notificationsEnabled,
-        appBaseUrl: null,
-      );
+      await ref
+          .read(adminActionsProvider)
+          .saveSettings(
+            itSupportGroupEmail: _itSupportEmail.text.trim().isEmpty
+                ? null
+                : _itSupportEmail.text.trim(),
+            managerEmail: _managerEmail.text.trim().isEmpty
+                ? null
+                : _managerEmail.text.trim(),
+            notificationsEnabled: _notificationsEnabled,
+            appBaseUrl: null,
+          );
       _setStatus('Notification recipients saved.');
       ref.invalidate(smtpConfigProvider);
       ref.invalidate(appSettingsProvider);
@@ -241,12 +261,14 @@ class _EmailNotificationsFormState extends ConsumerState<_EmailNotificationsForm
     setState(() => _busy = true);
     _setStatus(null);
     try {
-      await ref.read(adminActionsProvider).saveSettings(
-        itSupportGroupEmail: widget.config.itSupportGroupEmail,
-        managerEmail: widget.config.managerEmail,
-        notificationsEnabled: value,
-        appBaseUrl: null,
-      );
+      await ref
+          .read(adminActionsProvider)
+          .saveSettings(
+            itSupportGroupEmail: widget.config.itSupportGroupEmail,
+            managerEmail: widget.config.managerEmail,
+            notificationsEnabled: value,
+            appBaseUrl: null,
+          );
       _notificationsEnabled = value;
       ref.invalidate(smtpConfigProvider);
       ref.invalidate(appSettingsProvider);
@@ -339,8 +361,14 @@ class _EmailNotificationsFormState extends ConsumerState<_EmailNotificationsForm
                 child: DropdownButtonFormField<bool>(
                   initialValue: _secure,
                   items: const [
-                    DropdownMenuItem(value: false, child: Text('STARTTLS (port 587)')),
-                    DropdownMenuItem(value: true, child: Text('SSL/TLS (port 465)')),
+                    DropdownMenuItem(
+                      value: false,
+                      child: Text('STARTTLS (port 587)'),
+                    ),
+                    DropdownMenuItem(
+                      value: true,
+                      child: Text('SSL/TLS (port 465)'),
+                    ),
                   ],
                   onChanged: _busy ? null : (v) => setState(() => _secure = v!),
                 ),
@@ -376,11 +404,13 @@ class _EmailNotificationsFormState extends ConsumerState<_EmailNotificationsForm
                 ),
                 onPressed: _busy
                     ? null
-                    : () => setState(() => _obscurePassword = !_obscurePassword),
+                    : () =>
+                          setState(() => _obscurePassword = !_obscurePassword),
               ),
             ),
             onChanged: (v) => _password = v.isEmpty ? null : v,
-            validator: (_) => _password == null ? 'SMTP password is required' : null,
+            validator: (_) =>
+                _password == null ? 'SMTP password is required' : null,
           ),
           const SizedBox(height: 12),
           TextFormField(
@@ -406,13 +436,21 @@ class _EmailNotificationsFormState extends ConsumerState<_EmailNotificationsForm
           if (widget.config.isConfigured) ...[
             Chip(
               label: const Text('Credential configured'),
-              avatar: const Icon(Icons.lock_outline, color: Colors.green, size: 18),
+              avatar: const Icon(
+                Icons.lock_outline,
+                color: Colors.green,
+                size: 18,
+              ),
               backgroundColor: Colors.green[50],
             ),
           ] else ...[
             Chip(
               label: const Text('No SMTP credential configured'),
-              avatar: const Icon(Icons.lock_open, color: Colors.orange, size: 18),
+              avatar: const Icon(
+                Icons.lock_open,
+                color: Colors.orange,
+                size: 18,
+              ),
               backgroundColor: Colors.orange[50],
             ),
           ],
@@ -429,7 +467,9 @@ class _EmailNotificationsFormState extends ConsumerState<_EmailNotificationsForm
               const SizedBox(width: 12),
               Expanded(
                 child: OutlinedButton.icon(
-                  onPressed: _busy || !widget.config.isConfigured ? null : _removeCredential,
+                  onPressed: _busy || !widget.config.isConfigured
+                      ? null
+                      : _removeCredential,
                   icon: const Icon(Icons.delete_outline),
                   label: const Text('Remove Credential'),
                 ),
@@ -466,8 +506,7 @@ class _EmailNotificationsFormState extends ConsumerState<_EmailNotificationsForm
             decoration: const InputDecoration(
               labelText: 'IT Support Email',
               hintText: 'name@company-domain',
-              helperText:
-                  'CC recipient for all notifications; fallback when no IT staff are active.',
+              helperText: 'CC recipient for all notifications; fallback when no IT staff are active.',
             ),
             validator: (v) => Validators.email(v, required: false),
           ),
@@ -538,7 +577,7 @@ class _EmailNotificationsFormState extends ConsumerState<_EmailNotificationsForm
             value: widget.config.smtpLastTestAt == null
                 ? 'Never'
                 : '${Fmt.dateTime(widget.config.smtpLastTestAt!)} — '
-                    '${widget.config.smtpLastTestResult ?? 'unknown'}',
+                      '${widget.config.smtpLastTestResult ?? 'unknown'}',
             ok: widget.config.smtpLastTestResult == 'success',
           ),
           _StatusRow(
@@ -567,10 +606,7 @@ class _EmailNotificationsFormState extends ConsumerState<_EmailNotificationsForm
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Text(
-            'SMTP Actions',
-            style: Theme.of(context).textTheme.titleLarge,
-          ),
+          Text('SMTP Actions', style: Theme.of(context).textTheme.titleLarge),
           const SizedBox(height: 8),
           Text(
             'Test Connection verifies connectivity and authentication '
@@ -590,10 +626,9 @@ class _EmailNotificationsFormState extends ConsumerState<_EmailNotificationsForm
               ),
               const SizedBox(width: 8),
               OutlinedButton.icon(
-                onPressed:
-                    _busy || !widget.config.isConfigured
-                        ? null
-                        : _sendTestEmail,
+                onPressed: _busy || !widget.config.isConfigured
+                    ? null
+                    : _sendTestEmail,
                 icon: const Icon(Icons.email_outlined),
                 label: const Text('Send Test Email'),
               ),
@@ -646,11 +681,7 @@ class _EmailNotificationsFormState extends ConsumerState<_EmailNotificationsForm
 }
 
 class _StatusRow extends StatelessWidget {
-  const _StatusRow({
-    required this.label,
-    required this.value,
-    this.ok = true,
-  });
+  const _StatusRow({required this.label, required this.value, this.ok = true});
   final String label;
   final String value;
   final bool ok;
@@ -673,9 +704,7 @@ class _StatusRow extends StatelessWidget {
             decoration: BoxDecoration(
               color: (ok ? Colors.green : Colors.red)[50],
               borderRadius: BorderRadius.circular(12),
-              border: Border.all(
-                color: (ok ? Colors.green : Colors.red)[200]!,
-              ),
+              border: Border.all(color: (ok ? Colors.green : Colors.red)[200]!),
             ),
             child: Text(
               value,

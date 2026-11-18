@@ -7,6 +7,7 @@ import '../constants/app_theme.dart';
 import '../models/activity_model.dart';
 import '../models/ticket_model.dart';
 import '../models/ticket_stats.dart';
+import '../models/user_model.dart';
 import '../providers/auth_provider.dart';
 import '../providers/tickets_provider.dart';
 import '../utils/formatters.dart';
@@ -14,7 +15,7 @@ import '../widgets/common.dart';
 import 'employee/employee_home_screen.dart';
 
 /// Role-aware dashboard: employees see their own tickets; IT Support and
-/// administrators additionally see queue-wide and assigned-to-me figures.
+/// administrators get a command-center view of the whole queue.
 class DashboardScreen extends ConsumerWidget {
   const DashboardScreen({super.key});
 
@@ -30,229 +31,444 @@ class DashboardScreen extends ConsumerWidget {
       ref.invalidate(ticketListProvider(TicketScope.assignedToMe));
     }
 
-    return RefreshIndicator(
-      onRefresh: refresh,
-      child: ListView(
-        padding: const EdgeInsets.all(16),
-        children: [
-          // Greeting header (matches reference mobile dashboard)
-          Padding(
-            padding: const EdgeInsets.only(bottom: 20),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
+    return ColoredBox(
+      color: const Color(0xFFF4F6FB),
+      child: RefreshIndicator(
+        onRefresh: refresh,
+        child: ListView(
+          padding: const EdgeInsets.fromLTRB(16, 16, 16, 32),
+          children: [
+            Center(
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 1200),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            'Hai, ${user.fullName.split(' ').first}',
-                            style: Theme.of(context).textTheme.titleLarge
-                                ?.copyWith(fontWeight: FontWeight.w700),
-                          ),
-                          const SizedBox(height: 4),
-                          Text(
-                            'Selamat datang di ${AppConstants.appShortName}',
-                            style: TextStyle(
-                              color: AppTheme.muted,
-                              fontSize: 14,
+                    _HeroBanner(user: user),
+                    const SizedBox(height: 24),
+                    const _SectionTitle(
+                      'Support queue',
+                      icon: Icons.dashboard_customize_rounded,
+                    ),
+                    _StatsSection(
+                      scope: 'all',
+                      onTap: () => context.go('/queue'),
+                    ),
+                    const SizedBox(height: 24),
+                    LayoutBuilder(
+                      builder: (context, c) {
+                        const assigned = Column(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            _SectionTitle(
+                              'Assigned to me',
+                              icon: Icons.assignment_ind_rounded,
                             ),
+                            _AssignedToMe(),
+                          ],
+                        );
+                        const activity = Column(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            _SectionTitle(
+                              'Recent activity',
+                              icon: Icons.bolt_rounded,
+                            ),
+                            _RecentActivity(),
+                          ],
+                        );
+                        if (c.maxWidth < 860) {
+                          return const Column(
+                            crossAxisAlignment: CrossAxisAlignment.stretch,
+                            children: [
+                              assigned,
+                              SizedBox(height: 24),
+                              activity,
+                            ],
+                          );
+                        }
+                        return const Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Expanded(child: assigned),
+                            SizedBox(width: 20),
+                            Expanded(child: activity),
+                          ],
+                        );
+                      },
+                    ),
+                    const SizedBox(height: 24),
+                    const _SectionTitle(
+                      'My tickets',
+                      icon: Icons.confirmation_number_rounded,
+                    ),
+                    Consumer(
+                      builder: (context, ref, _) {
+                        final stats = ref.watch(ticketStatsProvider('mine'));
+                        return stats.when(
+                          loading: () =>
+                              const SizedBox(height: 130, child: LoadingView()),
+                          error: (e, _) => ErrorView(
+                            error: e,
+                            onRetry: () =>
+                                ref.invalidate(ticketStatsProvider('mine')),
                           ),
-                        ],
-                      ),
+                          data: (TicketStats s) => _StatGrid(
+                            children: [
+                              _StatCard(
+                                label: 'Tiket Saya',
+                                value: s.total,
+                                icon: Icons.confirmation_number,
+                                color: AppTheme.primary,
+                                onTap: () => context.go('/tickets'),
+                              ),
+                              _StatCard(
+                                label: 'Diproses',
+                                value: s.inProgress,
+                                icon: Icons.build_circle_outlined,
+                                color: AppTheme.getStatusColor('in_progress'),
+                                onTap: () => context.go('/tickets'),
+                              ),
+                              _StatCard(
+                                label: 'Open',
+                                value: s.open,
+                                icon: Icons.mark_email_unread_outlined,
+                                color: AppTheme.getStatusColor('open'),
+                                onTap: () => context.go('/tickets'),
+                              ),
+                              _StatCard(
+                                label: 'Selesai',
+                                value: s.resolved,
+                                icon: Icons.check_circle_outline,
+                                color: AppTheme.getStatusColor('resolved'),
+                                onTap: () => context.go('/tickets'),
+                              ),
+                            ],
+                          ),
+                        );
+                      },
                     ),
-                    Container(
-                      width: 48,
-                      height: 48,
-                      decoration: BoxDecoration(
-                        color: AppTheme.primary.withValues(alpha: 0.1),
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: const Icon(
-                        Icons.support_agent,
-                        color: AppTheme.primary,
-                        size: 24,
-                      ),
+                    const SizedBox(height: 24),
+                    const _SectionTitle(
+                      'Tiket Terbaru',
+                      icon: Icons.history_rounded,
                     ),
+                    const _RecentTickets(),
                   ],
                 ),
-              ],
+              ),
             ),
-          ),
-          // Quick action card
-          const _QuickActionCard(),
-          const SizedBox(height: 20),
-          // Stat cards grid (matches reference: Tiket Saya, Diproses, Menunggu, Selesai)
-          if (user.isStaff) ...[
-            const _SectionTitle('Support queue'),
-            _StatsSection(
-              scope: 'all',
-              onTap: () => context.go('/queue'),
-              staff: true,
-            ),
-            const SizedBox(height: 20),
-            const _SectionTitle('Assigned to me'),
-            const _AssignedToMe(),
-            const SizedBox(height: 20),
           ],
-          const _SectionTitle('My tickets'),
-          Consumer(
-            builder: (context, ref, _) {
-              final stats = ref.watch(ticketStatsProvider('mine'));
-              return stats.when(
-                loading: () =>
-                    const SizedBox(height: 130, child: LoadingView()),
-                error: (e, _) => ErrorView(
-                  error: e,
-                  onRetry: () => ref.invalidate(ticketStatsProvider('mine')),
-                ),
-                data: (TicketStats s) => _StatGrid(
-                  children: [
-                    _StatCard(
-                      label: 'Tiket Saya',
-                      value: s.total,
-                      icon: Icons.confirmation_number,
-                      color: AppTheme.primary,
-                      onTap: () => context.go('/tickets'),
+        ),
+      ),
+    );
+  }
+}
+
+/// Gradient welcome banner: time-aware greeting, role badge, today's date,
+/// the "needs attention" headline number and quick actions.
+class _HeroBanner extends ConsumerWidget {
+  const _HeroBanner({required this.user});
+  final UserModel user;
+
+  static String _greeting(int hour) => switch (hour) {
+    < 11 => 'Selamat pagi',
+    < 15 => 'Selamat siang',
+    < 18 => 'Selamat sore',
+    _ => 'Selamat malam',
+  };
+
+  static const _days = [
+    'Senin',
+    'Selasa',
+    'Rabu',
+    'Kamis',
+    'Jumat',
+    'Sabtu',
+    'Minggu',
+  ];
+  static const _months = [
+    'Januari',
+    'Februari',
+    'Maret',
+    'April',
+    'Mei',
+    'Juni',
+    'Juli',
+    'Agustus',
+    'September',
+    'Oktober',
+    'November',
+    'Desember',
+  ];
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final now = DateTime.now();
+    final stats = ref.watch(ticketStatsProvider('all')).valueOrNull;
+    final attention = stats == null ? null : stats.open + stats.inProgress;
+    final first = user.fullName.split(' ').first;
+
+    Widget action(String label, IconData icon, String path, {Key? key}) =>
+        Material(
+          color: Colors.white.withValues(alpha: 0.16),
+          borderRadius: BorderRadius.circular(12),
+          child: InkWell(
+            key: key,
+            borderRadius: BorderRadius.circular(12),
+            onTap: () => context.go(path),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(icon, color: Colors.white, size: 18),
+                  const SizedBox(width: 8),
+                  Text(
+                    label,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.w600,
+                      fontSize: 13,
                     ),
-                    _StatCard(
-                      label: 'Diproses',
-                      value: s.inProgress,
-                      icon: Icons.build_circle_outlined,
-                      color: AppTheme.getStatusColor('in_progress'),
-                      onTap: () => context.go('/tickets'),
-                    ),
-                    _StatCard(
-                      label: 'Open',
-                      value: s.open,
-                      icon: Icons.mark_email_unread_outlined,
-                      color: AppTheme.getStatusColor('open'),
-                      onTap: () => context.go('/tickets'),
-                    ),
-                    _StatCard(
-                      label: 'Selesai',
-                      value: s.resolved,
-                      icon: Icons.check_circle_outline,
-                      color: AppTheme.getStatusColor('resolved'),
-                      onTap: () => context.go('/tickets'),
-                    ),
-                  ],
-                ),
-              );
-            },
+                  ),
+                ],
+              ),
+            ),
           ),
-          const SizedBox(height: 20),
-          const _SectionTitle('Tiket Terbaru'),
-          const _RecentTickets(),
-          const SizedBox(height: 20),
-          const _SectionTitle('Recent activity'),
-          const _RecentActivity(),
+        );
+
+    final headline = Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+          decoration: BoxDecoration(
+            color: Colors.white.withValues(alpha: 0.18),
+            borderRadius: BorderRadius.circular(999),
+            border: Border.all(color: Colors.white.withValues(alpha: 0.3)),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                user.isSuperAdmin
+                    ? Icons.workspace_premium_rounded
+                    : user.isAdmin
+                    ? Icons.admin_panel_settings_rounded
+                    : Icons.support_agent_rounded,
+                size: 14,
+                color: Colors.white,
+              ),
+              const SizedBox(width: 6),
+              Text(
+                Fmt.role(user.role).toUpperCase(),
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 11,
+                  fontWeight: FontWeight.w800,
+                  letterSpacing: 0.8,
+                ),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 14),
+        Text(
+          '${_greeting(now.hour)}, $first 👋',
+          style: const TextStyle(
+            color: Colors.white,
+            fontSize: 26,
+            fontWeight: FontWeight.w800,
+            height: 1.2,
+          ),
+        ),
+        const SizedBox(height: 6),
+        Text(
+          '${_days[now.weekday - 1]}, ${now.day} ${_months[now.month - 1]} ${now.year}'
+          ' · ${AppConstants.appShortName}',
+          style: TextStyle(
+            color: Colors.white.withValues(alpha: 0.85),
+            fontSize: 13.5,
+          ),
+        ),
+        const SizedBox(height: 18),
+        Wrap(
+          spacing: 8,
+          runSpacing: 8,
+          children: [
+            action('Buat Tiket', Icons.add_rounded, '/tickets/new'),
+            action('Antrian', Icons.support_agent_rounded, '/queue'),
+            action('Ringkasan', Icons.insights_rounded, '/summary'),
+            if (user.isAdmin) ...[
+              action('Pengguna', Icons.group_rounded, '/admin/users'),
+              action('Backup & Data', Icons.backup_rounded, '/admin/data'),
+            ],
+          ],
+        ),
+      ],
+    );
+
+    final counter = Container(
+      width: 190,
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.14),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.25)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Icon(
+            Icons.local_fire_department_rounded,
+            color: Color(0xFFFDE68A),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            attention == null ? '–' : '$attention',
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: 40,
+              fontWeight: FontWeight.w800,
+              height: 1,
+            ),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            'tiket perlu ditangani',
+            style: TextStyle(color: Colors.white.withValues(alpha: 0.9)),
+          ),
+          if (stats != null && stats.unassigned > 0) ...[
+            const SizedBox(height: 8),
+            Text(
+              '${stats.unassigned} belum ditugaskan',
+              style: const TextStyle(
+                color: Color(0xFFFDE68A),
+                fontWeight: FontWeight.w700,
+                fontSize: 12.5,
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+
+    return Container(
+      clipBehavior: Clip.antiAlias,
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(24),
+        gradient: const LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [Color(0xFF312E81), Color(0xFF2563EB), Color(0xFF0EA5E9)],
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: const Color(0xFF2563EB).withValues(alpha: 0.35),
+            blurRadius: 30,
+            offset: const Offset(0, 14),
+          ),
+        ],
+      ),
+      child: Stack(
+        children: [
+          // Decorative glow circles
+          Positioned(
+            right: -60,
+            top: -80,
+            child: _Glow(size: 240, opacity: 0.12),
+          ),
+          Positioned(
+            left: -40,
+            bottom: -90,
+            child: _Glow(size: 200, opacity: 0.08),
+          ),
+          Padding(
+            padding: const EdgeInsets.all(24),
+            child: LayoutBuilder(
+              builder: (context, c) => c.maxWidth < 620
+                  ? Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [headline, const SizedBox(height: 18), counter],
+                    )
+                  : Row(
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: [
+                        Expanded(child: headline),
+                        const SizedBox(width: 20),
+                        counter,
+                      ],
+                    ),
+            ),
+          ),
         ],
       ),
     );
   }
 }
 
-/// Quick-create card. On narrow widths the CTA stacks below the text
-/// (the row variant needs ~270px of fixed width and overflows < 360px).
-class _QuickActionCard extends StatelessWidget {
-  const _QuickActionCard();
+class _Glow extends StatelessWidget {
+  const _Glow({required this.size, required this.opacity});
+  final double size;
+  final double opacity;
 
   @override
-  Widget build(BuildContext context) {
-    return LayoutBuilder(
-      builder: (context, c) {
-        final stacked = c.maxWidth < 460;
-        final info = Row(
-          children: [
-            Container(
-              width: 56,
-              height: 56,
-              decoration: BoxDecoration(
-                color: AppTheme.primary.withValues(alpha: 0.1),
-                borderRadius: BorderRadius.circular(14),
-              ),
-              child: const Icon(
-                Icons.add_circle_outline,
-                color: AppTheme.primary,
-                size: 28,
-              ),
-            ),
-            const SizedBox(width: 16),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Laporkan Masalah IT dengan Cepat!',
-                    style: Theme.of(context).textTheme.titleMedium
-                        ?.copyWith(fontWeight: FontWeight.w700),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    'Kami siap membantu Anda',
-                    style: TextStyle(color: AppTheme.muted, fontSize: 13),
-                  ),
-                ],
-              ),
-            ),
-          ],
-        );
-        final button = FilledButton(
-          onPressed: () => context.go('/tickets/new'),
-          child: const Text('Buat Tiket'),
-        );
-        return Card(
-          elevation: 0,
-          child: Padding(
-            padding: const EdgeInsets.all(20),
-            child: stacked
-                ? Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      info,
-                      const SizedBox(height: 12),
-                      button,
-                    ],
-                  )
-                : Row(
-                    children: [
-                      Expanded(child: info),
-                      const SizedBox(width: 12),
-                      button,
-                    ],
-                  ),
-          ),
-        );
-      },
-    );
-  }
-}
-
-class _SectionTitle extends StatelessWidget {
-  const _SectionTitle(this.text);
-  final String text;
-  @override
-  Widget build(BuildContext context) => Padding(
-    padding: const EdgeInsets.only(bottom: 12),
-    child: Semantics(
-      header: true,
-      child: Text(
-        text,
-        style: Theme.of(context).textTheme.titleMedium
-            ?.copyWith(fontWeight: FontWeight.bold),
+  Widget build(BuildContext context) => IgnorePointer(
+    child: Container(
+      width: size,
+      height: size,
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        color: Colors.white.withValues(alpha: opacity),
       ),
     ),
   );
 }
 
+class _SectionTitle extends StatelessWidget {
+  const _SectionTitle(this.text, {this.icon});
+  final String text;
+  final IconData? icon;
+  @override
+  Widget build(BuildContext context) => Padding(
+    padding: const EdgeInsets.only(bottom: 12),
+    child: Row(
+      children: [
+        if (icon != null) ...[
+          Container(
+            width: 30,
+            height: 30,
+            decoration: BoxDecoration(
+              gradient: const LinearGradient(
+                colors: [Color(0xFF4F46E5), Color(0xFF0EA5E9)],
+              ),
+              borderRadius: BorderRadius.circular(9),
+            ),
+            child: Icon(icon, size: 17, color: Colors.white),
+          ),
+          const SizedBox(width: 10),
+        ],
+        Expanded(
+          child: Semantics(
+            header: true,
+            child: Text(
+              text,
+              style: Theme.of(context).textTheme.titleMedium
+                  ?.copyWith(fontWeight: FontWeight.w800, color: AppTheme.ink),
+            ),
+          ),
+        ),
+      ],
+    ),
+  );
+}
+
+/// Queue KPIs: gradient-accent cards + the status distribution bar.
 class _StatsSection extends ConsumerWidget {
-  const _StatsSection({required this.scope, this.onTap, this.staff = false});
+  const _StatsSection({required this.scope, this.onTap});
   final String scope;
   final VoidCallback? onTap;
-  final bool staff;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -263,47 +479,297 @@ class _StatsSection extends ConsumerWidget {
         error: e,
         onRetry: () => ref.invalidate(ticketStatsProvider(scope)),
       ),
-      data: (TicketStats s) => Column(
-        children: [
-          if (staff)
-            _StatCard(
-              label: 'Unassigned',
-              value: s.unassigned,
-              icon: Icons.inbox,
-              color: Colors.red[600]!,
-              onTap: onTap,
-            ),
-          const SizedBox(height: 12),
-          _StatCard(
+      data: (TicketStats s) {
+        final total = s.total == 0 ? 1 : s.total;
+        final cards = [
+          _KpiCard(
+            label: 'Unassigned',
+            caption: 'Belum ditugaskan',
+            value: s.unassigned,
+            share: s.unassigned / total,
+            icon: Icons.inbox_rounded,
+            colors: const [Color(0xFFF43F5E), Color(0xFFF97316)],
+            onTap: onTap,
+          ),
+          _KpiCard(
             label: 'Total tickets',
+            caption: 'Semua tiket',
             value: s.total,
-            icon: Icons.confirmation_number,
-            color: AppTheme.primary,
+            share: 1,
+            icon: Icons.confirmation_number_rounded,
+            colors: const [Color(0xFF4F46E5), Color(0xFF2563EB)],
             onTap: onTap,
           ),
-          const SizedBox(height: 12),
-          _StatCard(
+          _KpiCard(
             label: 'Open',
+            caption: 'Menunggu',
             value: s.open,
-            icon: Icons.mark_email_unread_outlined,
-            color: AppTheme.getStatusColor('open'),
+            share: s.open / total,
+            icon: Icons.mark_email_unread_rounded,
+            colors: const [Color(0xFF2563EB), Color(0xFF06B6D4)],
             onTap: onTap,
           ),
-          const SizedBox(height: 12),
-          _StatCard(
+          _KpiCard(
             label: 'In progress',
+            caption: 'Sedang diproses',
             value: s.inProgress,
-            icon: Icons.build_circle_outlined,
-            color: AppTheme.getStatusColor('in_progress'),
+            share: s.inProgress / total,
+            icon: Icons.build_circle_rounded,
+            colors: const [Color(0xFFF59E0B), Color(0xFFEAB308)],
             onTap: onTap,
           ),
-          const SizedBox(height: 12),
-          _StatCard(
+          _KpiCard(
             label: 'Resolved',
+            caption: 'Selesai',
             value: s.resolved,
-            icon: Icons.check_circle_outline,
-            color: AppTheme.getStatusColor('resolved'),
+            share: s.resolved / total,
+            icon: Icons.verified_rounded,
+            colors: const [Color(0xFF10B981), Color(0xFF14B8A6)],
             onTap: onTap,
+          ),
+        ];
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            LayoutBuilder(
+              builder: (context, c) {
+                final cols = c.maxWidth >= 1000
+                    ? 5
+                    : c.maxWidth >= 640
+                    ? 3
+                    : 2;
+                const gap = 14.0;
+                final w = (c.maxWidth - gap * (cols - 1)) / cols;
+                return Wrap(
+                  spacing: gap,
+                  runSpacing: gap,
+                  children: [
+                    for (final k in cards) SizedBox(width: w, child: k),
+                  ],
+                );
+              },
+            ),
+            const SizedBox(height: 14),
+            _StatusBar(stats: s),
+          ],
+        );
+      },
+    );
+  }
+}
+
+class _KpiCard extends StatelessWidget {
+  const _KpiCard({
+    required this.label,
+    required this.caption,
+    required this.value,
+    required this.share,
+    required this.icon,
+    required this.colors,
+    this.onTap,
+  });
+  final String label;
+  final String caption;
+  final int value;
+  final double share;
+  final IconData icon;
+  final List<Color> colors;
+  final VoidCallback? onTap;
+
+  @override
+  Widget build(BuildContext context) => Container(
+    decoration: BoxDecoration(
+      color: Colors.white,
+      borderRadius: BorderRadius.circular(20),
+      border: Border.all(color: const Color(0xFFE8ECF4)),
+      boxShadow: [
+        BoxShadow(
+          color: colors.first.withValues(alpha: 0.10),
+          blurRadius: 18,
+          offset: const Offset(0, 8),
+        ),
+      ],
+    ),
+    child: Material(
+      color: Colors.transparent,
+      child: InkWell(
+        borderRadius: BorderRadius.circular(20),
+        onTap: onTap,
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Container(
+                    width: 42,
+                    height: 42,
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                        colors: colors,
+                      ),
+                      borderRadius: BorderRadius.circular(13),
+                      boxShadow: [
+                        BoxShadow(
+                          color: colors.first.withValues(alpha: 0.35),
+                          blurRadius: 10,
+                          offset: const Offset(0, 4),
+                        ),
+                      ],
+                    ),
+                    child: Icon(icon, color: Colors.white, size: 22),
+                  ),
+                  const Spacer(),
+                  Text(
+                    '$value',
+                    style: const TextStyle(
+                      fontSize: 28,
+                      fontWeight: FontWeight.w800,
+                      color: AppTheme.ink,
+                      height: 1,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 14),
+              Text(
+                label,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(
+                  fontWeight: FontWeight.w700,
+                  color: AppTheme.ink,
+                ),
+              ),
+              Text(
+                caption,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(fontSize: 12, color: AppTheme.muted),
+              ),
+              const SizedBox(height: 10),
+              ClipRRect(
+                borderRadius: BorderRadius.circular(999),
+                child: Stack(
+                  children: [
+                    Container(height: 6, color: const Color(0xFFEFF2F8)),
+                    FractionallySizedBox(
+                      widthFactor: share.clamp(0, 1).toDouble(),
+                      child: Container(
+                        height: 6,
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(colors: colors),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    ),
+  );
+}
+
+/// Part-to-whole of the ticket states: one stacked bar (2px gaps, rounded
+/// ends) with a legend that carries name + count, so state is never
+/// identified by color alone. Each segment has a tooltip.
+class _StatusBar extends StatelessWidget {
+  const _StatusBar({required this.stats});
+  final TicketStats stats;
+
+  @override
+  Widget build(BuildContext context) {
+    final parts = [
+      ('Open', stats.open, AppTheme.getStatusColor('open')),
+      ('In progress', stats.inProgress, AppTheme.getStatusColor('in_progress')),
+      ('Resolved', stats.resolved, AppTheme.getStatusColor('resolved')),
+      ('Closed', stats.closed, AppTheme.getStatusColor('closed')),
+    ];
+    final sum = parts.fold<int>(0, (a, p) => a + p.$2);
+    return Container(
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: const Color(0xFFE8ECF4)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'Distribusi status tiket',
+            style: TextStyle(fontWeight: FontWeight.w700, color: AppTheme.ink),
+          ),
+          const SizedBox(height: 12),
+          ClipRRect(
+            borderRadius: BorderRadius.circular(4),
+            child: SizedBox(
+              height: 14,
+              child: sum == 0
+                  ? Container(color: const Color(0xFFEFF2F8))
+                  : Row(
+                      children: [
+                        for (final (i, p) in parts.indexed)
+                          if (p.$2 > 0)
+                            Expanded(
+                              flex: p.$2,
+                              child: Tooltip(
+                                message:
+                                    '${p.$1}: ${p.$2} (${(p.$2 * 100 / sum).round()}%)',
+                                child: Container(
+                                  margin: EdgeInsets.only(
+                                    right: i == parts.length - 1 ? 0 : 2,
+                                  ),
+                                  color: p.$3,
+                                ),
+                              ),
+                            ),
+                      ],
+                    ),
+            ),
+          ),
+          const SizedBox(height: 12),
+          Wrap(
+            spacing: 18,
+            runSpacing: 8,
+            children: [
+              for (final p in parts)
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Container(
+                      width: 10,
+                      height: 10,
+                      decoration: BoxDecoration(
+                        color: p.$3,
+                        borderRadius: BorderRadius.circular(3),
+                      ),
+                    ),
+                    const SizedBox(width: 6),
+                    Text(
+                      '${p.$1} ',
+                      style: const TextStyle(
+                        fontSize: 12.5,
+                        color: AppTheme.muted,
+                      ),
+                    ),
+                    Text(
+                      '${p.$2}',
+                      style: const TextStyle(
+                        fontSize: 12.5,
+                        fontWeight: FontWeight.w700,
+                        color: AppTheme.ink,
+                      ),
+                    ),
+                  ],
+                ),
+            ],
           ),
         ],
       ),
@@ -427,46 +893,97 @@ class _RecentActivity extends ConsumerWidget {
       ),
       data: (items) {
         if (items.isEmpty) {
-          return Card(
-            elevation: 0,
-            child: Padding(
-              padding: const EdgeInsets.all(20),
-              child: EmptyView(
-                icon: Icons.history,
-                title: 'No activity yet',
-                message: 'Updates on your tickets will appear here.',
-              ),
+          return const _SoftCard(
+            child: EmptyView(
+              icon: Icons.history,
+              title: 'No activity yet',
+              message: 'Updates on your tickets will appear here.',
             ),
           );
         }
-        return Card(
-          elevation: 0,
+        return _SoftCard(
+          padding: const EdgeInsets.symmetric(vertical: 8),
           child: Column(
             children: [
-              for (final a in items)
-                ListTile(
-                  contentPadding: const EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 4,
-                  ),
-                  leading: Icon(
-                    activityIcon(a.action),
-                    color: activityColor(a.action),
-                  ),
-                  title: Text(
-                    '${a.ticketNumber ?? ''} ${describeActivity(a)}'.trim(),
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  subtitle: Text(
-                    [
-                      if (a.ticketSubject != null) a.ticketSubject!,
-                      Fmt.relative(a.createdAt),
-                    ].join(' â€¢ '),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
+              for (final (i, a) in items.indexed)
+                InkWell(
                   onTap: () => context.push('/tickets/${a.ticketId}'),
+                  child: Padding(
+                    padding: const EdgeInsets.fromLTRB(16, 6, 16, 6),
+                    child: IntrinsicHeight(
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          // timeline rail
+                          SizedBox(
+                            width: 34,
+                            child: Column(
+                              children: [
+                                Container(
+                                  width: 30,
+                                  height: 30,
+                                  decoration: BoxDecoration(
+                                    color: activityColor(a.action)
+                                        .withValues(alpha: 0.12),
+                                    shape: BoxShape.circle,
+                                  ),
+                                  child: Icon(
+                                    activityIcon(a.action),
+                                    size: 16,
+                                    color: activityColor(a.action),
+                                  ),
+                                ),
+                                if (i < items.length - 1)
+                                  Expanded(
+                                    child: Container(
+                                      width: 2,
+                                      margin: const EdgeInsets.only(top: 4),
+                                      color: const Color(0xFFE8ECF4),
+                                    ),
+                                  ),
+                              ],
+                            ),
+                          ),
+                          const SizedBox(width: 10),
+                          Expanded(
+                            child: Padding(
+                              padding: const EdgeInsets.only(bottom: 10),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    '${a.ticketNumber ?? ''} ${describeActivity(a)}'
+                                        .trim(),
+                                    maxLines: 2,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: const TextStyle(
+                                      fontWeight: FontWeight.w600,
+                                      color: AppTheme.ink,
+                                      fontSize: 13.5,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 2),
+                                  Text(
+                                    [
+                                      if (a.ticketSubject != null)
+                                        a.ticketSubject!,
+                                      Fmt.relative(a.createdAt),
+                                    ].join(' • '),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: const TextStyle(
+                                      color: AppTheme.muted,
+                                      fontSize: 12.5,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
                 ),
             ],
           ),
@@ -474,6 +991,27 @@ class _RecentActivity extends ConsumerWidget {
       },
     );
   }
+}
+
+/// White rounded card with a soft border, used across the staff dashboard.
+class _SoftCard extends StatelessWidget {
+  const _SoftCard({
+    required this.child,
+    this.padding = const EdgeInsets.all(20),
+  });
+  final Widget child;
+  final EdgeInsetsGeometry padding;
+
+  @override
+  Widget build(BuildContext context) => Container(
+    padding: padding,
+    decoration: BoxDecoration(
+      color: Colors.white,
+      borderRadius: BorderRadius.circular(20),
+      border: Border.all(color: const Color(0xFFE8ECF4)),
+    ),
+    child: child,
+  );
 }
 
 IconData activityIcon(String action) => switch (action) {
@@ -506,11 +1044,10 @@ String describeActivity(ActivityModel a) {
     ActivityModel.actionReopened => 'reopened by $who',
     ActivityModel.actionClosed => 'closed by $who',
     ActivityModel.actionPriorityChanged =>
-      'priority ${Fmt.priority(a.oldValue)} â†’ ${Fmt.priority(a.newValue)} by $who',
+      'priority ${Fmt.priority(a.oldValue)} → ${Fmt.priority(a.newValue)} by $who',
     ActivityModel.actionCategoryChanged =>
-      'category ${a.oldValue} â†’ ${a.newValue} by $who',
-    _ =>
-      'status ${Fmt.status(a.oldValue)} â†’ ${Fmt.status(a.newValue)} by $who',
+      'category ${a.oldValue} → ${a.newValue} by $who',
+    _ => 'status ${Fmt.status(a.oldValue)} → ${Fmt.status(a.newValue)} by $who',
   };
 }
 

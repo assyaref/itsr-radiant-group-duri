@@ -20,10 +20,10 @@ class AttachmentsNotifier
   }
 }
 
-final attachmentsProvider =
-    AsyncNotifierProvider.autoDispose.family<AttachmentsNotifier, List<AttachmentModel>, String>(
-  AttachmentsNotifier.new,
-);
+final attachmentsProvider = AsyncNotifierProvider.autoDispose
+    .family<AttachmentsNotifier, List<AttachmentModel>, String>(
+      AttachmentsNotifier.new,
+    );
 
 class AttachmentActions {
   AttachmentActions(this._ref);
@@ -36,7 +36,9 @@ class AttachmentActions {
     required Uint8List bytes,
     required String uploadedBy,
   }) async {
-    final result = await _ref.read(attachmentRepositoryProvider).uploadAttachment(
+    final result = await _ref
+        .read(attachmentRepositoryProvider)
+        .uploadAttachment(
           ticketId: ticketId,
           fileName: fileName,
           mimeType: mimeType,
@@ -51,4 +53,6 @@ class AttachmentActions {
       _ref.read(attachmentRepositoryProvider).downloadAttachment(attachmentId);
 }
 
-final attachmentActionsProvider = Provider<AttachmentActions>((ref) => AttachmentActions(ref));
+final attachmentActionsProvider = Provider<AttachmentActions>(
+  (ref) => AttachmentActions(ref),
+);

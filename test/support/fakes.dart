@@ -314,6 +314,24 @@ class FakeAdminRepository implements AdminRepository {
     calls.add('purge:$confirmPhrase');
     return {'tickets': 0, 'comments': 0, 'attachments': 0};
   }
+
+  @override
+  Future<Map<String, dynamic>> restoreBackup(
+    Map<String, dynamic> backup, {
+    required String mode,
+    required String confirmPhrase,
+  }) async {
+    calls.add('restore:$mode:$confirmPhrase');
+    return {
+      'mode': mode,
+      'tickets': 1,
+      'comments': 0,
+      'activity': 0,
+      'attachments': 0,
+      'categories': 0,
+      'skipped_tickets': 0,
+    };
+  }
 }
 
 /// Pumps [child] inside a ProviderScope wired to fakes, at a given screen size.

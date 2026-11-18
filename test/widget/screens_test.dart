@@ -389,9 +389,7 @@ void main() {
       expect(find.text('Unassigned'), findsOneWidget);
     });
 
-    testWidgets('desktop uses a fixed sidebar; phone uses a drawer', (
-      t,
-    ) async {
+    testWidgets('desktop uses a fixed sidebar; phone uses a drawer', (t) async {
       final auth = FakeAuthRepository(profile: user('adm', 'administrator'));
       await pumpApp(
         t,

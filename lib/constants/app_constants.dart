@@ -33,7 +33,9 @@ class AppConstants {
     final parts = key.split('.');
     if (parts.length != 3) return null;
     try {
-      final payload = utf8.decode(base64Url.decode(base64Url.normalize(parts[1])));
+      final payload = utf8.decode(
+        base64Url.decode(base64Url.normalize(parts[1])),
+      );
       final role = (jsonDecode(payload) as Map<String, dynamic>)['role'];
       return role is String ? role : null;
     } catch (_) {
@@ -90,7 +92,12 @@ class AppConstants {
   /// are shown).
   static const Map<String, List<String>> staffTransitions = {
     statusOpen: [statusInProgress, statusClosed],
-    statusAssigned: [statusInProgress, statusPendingUser, statusResolved, statusOpen],
+    statusAssigned: [
+      statusInProgress,
+      statusPendingUser,
+      statusResolved,
+      statusOpen,
+    ],
     statusInProgress: [statusPendingUser, statusResolved],
     statusPendingUser: [statusInProgress, statusResolved],
     statusResolved: [statusClosed, statusReopened],

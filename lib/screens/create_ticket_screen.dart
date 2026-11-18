@@ -26,6 +26,9 @@ class CreateTicketScreen extends ConsumerStatefulWidget {
 }
 
 class _CreateTicketScreenState extends ConsumerState<CreateTicketScreen> {
+  /// Lets the form-section widgets rebuild this screen's state.
+  void update(VoidCallback fn) => setState(fn);
+
   final _formKey = GlobalKey<FormState>();
   final _subject = TextEditingController();
   final _description = TextEditingController();
@@ -49,10 +52,7 @@ class _CreateTicketScreenState extends ConsumerState<CreateTicketScreen> {
 
   Future<void> _pickFiles() async {
     setState(() => _pickError = null);
-    final files = await pickFiles(
-      accept: kAttachmentAccept,
-      multiple: true,
-    );
+    final files = await pickFiles(accept: kAttachmentAccept, multiple: true);
     if (files.isEmpty) return;
     final added = <PickedFile>[];
     for (final f in files) {
@@ -62,7 +62,9 @@ class _CreateTicketScreenState extends ConsumerState<CreateTicketScreen> {
         return;
       }
       if (f.size > kMaxAttachmentSize) {
-        setState(() => _pickError = 'File terlalu besar (maks 10 MB): ${f.name}');
+        setState(
+          () => _pickError = 'File terlalu besar (maks 10 MB): ${f.name}',
+        );
         return;
       }
       added.add(f);
@@ -91,7 +93,9 @@ class _CreateTicketScreenState extends ConsumerState<CreateTicketScreen> {
       // the provider, so it may not be built yet on a deep link into the form.
       final user = await ref.read(currentUserProvider.future);
       if (user == null) throw StateError('Not signed in');
-      final id = await ref.read(ticketActionsProvider).createTicket(
+      final id = await ref
+          .read(ticketActionsProvider)
+          .createTicket(
             subject: _subject.text,
             description: _description.text,
             category: _category!,
@@ -99,7 +103,9 @@ class _CreateTicketScreenState extends ConsumerState<CreateTicketScreen> {
           );
       // Upload attachments (optional) after the ticket exists.
       for (final f in _picked) {
-        await ref.read(attachmentActionsProvider).uploadAttachment(
+        await ref
+            .read(attachmentActionsProvider)
+            .uploadAttachment(
               ticketId: id,
               fileName: f.name,
               mimeType: f.mimeType,
@@ -153,10 +159,7 @@ class _CreateTicketScreenState extends ConsumerState<CreateTicketScreen> {
         }
         return Scaffold(
           backgroundColor: EColors.page,
-          appBar: EHeader(
-            title: 'Buat Tiket',
-            onBack: () => context.pop(),
-          ),
+          appBar: EHeader(title: 'Buat Tiket', onBack: () => context.pop()),
           body: Column(
             children: [
               _Stepper(step: _step),
@@ -229,7 +232,11 @@ class _Stepper extends StatelessWidget {
 }
 
 class _Circle extends StatelessWidget {
-  const _Circle({super.key, required this.number, required this.label, required this.state});
+  const _Circle({
+    required this.number,
+    required this.label,
+    required this.state,
+  });
   final int number;
   final String label;
   final int state;
@@ -279,7 +286,7 @@ class _Circle extends StatelessWidget {
 }
 
 class _Line extends StatelessWidget {
-  const _Line({super.key, required this.done});
+  const _Line({required this.done});
   final bool done;
 
   @override
@@ -330,7 +337,10 @@ class _DetailForm extends StatelessWidget {
           initialValue: screen._category,
           isExpanded: true,
           decoration: eInput().copyWith(
-            prefixIcon: const Icon(Icons.category_outlined, color: EColors.muted),
+            prefixIcon: const Icon(
+              Icons.category_outlined,
+              color: EColors.muted,
+            ),
           ),
           items: [
             for (final cat in cats)
@@ -338,7 +348,7 @@ class _DetailForm extends StatelessWidget {
           ],
           onChanged: screen._busy
               ? null
-              : (v) => screen.setState(() => screen._category = v),
+              : (v) => screen.update(() => screen._category = v),
           validator: (v) => v == null ? 'Pilih kategori masalah' : null,
         ),
         const SizedBox(height: 16),
@@ -356,7 +366,7 @@ class _DetailForm extends StatelessWidget {
           ],
           onChanged: screen._busy
               ? null
-              : (v) => screen.setState(() => screen._priority = v!),
+              : (v) => screen.update(() => screen._priority = v!),
         ),
         const SizedBox(height: 16),
         const FieldLabel('Deskripsi Masalah', required: true),
@@ -449,7 +459,10 @@ class _AttachmentStepState extends ConsumerState<_AttachmentStep> {
                   const SizedBox(height: 12),
                   const Text(
                     'Ketuk untuk upload foto atau file',
-                    style: TextStyle(fontWeight: FontWeight.w600, color: EColors.ink),
+                    style: TextStyle(
+                      fontWeight: FontWeight.w600,
+                      color: EColors.ink,
+                    ),
                   ),
                   const SizedBox(height: 6),
                   Text(
@@ -469,10 +482,8 @@ class _AttachmentStepState extends ConsumerState<_AttachmentStep> {
               scrollDirection: Axis.horizontal,
               itemCount: picked.length,
               separatorBuilder: (_, _) => const SizedBox(width: 10),
-              itemBuilder: (_, i) => _Thumb(
-                file: picked[i],
-                onRemove: () => screen._removeAt(i),
-              ),
+              itemBuilder: (_, i) =>
+                  _Thumb(file: picked[i], onRemove: () => screen._removeAt(i)),
             ),
           ),
         ],
@@ -492,7 +503,10 @@ class _AttachmentStepState extends ConsumerState<_AttachmentStep> {
                 Expanded(
                   child: Text(
                     screen._pickError!,
-                    style: const TextStyle(color: Color(0xFF991B1B), fontSize: 13),
+                    style: const TextStyle(
+                      color: Color(0xFF991B1B),
+                      fontSize: 13,
+                    ),
                   ),
                 ),
               ],
@@ -525,7 +539,7 @@ class _AttachmentStepState extends ConsumerState<_AttachmentStep> {
 }
 
 class _Thumb extends StatelessWidget {
-  const _Thumb({super.key, required this.file, required this.onRemove});
+  const _Thumb({required this.file, required this.onRemove});
   final PickedFile file;
   final VoidCallback onRemove;
 
@@ -548,7 +562,11 @@ class _Thumb extends StatelessWidget {
               : Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    const Icon(Icons.insert_drive_file, color: EColors.muted, size: 24),
+                    const Icon(
+                      Icons.insert_drive_file,
+                      color: EColors.muted,
+                      size: 24,
+                    ),
                     const SizedBox(height: 4),
                     Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 6),
@@ -556,7 +574,10 @@ class _Thumb extends StatelessWidget {
                         file.name,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(fontSize: 9, color: EColors.muted),
+                        style: const TextStyle(
+                          fontSize: 9,
+                          color: EColors.muted,
+                        ),
                       ),
                     ),
                   ],
@@ -588,7 +609,6 @@ class _Thumb extends StatelessWidget {
 // ---------------------------------------------------------------------------
 class _ReviewStep extends StatelessWidget {
   const _ReviewStep({
-    super.key,
     required this.subject,
     required this.category,
     required this.priority,
@@ -636,7 +656,9 @@ class _ReviewStep extends StatelessWidget {
               const SizedBox(height: 10),
               _Row(
                 label: 'Lampiran',
-                value: attachments.isEmpty ? 'Tidak ada' : '${attachments.length} file',
+                value: attachments.isEmpty
+                    ? 'Tidak ada'
+                    : '${attachments.length} file',
               ),
             ],
           ),
@@ -652,7 +674,7 @@ class _ReviewStep extends StatelessWidget {
 }
 
 class _Row extends StatelessWidget {
-  const _Row({super.key, required this.label, required this.value});
+  const _Row({required this.label, required this.value});
   final String label;
   final String value;
 
@@ -662,7 +684,10 @@ class _Row extends StatelessWidget {
     children: [
       SizedBox(
         width: 90,
-        child: Text(label, style: const TextStyle(color: EColors.muted, fontSize: 13)),
+        child: Text(
+          label,
+          style: const TextStyle(color: EColors.muted, fontSize: 13),
+        ),
       ),
       Expanded(
         child: Text(
@@ -679,7 +704,6 @@ class _Row extends StatelessWidget {
 // ---------------------------------------------------------------------------
 class _Footer extends StatelessWidget {
   const _Footer({
-    super.key,
     required this.step,
     required this.busy,
     required this.onBack,
@@ -706,7 +730,9 @@ class _Footer extends StatelessWidget {
         const SizedBox(width: 12),
         Expanded(
           child: EPrimaryButton(
-            key: Key(last ? 'submit_ticket_button' : 'continue_ticket_details_button'),
+            key: Key(
+              last ? 'submit_ticket_button' : 'continue_ticket_details_button',
+            ),
             label: last ? 'Kirim Tiket' : 'Lanjutkan',
             busy: busy,
             icon: last ? Icons.send_rounded : Icons.arrow_forward,

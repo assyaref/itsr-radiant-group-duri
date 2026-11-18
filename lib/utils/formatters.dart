@@ -41,17 +41,18 @@ class Fmt {
 
   /// Indonesian status labels for the employee-facing design.
   static String statusId(String? s) => switch (s) {
-        'open' => 'Menunggu',
-        'assigned' => 'Ditugaskan',
-        'in_progress' => 'Diproses',
-        'pending_user' => 'Menunggu Anda',
-        'resolved' => 'Selesai',
-        'closed' => 'Ditutup',
-        'reopened' => 'Dibuka Ulang',
-        _ => status(s),
-      };
+    'open' => 'Menunggu',
+    'assigned' => 'Ditugaskan',
+    'in_progress' => 'Diproses',
+    'pending_user' => 'Menunggu Anda',
+    'resolved' => 'Selesai',
+    'closed' => 'Ditutup',
+    'reopened' => 'Dibuka Ulang',
+    _ => status(s),
+  };
 
   static String role(String? r) => _role[r] ?? (r ?? 'Unknown');
-  static String priority(String? p) =>
-      (p == null || p.isEmpty) ? 'Unknown' : p[0].toUpperCase() + p.substring(1);
+  static String priority(String? p) => (p == null || p.isEmpty)
+      ? 'Unknown'
+      : p[0].toUpperCase() + p.substring(1);
 }

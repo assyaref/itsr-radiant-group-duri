@@ -49,10 +49,7 @@ class SupabaseSmtpRepository implements SmtpRepository {
 
   @override
   Future<void> saveSmtpConfig(SmtpConfigInput config) async {
-    await _invoke({
-      'action': 'save',
-      ...config.toJson(),
-    });
+    await _invoke({'action': 'save', ...config.toJson()});
   }
 
   @override

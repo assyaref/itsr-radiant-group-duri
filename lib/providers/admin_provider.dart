@@ -11,7 +11,9 @@ final usersProvider = FutureProvider.autoDispose<List<UserModel>>(
 );
 
 final allCategoriesProvider = FutureProvider.autoDispose<List<CategoryModel>>(
-  (ref) => ref.watch(ticketRepositoryProvider).fetchCategories(includeInactive: true),
+  (ref) => ref
+      .watch(ticketRepositoryProvider)
+      .fetchCategories(includeInactive: true),
 );
 
 final appSettingsProvider = FutureProvider.autoDispose<AppSettingsModel>(
@@ -31,7 +33,9 @@ class AdminActions {
     String? phoneNumber,
     required String password,
   }) async {
-    await _ref.read(adminRepositoryProvider).createUser(
+    await _ref
+        .read(adminRepositoryProvider)
+        .createUser(
           employeeNumber: employeeNumber,
           fullName: fullName,
           email: email,
@@ -55,18 +59,39 @@ class AdminActions {
       _ref.read(adminRepositoryProvider).exportBackup();
 
   Future<Map<String, dynamic>> purgeTickets(String confirmPhrase) async {
-    final res =
-        await _ref.read(adminRepositoryProvider).purgeTickets(confirmPhrase);
+    final res = await _ref
+        .read(adminRepositoryProvider)
+        .purgeTickets(confirmPhrase);
     // Every ticket list / stat / detail is now stale.
     _ref.read(ticketActionsProvider).refreshAll();
+    return res;
+  }
+
+  Future<Map<String, dynamic>> restoreBackup(
+    Map<String, dynamic> backup, {
+    required String mode,
+    required String confirmPhrase,
+  }) async {
+    final res = await _ref
+        .read(adminRepositoryProvider)
+        .restoreBackup(backup, mode: mode, confirmPhrase: confirmPhrase);
+    _ref.read(ticketActionsProvider).refreshAll();
+    _ref.invalidate(allCategoriesProvider);
+    _ref.invalidate(categoriesProvider);
     return res;
   }
 
   Future<void> resetPassword(String userId, String password) =>
       _ref.read(adminRepositoryProvider).resetPassword(userId, password);
 
-  Future<void> createCategory(String name, String? description, int sortOrder) async {
-    await _ref.read(adminRepositoryProvider).createCategory(name, description, sortOrder);
+  Future<void> createCategory(
+    String name,
+    String? description,
+    int sortOrder,
+  ) async {
+    await _ref
+        .read(adminRepositoryProvider)
+        .createCategory(name, description, sortOrder);
     _ref.invalidate(allCategoriesProvider);
     _ref.invalidate(categoriesProvider);
   }
@@ -83,7 +108,9 @@ class AdminActions {
     required bool notificationsEnabled,
     String? appBaseUrl,
   }) async {
-    await _ref.read(adminRepositoryProvider).updateSettings(
+    await _ref
+        .read(adminRepositoryProvider)
+        .updateSettings(
           itSupportGroupEmail: itSupportGroupEmail,
           managerEmail: managerEmail,
           notificationsEnabled: notificationsEnabled,

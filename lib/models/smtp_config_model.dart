@@ -79,12 +79,12 @@ class SmtpConfigInput {
   });
 
   Map<String, dynamic> toJson() => {
-        'host': host,
-        'port': port,
-        'secure': secure,
-        'username': username,
-        'password': password,
-        'sender_name': senderName,
-        'sender_email': senderEmail,
-      };
+    'host': host,
+    'port': port,
+    'secure': secure,
+    'username': username,
+    'password': password,
+    'sender_name': senderName,
+    'sender_email': senderEmail,
+  };
 }

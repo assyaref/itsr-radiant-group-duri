@@ -23,13 +23,13 @@ class TicketStats {
   static int _n(Object? v) => v is num ? v.toInt() : int.tryParse('$v') ?? 0;
 
   factory TicketStats.fromJson(Map<String, dynamic> j) => TicketStats(
-        total: _n(j['total']),
-        open: _n(j['open']),
-        inProgress: _n(j['in_progress']),
-        resolved: _n(j['resolved']),
-        closed: _n(j['closed']),
-        unassigned: _n(j['unassigned']),
-      );
+    total: _n(j['total']),
+    open: _n(j['open']),
+    inProgress: _n(j['in_progress']),
+    resolved: _n(j['resolved']),
+    closed: _n(j['closed']),
+    unassigned: _n(j['unassigned']),
+  );
 }
 
 /// Everything the ticket detail screen shows, loaded under the caller's RLS.
@@ -60,9 +60,9 @@ class StaffMember {
   });
 
   factory StaffMember.fromJson(Map<String, dynamic> j) => StaffMember(
-        id: j['id'] as String,
-        fullName: j['full_name'] as String,
-        employeeNumber: j['employee_number'] as String,
-        role: j['role'] as String,
-      );
+    id: j['id'] as String,
+    fullName: j['full_name'] as String,
+    employeeNumber: j['employee_number'] as String,
+    role: j['role'] as String,
+  );
 }

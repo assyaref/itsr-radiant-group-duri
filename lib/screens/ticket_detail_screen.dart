@@ -17,8 +17,7 @@ import '../providers/tickets_provider.dart';
 import '../utils/browser_files.dart' show downloadBytes;
 import '../utils/error_messages.dart';
 import '../utils/formatters.dart';
-import '../utils/file_picker_web.dart'
-    if (dart.library.io) '../utils/file_picker_stub.dart';
+import '../utils/file_picker.dart';
 import '../widgets/common.dart';
 import '../widgets/employee_ui.dart';
 

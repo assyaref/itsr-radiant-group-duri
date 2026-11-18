@@ -94,12 +94,18 @@ class SupabaseAuthRepository implements AuthRepository {
   Future<void> signOut() => _client.auth.signOut();
 
   @override
-  Future<void> changePassword(String currentPassword, String newPassword) async {
-    await _client.functions.invoke('account', body: {
-      'action': 'change_password',
-      'current_password': currentPassword,
-      'new_password': newPassword,
-    });
+  Future<void> changePassword(
+    String currentPassword,
+    String newPassword,
+  ) async {
+    await _client.functions.invoke(
+      'account',
+      body: {
+        'action': 'change_password',
+        'current_password': currentPassword,
+        'new_password': newPassword,
+      },
+    );
   }
 
   @override

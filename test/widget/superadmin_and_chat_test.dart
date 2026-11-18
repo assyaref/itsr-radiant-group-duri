@@ -4,6 +4,12 @@ import 'package:itsr_radiant/constants/app_constants.dart';
 import 'package:itsr_radiant/models/comment_model.dart';
 import 'package:itsr_radiant/screens/admin/data_management_screen.dart';
 import 'package:itsr_radiant/screens/admin/users_screen.dart';
+import 'package:itsr_radiant/utils/browser_files.dart';
+import 'package:itsr_radiant/utils/user_import.dart';
+
+import 'dart:convert';
+import 'dart:typed_data';
+
 import 'package:itsr_radiant/screens/ticket_detail_screen.dart';
 
 import '../support/fakes.dart';
@@ -167,6 +173,87 @@ void main() {
       );
       expect(find.byIcon(Icons.lock_outline), findsOneWidget);
       expect(find.byType(PopupMenuButton<String>), findsOneWidget);
+    });
+  });
+
+  group('import & restore', () {
+    tearDown(() => debugPickedFiles = null);
+
+    testWidgets('import users from CSV', (t) async {
+      final admin = FakeAdminRepository()
+        ..users = [user('ad1', 'administrator')];
+      await pumpApp(
+        t,
+        const UsersScreen(),
+        auth: FakeAuthRepository(profile: user('ad1', 'administrator')),
+        admin: admin,
+      );
+      await t.tap(find.byKey(const Key('user_template_button')));
+      await t.pumpAndSettle();
+      expect(debugDownloads, contains('template-import-user-itsr.csv'));
+
+      debugPickedFiles = [
+        PickedFile(
+          name: 'u.csv',
+          mimeType: 'text/csv',
+          bytes: Uint8List.fromList(
+            utf8.encode(
+              [
+                'NIK;Nama Lengkap;Email;Departemen;Role;No HP;Password',
+                'E100;Satu;satu@x.com;HR;employee;;rahasia123',
+                'E101;Dua;bad;HR;employee;;rahasia123',
+              ].join('\n'),
+            ),
+          ),
+        ),
+      ];
+      await t.tap(find.byKey(const Key('user_import_button')));
+      await t.pumpAndSettle();
+      await t.tap(find.byKey(const Key('pick_import_file')));
+      await t.pumpAndSettle();
+      expect(find.text('Import 1 pengguna'), findsOneWidget);
+      await t.tap(find.byKey(const Key('run_user_import')));
+      await t.pumpAndSettle();
+      expect(admin.calls, ['createUser:E100:employee']);
+      expect(find.text('Tutup'), findsOneWidget);
+      expect(UserImport.maxRows, 500);
+    });
+
+    testWidgets('restore requires phrase and sends mode', (t) async {
+      final admin = FakeAdminRepository();
+      debugPickedFiles = [
+        PickedFile(
+          name: 'b.json',
+          mimeType: 'application/json',
+          bytes: Uint8List.fromList(
+            utf8.encode(
+              jsonEncode({
+                'format': 'itsr-backup',
+                'tables': {'tickets': []},
+              }),
+            ),
+          ),
+        ),
+      ];
+      await pumpApp(
+        t,
+        const DataManagementScreen(),
+        auth: FakeAuthRepository(profile: user('ad1', 'administrator')),
+        admin: admin,
+      );
+      await t.tap(find.byKey(const Key('restore_button')));
+      await t.pumpAndSettle();
+      final ok = find.byKey(const Key('restore_confirm_button'));
+      expect(t.widget<FilledButton>(ok).onPressed, isNull);
+      await t.tap(find.byKey(const Key('restore_mode_replace')));
+      await t.enterText(
+        find.byKey(const Key('restore_confirm_field')),
+        kRestoreConfirmPhrase,
+      );
+      await t.pump();
+      await t.tap(ok);
+      await t.pumpAndSettle();
+      expect(admin.calls, ['backup', 'restore:replace:$kRestoreConfirmPhrase']);
     });
   });
 }

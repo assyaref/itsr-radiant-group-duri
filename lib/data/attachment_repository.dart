@@ -65,7 +65,9 @@ class SupabaseAttachmentRepository implements AttachmentRepository {
       throw const AppFailure('File terlalu besar (maks 10 MB).');
     }
     if (!mimeType.isAllowedAttachmentMime) {
-      throw const AppFailure('Tipe file tidak diizinkan (hanya JPG, PNG, PDF).');
+      throw const AppFailure(
+        'Tipe file tidak diizinkan (hanya JPG, PNG, PDF).',
+      );
     }
     final res = await _client.functions.invoke(
       _function,

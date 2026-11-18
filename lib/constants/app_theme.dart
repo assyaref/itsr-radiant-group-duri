@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 
 class AppTheme {
   static const Color primary = Color(0xFF1976D2);
@@ -63,7 +63,11 @@ class AppTheme {
       ),
       bodyLarge: TextStyle(fontSize: 16, color: ink),
       bodyMedium: TextStyle(fontSize: 14, color: muted),
-      labelLarge: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: ink),
+      labelLarge: TextStyle(
+        fontSize: 14,
+        fontWeight: FontWeight.w600,
+        color: ink,
+      ),
     ),
     elevatedButtonTheme: ElevatedButtonThemeData(
       style: ElevatedButton.styleFrom(
@@ -136,8 +140,9 @@ class AppTheme {
         return Colors.grey[400];
       }),
       trackColor: WidgetStateProperty.resolveWith((states) {
-        if (states.contains(WidgetState.selected))
+        if (states.contains(WidgetState.selected)) {
           return primary.withValues(alpha: 0.5);
+        }
         return Colors.grey[300];
       }),
     ),
@@ -197,7 +202,11 @@ class AppTheme {
       ),
       bodyLarge: TextStyle(fontSize: 16, color: Colors.white),
       bodyMedium: TextStyle(fontSize: 14, color: Color(0xFF94A3B8)),
-      labelLarge: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: Colors.white),
+      labelLarge: TextStyle(
+        fontSize: 14,
+        fontWeight: FontWeight.w600,
+        color: Colors.white,
+      ),
     ),
     elevatedButtonTheme: ElevatedButtonThemeData(
       style: ElevatedButton.styleFrom(
@@ -250,9 +259,15 @@ class AppTheme {
       contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
       labelStyle: TextStyle(color: Color(0xFF94A3B8), fontSize: 14),
       hintStyle: TextStyle(
-          color: Color(0xFF64748B).withValues(alpha: 0.7), fontSize: 14),
+        color: Color(0xFF64748B).withValues(alpha: 0.7),
+        fontSize: 14,
+      ),
     ),
-    dividerTheme: const DividerThemeData(color: Color(0xFF334155), space: 1, thickness: 1),
+    dividerTheme: const DividerThemeData(
+      color: Color(0xFF334155),
+      space: 1,
+      thickness: 1,
+    ),
     listTileTheme: const ListTileThemeData(
       contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 0),
       dense: true,
@@ -271,8 +286,9 @@ class AppTheme {
         return Colors.grey[600];
       }),
       trackColor: WidgetStateProperty.resolveWith((states) {
-        if (states.contains(WidgetState.selected))
+        if (states.contains(WidgetState.selected)) {
           return primary.withValues(alpha: 0.5);
+        }
         return Colors.grey[800];
       }),
     ),
@@ -335,7 +351,10 @@ class AppTheme {
         .join(' ');
   }
 
-  static BoxDecoration cardDecoration({Color color = Colors.white, double radius = 16}) {
+  static BoxDecoration cardDecoration({
+    Color color = Colors.white,
+    double radius = 16,
+  }) {
     return BoxDecoration(
       color: color,
       borderRadius: BorderRadius.circular(radius),
@@ -343,4 +362,3 @@ class AppTheme {
     );
   }
 }
-
