@@ -95,7 +95,7 @@ void main() {
       await t.tap(find.byKey(const Key('continue_ticket_details_button')));
       await t.pump();
       expect(find.text('Please enter a subject'), findsOneWidget);
-      expect(find.text('Please select a category'), findsOneWidget);
+      expect(find.text('Pilih kategori masalah'), findsOneWidget);
       expect(find.text('Please describe the problem'), findsOneWidget);
       expect(repo.calls, isEmpty);
     });
@@ -117,6 +117,9 @@ void main() {
       await t.tap(find.byKey(const Key('category_field')));
       await t.pumpAndSettle();
       await t.tap(find.text('Network').last);
+      await t.pumpAndSettle();
+      // Step 1 (Detail) -> 2 (Lampiran) -> 3 (Kirim).
+      await t.tap(find.byKey(const Key('continue_ticket_details_button')));
       await t.pumpAndSettle();
       await t.tap(find.byKey(const Key('continue_ticket_details_button')));
       await t.pumpAndSettle();
@@ -159,20 +162,28 @@ void main() {
           tickets: repo,
           size: desktop,
         );
-        for (final s in [
-          'ITSR-00001',
-          'Printer broken',
-          'It does not print anything',
-          'Replaced toner',
-          'It jams on page two',
-        ]) {
+        bool expectReadable(String s) {
           // Flutter merges adjacent text into one semantics node: match as substring.
           expect(
             find.bySemanticsLabel(RegExp(RegExp.escape(s))),
             findsWidgets,
             reason: '"$s" must be readable by assistive tech',
           );
+          return true;
         }
+
+        for (final s in [
+          'ITSR-00001',
+          'Printer broken',
+          'It does not print anything',
+          'Replaced toner',
+        ]) {
+          expectReadable(s);
+        }
+        // The comment lives on the Komentar tab; switch to it before asserting.
+        await t.tap(find.text('Komentar'));
+        await t.pumpAndSettle();
+        expectReadable('It jams on page two');
         handle.dispose();
       },
     );
@@ -197,13 +208,12 @@ void main() {
           tickets: repo,
           size: phone,
         );
-        expect(find.text('IT Support actions'), findsNothing);
-        expect(find.text('Internal work note'), findsNothing);
+        expect(find.text('Aksi IT Support'), findsNothing);
+        expect(find.text('Catatan internal'), findsNothing);
         expect(find.text('Replaced toner'), findsOneWidget);
-        expect(find.text('Yes, close ticket'), findsOneWidget);
-        await t.drag(find.byType(ListView).first, const Offset(0, -1500));
-        await t.pumpAndSettle();
-        await t.tap(find.text('Reopen'));
+        expect(find.text('Ya, tutup tiket'), findsOneWidget);
+        await t.ensureVisible(find.text('Buka Ulang'));
+        await t.tap(find.text('Buka Ulang'));
         await t.pumpAndSettle();
         await t.enterText(
           find.descendant(
@@ -212,7 +222,7 @@ void main() {
           ),
           'Still not printing',
         );
-        await t.tap(find.widgetWithText(FilledButton, 'Reopen'));
+        await t.tap(find.widgetWithText(FilledButton, 'Buka Ulang'));
         await t.pumpAndSettle();
         expect(repo.calls, contains('reporter:1:reopen:Still not printing'));
       },
@@ -240,8 +250,14 @@ void main() {
         tickets: repo,
         size: desktop,
       );
-      expect(find.text('INTERNAL NOTE'), findsOneWidget);
-      expect(find.text('Internal work note'), findsOneWidget);
+      // Internal comment + composer live on the Komentar tab.
+      await t.tap(find.text('Komentar'));
+      await t.pumpAndSettle();
+      expect(find.text('CATATAN INTERNAL'), findsOneWidget);
+      expect(find.text('Catatan internal'), findsOneWidget);
+      // Back to the Detail tab for the staff actions.
+      await t.tap(find.text('Detail'));
+      await t.pumpAndSettle();
       // the server moves the ticket on; the screen reloads after the action
       repo.tickets = [ticket('1', status: 'in_progress', assignedToId: 'it1')];
       await t.tap(find.byKey(const Key('accept_ticket_button')));
@@ -255,7 +271,7 @@ void main() {
       expect(find.byKey(const Key('accept_ticket_button')), findsNothing);
       await t.tap(find.byKey(const Key('status_resolved')));
       await t.pumpAndSettle();
-      await t.tap(find.widgetWithText(FilledButton, 'Resolve'));
+      await t.tap(find.widgetWithText(FilledButton, 'Selesaikan'));
       await t.pumpAndSettle();
       expect(find.text('Please enter at least 5 characters'), findsOneWidget);
       await t.enterText(
@@ -265,7 +281,7 @@ void main() {
         ),
         'Re-seated network cable',
       );
-      await t.tap(find.widgetWithText(FilledButton, 'Resolve'));
+      await t.tap(find.widgetWithText(FilledButton, 'Selesaikan'));
       await t.pumpAndSettle();
       expect(
         repo.calls,
@@ -343,7 +359,7 @@ void main() {
       );
       expect(find.text('Hai, Ani'), findsOneWidget);
       expect(find.text('Tiket Saya'), findsOneWidget);
-      expect(find.text('Menunggu'), findsOneWidget);
+      expect(find.text('Menunggu'), findsWidgets);
       expect(find.text('Ringkasan Tiket'), findsOneWidget);
       expect(find.text('Tiket Terbaru'), findsOneWidget);
       expect(find.text('Support queue'), findsNothing);
@@ -373,7 +389,7 @@ void main() {
       expect(find.text('Unassigned'), findsOneWidget);
     });
 
-    testWidgets('desktop uses a navigation rail; phone uses a drawer', (
+    testWidgets('desktop uses a fixed sidebar; phone uses a drawer', (
       t,
     ) async {
       final auth = FakeAuthRepository(profile: user('adm', 'administrator'));
@@ -383,7 +399,7 @@ void main() {
         auth: auth,
         size: desktop,
       );
-      expect(find.byType(NavigationRail), findsOneWidget);
+      expect(find.byType(NavigationRail), findsNothing);
       expect(find.text('Users'), findsOneWidget);
 
       await t.pumpWidget(const SizedBox());

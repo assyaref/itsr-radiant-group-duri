@@ -82,52 +82,7 @@ class DashboardScreen extends ConsumerWidget {
             ),
           ),
           // Quick action card
-          Card(
-            elevation: 0,
-            child: Padding(
-              padding: const EdgeInsets.all(20),
-              child: Row(
-                children: [
-                  Container(
-                    width: 56,
-                    height: 56,
-                    decoration: BoxDecoration(
-                      color: AppTheme.primary.withValues(alpha: 0.1),
-                      borderRadius: BorderRadius.circular(14),
-                    ),
-                    child: const Icon(
-                      Icons.add_circle_outline,
-                      color: AppTheme.primary,
-                      size: 28,
-                    ),
-                  ),
-                  const SizedBox(width: 16),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'Laporkan Masalah IT dengan Cepat!',
-                          style: Theme.of(context).textTheme.titleMedium
-                              ?.copyWith(fontWeight: FontWeight.w700),
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          'Kami siap membantu Anda',
-                          style: TextStyle(color: AppTheme.muted, fontSize: 13),
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  FilledButton(
-                    onPressed: () => context.go('/tickets/new'),
-                    child: const Text('Buat Tiket'),
-                  ),
-                ],
-              ),
-            ),
-          ),
+          const _QuickActionCard(),
           const SizedBox(height: 20),
           // Stat cards grid (matches reference: Tiket Saya, Diproses, Menunggu, Selesai)
           if (user.isStaff) ...[
@@ -196,6 +151,82 @@ class DashboardScreen extends ConsumerWidget {
           const _RecentActivity(),
         ],
       ),
+    );
+  }
+}
+
+/// Quick-create card. On narrow widths the CTA stacks below the text
+/// (the row variant needs ~270px of fixed width and overflows < 360px).
+class _QuickActionCard extends StatelessWidget {
+  const _QuickActionCard();
+
+  @override
+  Widget build(BuildContext context) {
+    return LayoutBuilder(
+      builder: (context, c) {
+        final stacked = c.maxWidth < 460;
+        final info = Row(
+          children: [
+            Container(
+              width: 56,
+              height: 56,
+              decoration: BoxDecoration(
+                color: AppTheme.primary.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(14),
+              ),
+              child: const Icon(
+                Icons.add_circle_outline,
+                color: AppTheme.primary,
+                size: 28,
+              ),
+            ),
+            const SizedBox(width: 16),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Laporkan Masalah IT dengan Cepat!',
+                    style: Theme.of(context).textTheme.titleMedium
+                        ?.copyWith(fontWeight: FontWeight.w700),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    'Kami siap membantu Anda',
+                    style: TextStyle(color: AppTheme.muted, fontSize: 13),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        );
+        final button = FilledButton(
+          onPressed: () => context.go('/tickets/new'),
+          child: const Text('Buat Tiket'),
+        );
+        return Card(
+          elevation: 0,
+          child: Padding(
+            padding: const EdgeInsets.all(20),
+            child: stacked
+                ? Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      info,
+                      const SizedBox(height: 12),
+                      button,
+                    ],
+                  )
+                : Row(
+                    children: [
+                      Expanded(child: info),
+                      const SizedBox(width: 12),
+                      button,
+                    ],
+                  ),
+          ),
+        );
+      },
     );
   }
 }

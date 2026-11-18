@@ -113,7 +113,7 @@ class ETag extends StatelessWidget {
   final bool dense;
 
   factory ETag.priority(String p) => ETag(Fmt.priority(p), EColors.priority(p));
-  factory ETag.status(String s) => ETag(Fmt.status(s), EColors.status(s));
+  factory ETag.status(String s) => ETag(Fmt.statusId(s), EColors.status(s));
 
   @override
   Widget build(BuildContext context) => Container(
@@ -442,6 +442,7 @@ class EPrimaryButton extends StatelessWidget {
     this.busy = false,
     this.icon,
   });
+
   final String label;
   final VoidCallback? onPressed;
   final bool busy;

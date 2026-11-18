@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
@@ -20,24 +20,60 @@ class NavItem {
 /// Navigation entries visible for a role. Server-side RLS is the real guard;
 /// this only hides links a user cannot use.
 List<NavItem> navItemsFor(UserModel? user) => [
-      const NavItem('/dashboard', 'Dashboard', Icons.dashboard_outlined, Icons.dashboard),
-      const NavItem('/tickets', 'My Tickets', Icons.confirmation_number_outlined,
-          Icons.confirmation_number),
-      const NavItem('/tickets/new', 'New Ticket', Icons.add_circle_outline, Icons.add_circle),
-      if (user?.isStaff ?? false)
-        const NavItem('/queue', 'Support Queue', Icons.support_agent_outlined, Icons.support_agent),
-      if (user?.isAdmin ?? false) ...const [
-        NavItem('/admin/users', 'Users', Icons.people_outline, Icons.people),
-        NavItem('/admin/categories', 'Categories', Icons.category_outlined, Icons.category),
-        NavItem('/admin/settings', 'Settings', Icons.settings_outlined, Icons.settings),
-        NavItem(
-          '/admin/email-notifications',
-          'Email & Notifications',
-          Icons.email_outlined,
-          Icons.email,
-        ),
-      ],
-    ];
+  const NavItem(
+    '/dashboard',
+    'Dashboard',
+    Icons.dashboard_outlined,
+    Icons.dashboard,
+  ),
+  const NavItem(
+    '/tickets',
+    'My Tickets',
+    Icons.confirmation_number_outlined,
+    Icons.confirmation_number,
+  ),
+  const NavItem(
+    '/tickets/new',
+    'New Ticket',
+    Icons.add_circle_outline,
+    Icons.add_circle,
+  ),
+  if (user?.isStaff ?? false) ...const [
+    NavItem(
+      '/queue',
+      'Support Queue',
+      Icons.support_agent_outlined,
+      Icons.support_agent,
+    ),
+    NavItem(
+      '/summary',
+      'Ticket Summary',
+      Icons.insert_chart_outlined,
+      Icons.insert_chart,
+    ),
+  ],
+  if (user?.isAdmin ?? false) ...const [
+    NavItem('/admin/users', 'Users', Icons.people_outline, Icons.people),
+    NavItem(
+      '/admin/categories',
+      'Categories',
+      Icons.category_outlined,
+      Icons.category,
+    ),
+    NavItem(
+      '/admin/settings',
+      'Settings',
+      Icons.settings_outlined,
+      Icons.settings,
+    ),
+    NavItem(
+      '/admin/email-notifications',
+      'Email & Notifications',
+      Icons.email_outlined,
+      Icons.email,
+    ),
+  ],
+];
 
 int selectedNavIndex(List<NavItem> items, String location) {
   var best = -1, bestLen = -1;
@@ -64,8 +100,12 @@ class AppShell extends ConsumerWidget {
   final String location;
 
   Future<void> _signOut(BuildContext context, WidgetRef ref) async {
-    final ok = await showConfirmDialog(context,
-        title: 'Sign out', message: 'Do you want to sign out?', confirmLabel: 'Sign out');
+    final ok = await showConfirmDialog(
+      context,
+      title: 'Sign out',
+      message: 'Do you want to sign out?',
+      confirmLabel: 'Sign out',
+    );
     if (ok) await ref.read(authControllerProvider.notifier).signOut();
   }
 
@@ -88,32 +128,55 @@ class AppShell extends ConsumerWidget {
               color: AppTheme.primary.withValues(alpha: 0.15),
               borderRadius: BorderRadius.circular(12),
             ),
-            child: const Icon(Icons.support_agent, color: AppTheme.primary, size: 26),
+            child: const Icon(
+              Icons.support_agent,
+              color: AppTheme.primary,
+              size: 26,
+            ),
           ),
           const SizedBox(height: 12),
-          Text(AppConstants.appShortName,
-              style: const TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.w800,
-                color: Colors.white,
-              )),
+          Text(
+            AppConstants.appShortName,
+            style: const TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.w800,
+              color: Colors.white,
+            ),
+          ),
           const SizedBox(height: 4),
-          Text('IT Support Cabang Duri',
-              style: TextStyle(fontSize: 12, color: Colors.white.withValues(alpha: 0.7))),
+          Text(
+            'IT Support Cabang Duri',
+            style: TextStyle(
+              fontSize: 12,
+              color: Colors.white.withValues(alpha: 0.7),
+            ),
+          ),
           const SizedBox(height: 20),
           ListTile(
             contentPadding: EdgeInsets.zero,
             leading: CircleAvatar(
-              child: Text((user?.fullName.isNotEmpty ?? false)
-                  ? user!.fullName[0].toUpperCase()
-                  : '?'),
+              child: Text(
+                (user?.fullName.isNotEmpty ?? false)
+                    ? user!.fullName[0].toUpperCase()
+                    : '?',
+              ),
             ),
-            title: Text(user?.fullName ?? '',
-                overflow: TextOverflow.ellipsis,
-                style: const TextStyle(fontWeight: FontWeight.w600, color: Colors.white)),
-            subtitle: Text('${user?.employeeNumber ?? ''} â€¢ ${Fmt.role(user?.role)}',
-                overflow: TextOverflow.ellipsis,
-                style: TextStyle(color: Colors.white.withValues(alpha: 0.7), fontSize: 12)),
+            title: Text(
+              user?.fullName ?? '',
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(
+                fontWeight: FontWeight.w600,
+                color: Colors.white,
+              ),
+            ),
+            subtitle: Text(
+              '${user?.employeeNumber ?? ''} • ${Fmt.role(user?.role)}',
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(
+                color: Colors.white.withValues(alpha: 0.7),
+                fontSize: 12,
+              ),
+            ),
           ),
         ],
       ),
@@ -146,9 +209,14 @@ class AppShell extends ConsumerWidget {
                       ),
                       const Divider(height: 1, color: Color(0xFF334155)),
                       ListTile(
-                        leading: const Icon(Icons.logout, color: Colors.white70),
-                        title: const Text('Sign out',
-                            style: TextStyle(color: Colors.white)),
+                        leading: const Icon(
+                          Icons.logout,
+                          color: Colors.white70,
+                        ),
+                        title: const Text(
+                          'Sign out',
+                          style: TextStyle(color: Colors.white),
+                        ),
                         onTap: () => _signOut(context, ref),
                       ),
                     ],
@@ -244,17 +312,23 @@ class _NavTile extends StatelessWidget {
           children: [
             Icon(
               active ? item.selectedIcon : item.icon,
-              color: active ? Colors.white : Colors.white.withValues(alpha: 0.7),
+              color: active
+                  ? Colors.white
+                  : Colors.white.withValues(alpha: 0.7),
               size: 20,
             ),
             const SizedBox(width: 14),
             Expanded(
-              child: Text(item.label,
-                  style: TextStyle(
-                    color: active ? Colors.white : Colors.white.withValues(alpha: 0.85),
-                    fontWeight: active ? FontWeight.w600 : FontWeight.w500,
-                    fontSize: 14,
-                  )),
+              child: Text(
+                item.label,
+                style: TextStyle(
+                  color: active
+                      ? Colors.white
+                      : Colors.white.withValues(alpha: 0.85),
+                  fontWeight: active ? FontWeight.w600 : FontWeight.w500,
+                  fontSize: 14,
+                ),
+              ),
             ),
           ],
         ),
@@ -262,4 +336,3 @@ class _NavTile extends StatelessWidget {
     );
   }
 }
-

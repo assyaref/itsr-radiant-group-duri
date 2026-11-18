@@ -11,10 +11,10 @@ class Fmt {
 
   static String relative(DateTime d, {DateTime? now}) {
     final diff = (now ?? DateTime.now()).difference(d.toLocal());
-    if (diff.inMinutes < 1) return 'just now';
-    if (diff.inMinutes < 60) return '${diff.inMinutes} min ago';
-    if (diff.inHours < 24) return '${diff.inHours} h ago';
-    if (diff.inDays < 7) return '${diff.inDays} d ago';
+    if (diff.inMinutes < 1) return 'baru saja';
+    if (diff.inMinutes < 60) return '${diff.inMinutes} menit lalu';
+    if (diff.inHours < 24) return '${diff.inHours} jam lalu';
+    if (diff.inDays < 7) return '${diff.inDays} hari lalu';
     return date(d);
   }
 
@@ -35,6 +35,19 @@ class Fmt {
   };
 
   static String status(String? s) => _status[s] ?? (s ?? 'Unknown');
+
+  /// Indonesian status labels for the employee-facing design.
+  static String statusId(String? s) => switch (s) {
+        'open' => 'Menunggu',
+        'assigned' => 'Ditugaskan',
+        'in_progress' => 'Diproses',
+        'pending_user' => 'Menunggu Anda',
+        'resolved' => 'Selesai',
+        'closed' => 'Ditutup',
+        'reopened' => 'Dibuka Ulang',
+        _ => status(s),
+      };
+
   static String role(String? r) => _role[r] ?? (r ?? 'Unknown');
   static String priority(String? p) =>
       (p == null || p.isEmpty) ? 'Unknown' : p[0].toUpperCase() + p.substring(1);
