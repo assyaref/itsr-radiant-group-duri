@@ -33,7 +33,7 @@ Deno.serve(withErrorBoundary("login", async (req) => {
   const employeeNumber = byEmail ? null : normalizeEmployeeNumber(body.employeeNumber);
   const password = plausibleLoginPassword(body.password) ? body.password : "";
   if (byEmail ? (!EMAIL_RE.test(email) || email.length > 254) : !employeeNumber) return fail(401, GENERIC);
-  if (!password) return fail(401, GENERIC); // 4–5 digit PIN or 6–128 characters
+  if (!password) return fail(401, GENERIC); // 4–6 digit PIN or 6–128 characters
 
   const ip = clientIp(req);
   try {

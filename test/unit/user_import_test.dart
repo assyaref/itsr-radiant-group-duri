@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:flutter_test/flutter_test.dart';
@@ -55,6 +56,38 @@ void main() {
   test('missing required columns is a format error', () {
     expect(
       () => UserImport.parse(csv('nama;email\nx;y@z.com\n')),
+      throwsFormatException,
+    );
+  });
+
+  test('bundled .xlsx template parses: only the example row, skipped', () {
+    final bytes = File(
+      'assets/templates/template-import-user-itsr.xlsx',
+    ).readAsBytesSync();
+    final rows = UserImport.parse(Uint8List.fromList(bytes));
+    expect(rows, hasLength(1));
+    expect(rows.single.status, ImportStatus.skipped);
+  });
+
+  test('.xlsx with shared strings and a numeric NIK cell', () {
+    final bytes = File(
+      'test/fixtures/import_sample.xlsx',
+    ).readAsBytesSync();
+    final rows = UserImport.parse(Uint8List.fromList(bytes));
+    expect(rows, hasLength(2));
+    // Numeric NIK cell 90692 normalises to the plain integer string.
+    expect(rows[0].employeeNumber, '90692');
+    expect(rows[0].status, ImportStatus.ready);
+    // Text NIK with a leading zero is preserved exactly.
+    expect(rows[1].employeeNumber, '060392');
+    expect(rows[1].role, 'it_support');
+    expect(rows[1].fullName, 'Budi Santoso');
+    expect(rows[1].line, 3);
+  });
+
+  test('corrupt .xlsx bytes raise a format error', () {
+    expect(
+      () => UserImport.parse(Uint8List.fromList(utf8.encode('PK\x03\x04garbage'))),
       throwsFormatException,
     );
   });

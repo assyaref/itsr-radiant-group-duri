@@ -190,7 +190,7 @@ void main() {
       );
       await t.tap(find.byKey(const Key('user_template_button')));
       await t.pumpAndSettle();
-      expect(debugDownloads, contains('template-import-user-itsr.csv'));
+      expect(debugDownloads, contains('template-import-user-itsr.xlsx'));
 
       debugPickedFiles = [
         PickedFile(
