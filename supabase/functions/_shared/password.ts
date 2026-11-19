@@ -2,8 +2,7 @@
 //
 // Accounts may use either
 //   * a PIN of 4, 5 or 6 digits, or
-//   * a normal password of 8–128 characters (6–128 accepted at login for
-//     accounts created before this policy).
+//   * a normal password of 6–128 characters (Supabase Auth's own minimum).
 //
 // Supabase Auth refuses passwords shorter than 6 characters, so a PIN is never
 // given to Auth as-is: it is turned into a long secret-derived string with
@@ -23,8 +22,8 @@ export function isPin(p: string): boolean {
 export function newPasswordError(p: unknown): string | null {
   if (typeof p !== "string" || p.length === 0) return "Password is required";
   if (isPin(p)) return null;
-  if (/^\d+$/.test(p) && p.length < 8) return "A numeric PIN must be 4 to 6 digits";
-  if (p.length < 8) return "Password must be a 4–6 digit PIN or at least 8 characters";
+  if (/^\d+$/.test(p) && p.length < 4) return "A numeric PIN must be 4 to 6 digits";
+  if (p.length < 6) return "Password must be a 4–6 digit PIN or at least 6 characters";
   if (p.length > 128) return "Password is too long";
   return null;
 }
@@ -46,7 +45,7 @@ export function pinSupported(pepper: string | undefined): boolean {
 }
 
 export const PIN_NOT_CONFIGURED =
-  "PIN 4–6 digit belum diaktifkan oleh administrator. Gunakan password minimal 8 karakter.";
+  "PIN 4–6 digit belum diaktifkan oleh administrator. Gunakan password minimal 6 karakter.";
 
 /**
  * The password actually stored in / sent to Supabase Auth.

@@ -28,14 +28,14 @@ class Validators {
     return null;
   }
 
-  /// New passwords: a 4–6 digit PIN, or 8–128 characters.
+  /// New passwords: a 4–6 digit PIN, or 6–128 characters.
   static String? newPassword(String? value) {
     final v = value ?? '';
     if (pinPattern.hasMatch(v)) return null;
-    if (RegExp(r'^\d+$').hasMatch(v) && v.length < 8) {
+    if (RegExp(r'^\d+$').hasMatch(v) && v.length < 4) {
       return 'A numeric PIN must be 4 to 6 digits';
     }
-    if (v.length < 8) return 'Use a 4–6 digit PIN or at least 8 characters';
+    if (v.length < 6) return 'Use a 4–6 digit PIN or at least 6 characters';
     if (v.length > 128) return 'Password is too long';
     return null;
   }

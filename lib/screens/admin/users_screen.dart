@@ -419,7 +419,7 @@ class _UserDialogState extends ConsumerState<_UserDialog> {
                   obscureText: true,
                   decoration: const InputDecoration(
                     labelText: 'Initial password *',
-                    helperText: 'At least 8 characters. Share it with the user securely.',
+                    helperText: '4–6 digit PIN or at least 6 characters. Share it securely.',
                   ),
                   validator: Validators.newPassword,
                 ),

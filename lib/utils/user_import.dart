@@ -203,7 +203,7 @@ class UserImport {
           : 'Role harus employee, it_support, atau administrator';
     }
     if (Validators.newPassword(r.password) != null) {
-      return 'Password minimal 8 karakter (atau PIN 4–6 digit)';
+      return 'Password minimal 6 karakter (atau PIN 4–6 digit)';
     }
     if (seenNo.contains(r.employeeNumber)) return 'NIK duplikat di file';
     if (seenEmail.contains(r.email)) return 'Email duplikat di file';
