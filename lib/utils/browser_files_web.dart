@@ -87,3 +87,44 @@ Future<List<PickedFile>> pickFiles({
     input.remove();
   }
 }
+
+/// Listens for Ctrl/Cmd+V of files (e.g. a screenshot) anywhere on the page.
+/// Each pasted file whose type is in [allowedMimeTypes] is read and passed to
+/// [onFile]; other file types go to [onUnsupported]. Plain-text pastes are
+/// left alone so typing into text fields keeps working. Returns a function
+/// that removes the listener.
+void Function() listenForPastedFiles(
+  void Function(PickedFile file) onFile, {
+  void Function(String mimeType)? onUnsupported,
+  Set<String> allowedMimeTypes = const {'image/png', 'image/jpeg'},
+}) {
+  final listener = (web.Event event) {
+    final data = (event as web.ClipboardEvent).clipboardData;
+    if (data == null) return;
+    final files = data.files;
+    var handled = false;
+    for (var i = 0; i < files.length; i++) {
+      final file = files.item(i);
+      if (file == null) continue;
+      final type = file.type.toLowerCase();
+      handled = true;
+      if (!allowedMimeTypes.contains(type)) {
+        onUnsupported?.call(type);
+        continue;
+      }
+      final ext = type == 'image/png' ? 'png' : 'jpg';
+      // Screenshots arrive as a generic "image.png"; give them a unique name.
+      final name = (file.name.isNotEmpty && file.name != 'image.$ext')
+          ? file.name
+          : 'tempel_${DateTime.now().millisecondsSinceEpoch}.$ext';
+      file.arrayBuffer().toDart.then(
+        (buf) => onFile(
+          PickedFile(name: name, bytes: buf.toDart.asUint8List(), mimeType: type),
+        ),
+      );
+    }
+    if (handled) event.preventDefault();
+  }.toJS;
+  web.document.addEventListener('paste', listener, true.toJS);
+  return () => web.document.removeEventListener('paste', listener, true.toJS);
+}

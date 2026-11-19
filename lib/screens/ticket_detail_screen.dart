@@ -14,7 +14,7 @@ import '../models/user_model.dart';
 import '../providers/attachment_provider.dart';
 import '../providers/auth_provider.dart';
 import '../providers/tickets_provider.dart';
-import '../utils/browser_files.dart' show downloadBytes;
+import '../utils/browser_files.dart' show downloadBytes, listenForPastedFiles;
 import '../utils/error_messages.dart';
 import '../utils/formatters.dart';
 import '../utils/file_picker.dart';
@@ -1063,9 +1063,40 @@ class _CommentsTabState extends ConsumerState<_CommentsTab> with _ActionRunner {
   String? _pickedFileName;
   String? _pickedMimeType;
   Uint8List? _pickedBytes;
+  void Function()? _stopPasteListener;
+
+  @override
+  void initState() {
+    super.initState();
+    // Ctrl/Cmd+V of a screenshot or copied image attaches it to the comment.
+    _stopPasteListener = listenForPastedFiles(
+      (file) {
+        if (!mounted || busy) return;
+        if (file.size > kMaxAttachmentDisplaySize) {
+          showSnack(context, 'Gambar lebih dari 10 MB', error: true);
+          return;
+        }
+        setState(() {
+          _pickedFileName = file.name;
+          _pickedMimeType = file.mimeType;
+          _pickedBytes = file.bytes;
+        });
+        showSnack(context, 'Gambar ditempel. Tekan kirim untuk mengunggah.');
+      },
+      onUnsupported: (_) {
+        if (!mounted) return;
+        showSnack(
+          context,
+          'Hanya gambar PNG/JPG yang bisa ditempel',
+          error: true,
+        );
+      },
+    );
+  }
 
   @override
   void dispose() {
+    _stopPasteListener?.call();
     _text.dispose();
     super.dispose();
   }
@@ -1191,8 +1222,8 @@ class _CommentsTabState extends ConsumerState<_CommentsTab> with _ActionRunner {
                           scrollPadding: const EdgeInsets.only(bottom: 80),
                           decoration: InputDecoration(
                             hintText: staff
-                                ? 'Balas ke pelapor, atau tulis catatan teknis'
-                                : 'Tambah detail atau balas IT Support',
+                                ? 'Balas pelapor / catatan teknis (Ctrl+V untuk tempel gambar)'
+                                : 'Tambah detail atau balas (Ctrl+V untuk tempel gambar)',
                             counterText: '',
                             filled: true,
                             fillColor: EColors.page,
@@ -1224,7 +1255,7 @@ class _CommentsTabState extends ConsumerState<_CommentsTab> with _ActionRunner {
                                 }
                               },
                         icon: const Icon(Icons.attach_file, size: 20),
-                        tooltip: 'Lampirkan file',
+                        tooltip: 'Lampirkan file (atau tempel gambar dengan Ctrl+V)',
                       ),
                       const SizedBox(width: 4),
                       Material(
@@ -1257,11 +1288,28 @@ class _CommentsTabState extends ConsumerState<_CommentsTab> with _ActionRunner {
                       padding: const EdgeInsets.only(top: 8, left: 4, right: 4),
                       child: Row(
                         children: [
-                          const Icon(
-                            Icons.insert_drive_file,
-                            size: 16,
-                            color: EColors.blue,
-                          ),
+                          if (_pickedMimeType?.startsWith('image/') ?? false)
+                            ClipRRect(
+                              borderRadius: BorderRadius.circular(6),
+                              child: Image.memory(
+                                _pickedBytes!,
+                                key: const Key('pasted_image_preview'),
+                                width: 48,
+                                height: 48,
+                                fit: BoxFit.cover,
+                                errorBuilder: (_, _, _) => const Icon(
+                                  Icons.image,
+                                  size: 16,
+                                  color: EColors.blue,
+                                ),
+                              ),
+                            )
+                          else
+                            const Icon(
+                              Icons.insert_drive_file,
+                              size: 16,
+                              color: EColors.blue,
+                            ),
                           const SizedBox(width: 6),
                           Expanded(
                             child: Text(
