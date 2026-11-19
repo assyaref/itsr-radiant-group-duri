@@ -148,3 +148,11 @@ Deno.test("new password policy: PIN of 4+ digits or 6+ characters", async () => 
     assert(newPasswordError(bad) !== null, bad);
   }
 });
+
+Deno.test("PIN storage stays 4–5 digits so 6+ digit passwords keep working", async () => {
+  const { authPassword } = await import("../_shared/password.ts");
+  const pepper = "x".repeat(32);
+  assert((await authPassword("1234", pepper)).startsWith("pin1."));
+  assert((await authPassword("12345", pepper)).startsWith("pin1."));
+  assertEquals(await authPassword("123456", pepper), "123456");
+});
