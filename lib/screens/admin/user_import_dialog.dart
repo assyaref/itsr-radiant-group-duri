@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart' show rootBundle;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../providers/admin_provider.dart';
@@ -10,20 +11,23 @@ import '../../utils/formatters.dart';
 import '../../utils/user_import.dart';
 import '../../widgets/common.dart';
 
-const String kUserTemplateFileName = 'template-import-user-itsr.csv';
+const String kUserTemplateFileName = 'template-import-user-itsr.xlsx';
+const String _kUserTemplateMime =
+    'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
 
 Future<void> downloadUserTemplate(BuildContext context) async {
+  final data = await rootBundle.load(UserImport.excelTemplateAsset);
   await downloadBytes(
-    UserImport.templateBytes(),
+    data.buffer.asUint8List(),
     kUserTemplateFileName,
-    'text/csv',
+    _kUserTemplateMime,
   );
   if (context.mounted) {
     showSnack(context, 'Template diunduh: $kUserTemplateFileName');
   }
 }
 
-/// Administrator: import many users at once from a CSV file.
+/// Administrator: import many users at once from an Excel (.xlsx) or CSV file.
 class UserImportDialog extends ConsumerStatefulWidget {
   const UserImportDialog({super.key});
 
@@ -43,7 +47,7 @@ class _UserImportDialogState extends ConsumerState<UserImportDialog> {
 
   Future<void> _pick() async {
     final files = await pickFiles(
-      accept: '.csv,text/csv,text/plain',
+      accept: '.xlsx,.csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,text/csv,text/plain',
       multiple: false,
     );
     if (files.isEmpty || !mounted) return;
@@ -131,9 +135,9 @@ class _UserImportDialogState extends ConsumerState<UserImportDialog> {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             const Text(
-              '1. Unduh template CSV dan isi satu baris per pengguna '
+              '1. Unduh template Excel (.xlsx) dan isi satu baris per pengguna '
               '(Role: employee, it_support, atau administrator).\n'
-              '2. Simpan sebagai CSV, lalu pilih file di sini.\n'
+              '2. Simpan file .xlsx (atau CSV), lalu pilih file di sini.\n'
               '3. Periksa hasil validasi, kemudian klik Import.',
               style: TextStyle(height: 1.5),
             ),
@@ -155,7 +159,7 @@ class _UserImportDialogState extends ConsumerState<UserImportDialog> {
                   onPressed: _running ? null : _pick,
                   icon: const Icon(Icons.upload_file),
                   label: Text(
-                    _fileName == null ? 'Pilih file CSV' : 'Ganti file',
+                    _fileName == null ? 'Pilih file' : 'Ganti file',
                   ),
                 ),
               ],

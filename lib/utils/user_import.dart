@@ -1,13 +1,18 @@
 import 'dart:convert';
 import 'dart:typed_data';
 
+import 'package:archive/archive.dart';
+import 'package:xml/xml.dart';
+
 import '../constants/app_constants.dart';
 import 'validators.dart';
 
-/// Bulk user import from a CSV file (made from [UserImport.templateBytes]).
+/// Bulk user import from an `.xlsx` or CSV file (the bundled Excel template
+/// is [excelTemplateAsset]; a CSV template is available via [templateBytes]).
 ///
-/// Pure Dart so it can be unit-tested. Accounts are created one by one via the
-/// `admin-users` Edge Function, which re-validates every field server-side.
+/// Supports both `.xlsx` (preferred) and CSV. Pure Dart so it can be
+/// unit-tested. Accounts are created one by one via the `admin-users` Edge
+/// Function, which re-validates every field server-side.
 class UserImport {
   UserImport._();
 
@@ -84,7 +89,11 @@ class UserImport {
     ]);
   }
 
-  /// Parses CSV bytes into rows with per-row validation.
+  /// The bundled `.xlsx` template (see `assets/templates/`).
+  static const String excelTemplateAsset =
+      'assets/templates/template-import-user-itsr.xlsx';
+
+  /// Parses CSV or `.xlsx` bytes into rows with per-row validation.
   /// [existingEmployeeNumbers] / [existingEmails] mark duplicates of accounts
   /// that already exist. Throws [FormatException] for an unusable file.
   static List<ImportRow> parse(
@@ -92,17 +101,8 @@ class UserImport {
     Set<String> existingEmployeeNumbers = const {},
     Set<String> existingEmails = const {},
   }) {
-    var text = utf8.decode(bytes, allowMalformed: true);
-    if (text.startsWith('﻿')) text = text.substring(1);
-    final lines = text.split(RegExp(r'\r\n|\n|\r'));
-    // Excel's optional "sep=;" hint line.
-    var start = 0;
-    String? sep;
-    if (lines.isNotEmpty && lines.first.toLowerCase().startsWith('sep=')) {
-      sep = lines.first.length > 4 ? lines.first[4] : null;
-      start = 1;
-    }
-    final records = _records(lines.skip(start).join('\n'), sep);
+    final (records, recordLines) =
+        _looksLikeXlsx(bytes) ? _xlsxRecords(bytes) : _csvRecords(bytes);
     if (records.isEmpty) throw const FormatException('File kosong');
 
     final header = records.first
@@ -141,7 +141,7 @@ class UserImport {
         if (key != null) f[key] = rec[c].trim();
       }
       final row = ImportRow(
-        line: i + 1 + start,
+        line: recordLines[i],
         employeeNumber: (f['employee_number'] ?? '').toUpperCase(),
         fullName: f['full_name'] ?? '',
         email: (f['email'] ?? '').toLowerCase(),
@@ -203,7 +203,7 @@ class UserImport {
           : 'Role harus employee, it_support, atau administrator';
     }
     if (Validators.newPassword(r.password) != null) {
-      return 'Password minimal 8 karakter (atau PIN 4–5 digit)';
+      return 'Password minimal 8 karakter (atau PIN 4–6 digit)';
     }
     if (seenNo.contains(r.employeeNumber)) return 'NIK duplikat di file';
     if (seenEmail.contains(r.email)) return 'Email duplikat di file';
@@ -261,6 +261,179 @@ class UserImport {
       out.add(row);
     }
     return out;
+  }
+
+  /// Whether [bytes] looks like an `.xlsx` (a zip archive).
+  static bool _looksLikeXlsx(Uint8List bytes) =>
+      bytes.length > 4 && bytes[0] == 0x50 && bytes[1] == 0x4B;
+
+  /// Extracts records (and their 1-based physical line numbers) from a CSV.
+  static (List<List<String>>, List<int>) _csvRecords(Uint8List bytes) {
+    var text = utf8.decode(bytes, allowMalformed: true);
+    if (text.startsWith('﻿')) text = text.substring(1);
+    final lines = text.split(RegExp(r'\r\n|\n|\r'));
+    // Excel's optional "sep=;" hint line.
+    var start = 0;
+    String? sep;
+    if (lines.isNotEmpty && lines.first.toLowerCase().startsWith('sep=')) {
+      sep = lines.first.length > 4 ? lines.first[4] : null;
+      start = 1;
+    }
+    final records = _records(lines.skip(start).join('\n'), sep);
+    return (
+      records,
+      [for (var i = 0; i < records.length; i++) i + 1 + start],
+    );
+  }
+
+  /// Extracts records (and their sheet row numbers) from an `.xlsx` file.
+  /// Handles string cells stored either inline or in the shared-strings
+  /// table, plus numeric cells (normalised to plain integers where exact).
+  static (List<List<String>>, List<int>) _xlsxRecords(Uint8List bytes) {
+    final Archive archive;
+    try {
+      archive = ZipDecoder().decodeBytes(bytes);
+    } on Object {
+      throw const FormatException('File .xlsx rusak atau bukan file Excel');
+    }
+    String? readText(String name) {
+      for (final f in archive.files) {
+        if (f.name == name) {
+          return utf8.decode(f.content as List<int>, allowMalformed: true);
+        }
+      }
+      return null;
+    }
+
+    // First sheet of the workbook (fall back to the lowest worksheet file).
+    var sheetPath = 'xl/worksheets/sheet1.xml';
+    final workbookText = readText('xl/workbook.xml');
+    final relsText = readText('xl/_rels/workbook.xml.rels');
+    if (workbookText != null && relsText != null) {
+      try {
+        final wb = XmlDocument.parse(workbookText);
+        String? rid;
+        for (final sheet in wb.findAllElements('sheet')) {
+          for (final attr in sheet.attributes) {
+            if (attr.name.local == 'id') {
+              rid = attr.value;
+              break;
+            }
+          }
+          if (rid != null) break;
+        }
+        final rels = XmlDocument.parse(relsText);
+        for (final rel in rels.findAllElements('Relationship')) {
+          if (rel.getAttribute('Id') != rid) continue;
+          final target = rel.getAttribute('Target') ?? '';
+          if (target.isEmpty) break;
+          sheetPath = target.startsWith('/')
+              ? target.substring(1)
+              : target.startsWith('xl/')
+              ? target
+              : 'xl/$target';
+          break;
+        }
+      } on Object {
+        // Keep the default sheet path.
+      }
+    }
+    var sheetText = readText(sheetPath);
+    if (sheetText == null) {
+      final names = archive.files
+          .map((f) => f.name)
+          .where((n) => n.startsWith('xl/worksheets/sheet') && n.endsWith('.xml'))
+          .toList()
+        ..sort();
+      if (names.isNotEmpty) sheetText = readText(names.first);
+    }
+    if (sheetText == null) {
+      throw const FormatException('Sheet tidak ditemukan di file .xlsx');
+    }
+
+    final shared = <String>[];
+    final sstText = readText('xl/sharedStrings.xml');
+    if (sstText != null) {
+      try {
+        for (final si in XmlDocument.parse(sstText).findAllElements('si')) {
+          shared.add(si.findAllElements('t').map((t) => t.innerText).join());
+        }
+      } on Object {
+        throw const FormatException('sharedStrings.xml tidak bisa dibaca');
+      }
+    }
+
+    final XmlDocument sheet;
+    try {
+      sheet = XmlDocument.parse(sheetText);
+    } on Object {
+      throw const FormatException('Isi sheet tidak bisa dibaca');
+    }
+
+    final records = <List<String>>[];
+    final recordLines = <int>[];
+    for (final rowEl in sheet.findAllElements('row')) {
+      final rowNumber =
+          int.tryParse(rowEl.getAttribute('r') ?? '') ?? (records.length + 1);
+      final cells = <int, String>{};
+      var sequential = 0;
+      for (final c in rowEl.findAllElements('c')) {
+        final ref = c.getAttribute('r') ?? '';
+        final col = _columnIndex(ref) ?? sequential;
+        sequential = col + 1;
+        final type = c.getAttribute('t');
+        final String value;
+        if (type == 's') {
+          final idx = int.tryParse(_childText(c, 'v'));
+          value = (idx != null && idx >= 0 && idx < shared.length)
+              ? shared[idx]
+              : '';
+        } else if (type == 'inlineStr') {
+          value =
+              c.findAllElements('t').map((e) => e.innerText).join();
+        } else if (type == 'b') {
+          value = _childText(c, 'v') == '1' ? 'TRUE' : 'FALSE';
+        } else {
+          // Number / date: normalise exact integers (90692.0 -> 90692).
+          value = _numberToText(_childText(c, 'v'));
+        }
+        cells[col] = value;
+      }
+      if (cells.isEmpty) continue;
+      final maxCol = cells.keys.reduce((a, b) => a > b ? a : b);
+      records.add([for (var i = 0; i <= maxCol; i++) cells[i] ?? '']);
+      recordLines.add(rowNumber);
+    }
+    return (records, recordLines);
+  }
+
+  static String _childText(XmlElement element, String name) =>
+      element.findElements(name).firstOrNull?.innerText ?? '';
+
+  /// 'B3' / 'AA12' -> 0-based column index, or null when no letters are found.
+  static int? _columnIndex(String cellRef) {
+    var n = 0;
+    var seen = false;
+    for (final ch in cellRef.codeUnits) {
+      final upper = (ch >= 97 && ch <= 122) ? ch - 32 : ch;
+      if (upper >= 65 && upper <= 90) {
+        n = n * 26 + (upper - 64);
+        seen = true;
+      } else {
+        break;
+      }
+    }
+    return seen ? n - 1 : null;
+  }
+
+  static String _numberToText(String raw) {
+    if (raw.isEmpty) return '';
+    if (!raw.contains('.')) return raw;
+    final d = double.tryParse(raw);
+    if (d != null && d.isFinite && d == d.roundToDouble() && d.abs() < 1e15) {
+      return d.round().toString();
+    }
+    return raw;
   }
 }
 

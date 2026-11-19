@@ -18,7 +18,7 @@ abstract class AuthRepository {
   /// Profile of the signed-in user, or null if signed out / deactivated.
   Future<UserModel?> fetchCurrentProfile();
 
-  /// Changes the signed-in user's own password (or 4–5 digit PIN) after
+  /// Changes the signed-in user's own password (or 4–6 digit PIN) after
   /// re-checking the current one server-side (`account` Edge Function).
   Future<void> changePassword(String currentPassword, String newPassword);
 }

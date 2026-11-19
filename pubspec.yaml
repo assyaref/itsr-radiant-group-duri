@@ -43,6 +43,8 @@ dependencies:
   pdf: ^3.13.1
   web: ^1.1.2
   graphify: ^1.2.0
+  archive: ^4.7.1
+  xml: ^7.0.1
 
 dev_dependencies:
   flutter_test:
@@ -72,6 +74,7 @@ flutter:
 
   assets:
     - assets/images/login_illustration.png
+    - assets/templates/template-import-user-itsr.xlsx
 
   # No environment files included in assets - configuration is passed at build time
 
