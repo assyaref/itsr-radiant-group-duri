@@ -138,3 +138,13 @@ Deno.test("send errors: description is short and structured", () => {
   assert(describeSendError({ message: "x".repeat(2000) }).length <= 500);
   assertEquals(describeSendError("plain"), "plain");
 });
+
+Deno.test("new password policy: PIN of 4+ digits or 6+ characters", async () => {
+  const { newPasswordError } = await import("../_shared/password.ts");
+  for (const ok of ["1234", "12345", "123456", "1234567", "12345678", "abc123"]) {
+    assertEquals(newPasswordError(ok), null, ok);
+  }
+  for (const bad of ["", "123", "abc12", "x".repeat(129)]) {
+    assert(newPasswordError(bad) !== null, bad);
+  }
+});

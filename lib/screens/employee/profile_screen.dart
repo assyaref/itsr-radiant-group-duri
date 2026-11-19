@@ -366,7 +366,7 @@ class _ChangePasswordDialogState extends ConsumerState<_ChangePasswordDialog> {
               autofillHints: const [AutofillHints.newPassword],
               decoration: InputDecoration(
                 labelText: 'Password / PIN baru',
-                helperText: 'PIN 4–6 digit angka, atau minimal 6 karakter',
+                helperText: 'PIN minimal 4 digit angka, atau password minimal 6 karakter',
                 suffixIcon: IconButton(
                   tooltip: _obscure
                       ? 'Tampilkan password'

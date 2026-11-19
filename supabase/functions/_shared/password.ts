@@ -22,8 +22,8 @@ export function isPin(p: string): boolean {
 export function newPasswordError(p: unknown): string | null {
   if (typeof p !== "string" || p.length === 0) return "Password is required";
   if (isPin(p)) return null;
-  if (/^\d+$/.test(p) && p.length < 4) return "A numeric PIN must be 4 to 6 digits";
-  if (p.length < 6) return "Password must be a 4–6 digit PIN or at least 6 characters";
+  if (/^\d+$/.test(p) && p.length < 4) return "PIN must be at least 4 digits";
+  if (p.length < 6) return "Use a PIN of at least 4 digits or a password of at least 6 characters";
   if (p.length > 128) return "Password is too long";
   return null;
 }
