@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../constants/app_theme.dart';
 import '../providers/auth_provider.dart';
 import '../utils/error_messages.dart';
+import '../utils/open_link.dart';
 import '../utils/validators.dart';
 
 /// How the user identifies themselves.
@@ -114,8 +115,16 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                         width: 480,
                         child: Center(
                           child: SingleChildScrollView(
-                            padding: const EdgeInsets.all(40),
-                            child: content,
+                            padding: const EdgeInsets.fromLTRB(40, 24, 40, 24),
+                            child: Column(
+                              mainAxisSize: MainAxisSize.min,
+                              crossAxisAlignment: CrossAxisAlignment.stretch,
+                              children: [
+                                content,
+                                const SizedBox(height: 24),
+                                const _DevFooter(),
+                              ],
+                            ),
                           ),
                         ),
                       ),
@@ -126,7 +135,15 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                       padding: const EdgeInsets.fromLTRB(24, 16, 24, 24),
                       child: ConstrainedBox(
                         constraints: const BoxConstraints(maxWidth: 420),
-                        child: content,
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            content,
+                            const SizedBox(height: 20),
+                            const _DevFooter(),
+                          ],
+                        ),
                       ),
                     ),
                   ),
@@ -577,6 +594,75 @@ class LoginIllustration extends StatelessWidget {
       errorBuilder: (_, _, _) => const _FallbackIllustration(),
     ),
   );
+}
+
+/// Footer at the very bottom of the login page:
+/// `© <year> | </> Developed by Assyaref.dev | 💎`, where "Assyaref.dev"
+/// opens the developer's WhatsApp in a new tab.
+class _DevFooter extends StatelessWidget {
+  const _DevFooter();
+
+  static const whatsAppUrl =
+      'https://api.whatsapp.com/send?phone=6282167472765&text=Haii%20..%F0%9F%91%8B';
+
+  static const _brown = Color(0xFF8A7364); // "© <year>"
+  static const _gray = Color(0xFF7C6F64); // "</> Developed by"
+  static const _pipe = Color(0xFFC9BCB0); // separators
+  static const _link = Color(0xFF2563EB); // link blue
+
+  @override
+  Widget build(BuildContext context) {
+    final year = DateTime.now().year;
+    const textStyle = TextStyle(fontSize: 12.5, height: 1.2);
+    Widget pipe() => const Padding(
+      padding: EdgeInsets.symmetric(horizontal: 14),
+      child: Text('|', style: TextStyle(color: _pipe, fontSize: 14)),
+    );
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        const Divider(
+          height: 1,
+          thickness: 1,
+          color: AppTheme.border,
+        ),
+        Padding(
+          padding: const EdgeInsets.only(top: 10, bottom: 4),
+          child: Wrap(
+            alignment: WrapAlignment.center,
+            crossAxisAlignment: WrapCrossAlignment.center,
+            children: [
+              Text('© $year', style: textStyle.copyWith(color: _brown)),
+              pipe(),
+              const Icon(Icons.code, size: 15, color: _gray),
+              const SizedBox(width: 5),
+              Text('Developed by ', style: textStyle.copyWith(color: _gray)),
+              Semantics(
+                button: true,
+                label: 'Assyaref.dev — hubungi via WhatsApp',
+                child: MouseRegion(
+                  cursor: SystemMouseCursors.click,
+                  child: GestureDetector(
+                    key: const Key('dev_name_link'),
+                    onTap: () => openExternalLink(whatsAppUrl),
+                    child: Text(
+                      'Assyaref.dev',
+                      style: textStyle.copyWith(
+                        color: _link,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+              pipe(),
+              const Text('💎', style: TextStyle(fontSize: 13)),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
 }
 
 class _FallbackIllustration extends StatelessWidget {

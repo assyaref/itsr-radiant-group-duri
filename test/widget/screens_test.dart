@@ -7,6 +7,7 @@ import 'package:itsr_radiant/screens/login_screen.dart';
 import 'package:itsr_radiant/screens/my_tickets_screen.dart';
 import 'package:itsr_radiant/screens/ticket_detail_screen.dart';
 import 'package:itsr_radiant/utils/error_messages.dart';
+import 'package:itsr_radiant/utils/open_link.dart';
 import 'package:itsr_radiant/widgets/app_shell.dart';
 
 import '../support/fakes.dart';
@@ -76,6 +77,18 @@ void main() {
       await t.tap(find.byKey(const Key('login_button')));
       await t.pumpAndSettle();
       expect(find.textContaining('15 minutes'), findsOneWidget);
+    });
+
+    testWidgets('developer footer link opens WhatsApp chat', (t) async {
+      debugOpenedLinks.clear();
+      final auth = FakeAuthRepository();
+      await pumpApp(t, const LoginScreen(), auth: auth, size: phone);
+      await t.ensureVisible(find.byKey(const Key('dev_name_link')));
+      await t.pumpAndSettle();
+      await t.tap(find.byKey(const Key('dev_name_link')));
+      expect(debugOpenedLinks, [
+        'https://api.whatsapp.com/send?phone=6282167472765&text=Haii%20..%F0%9F%91%8B',
+      ]);
     });
   });
 
