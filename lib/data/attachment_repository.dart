@@ -55,7 +55,7 @@ class SupabaseAttachmentRepository implements AttachmentRepository {
   static const _function = 'attachments';
   static const _columns =
       'id, ticket_id, uploaded_by, file_name, mime_type, size_bytes, created_at, '
-      'uploader:profiles(full_name)';
+      'uploader:profiles!uploaded_by(full_name)';
 
   @override
   Future<AttachmentModel> uploadAttachment({
