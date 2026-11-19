@@ -5,7 +5,7 @@
 // The current password is re-checked (through the same PIN derivation as the
 // `login` function) before the new one is set, and attempts count towards the
 // login rate limit, so a stolen session cannot brute-force or silently change
-// the password. PINs (4–6 digits) are stored via authPassword() because
+// the password. PINs (4–5 digits) are stored via authPassword() because
 // Supabase Auth rejects passwords shorter than 6 characters.
 import { bearerToken, clientIp, corsHeaders, json, readJsonObject, withErrorBoundary } from "../_shared/http.ts";
 import { adminClient, publicClient, verifyCaller } from "../_shared/supabase.ts";

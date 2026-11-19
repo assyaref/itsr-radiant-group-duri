@@ -66,7 +66,7 @@ export function validateUpdate(b: Record<string, unknown>): Result<UpdateInput> 
 
 export interface ResetPasswordInput { user_id: string; password: string }
 
-/** Same rules as account creation: valid UUID, password 8–128 characters. */
+/** Same rules as account creation: valid UUID, PIN of 4+ digits or 6–128 characters. */
 export function validateResetPassword(b: Record<string, unknown>): Result<ResetPasswordInput> {
   const user_id = str(b.user_id);
   if (!UUID_RE.test(user_id)) return { ok: false, error: "Invalid user id" };

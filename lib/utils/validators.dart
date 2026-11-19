@@ -24,18 +24,19 @@ class Validators {
   static String? loginPassword(String? value) {
     if (value == null || value.isEmpty) return 'Please enter your password';
     if (pinPattern.hasMatch(value)) return null;
-    if (value.length < 6) return 'Enter your 4–6 digit PIN or password';
+    if (value.length < 6) return 'Enter your PIN (min. 4 digits) or password';
     return null;
   }
 
-  /// New passwords: a 4–6 digit PIN, or 8–128 characters.
+  /// New passwords: a PIN of 4+ digits, or 6–128 characters.
+  /// (4–6 digit PINs are stored peppered; longer numbers as normal passwords.)
   static String? newPassword(String? value) {
     final v = value ?? '';
     if (pinPattern.hasMatch(v)) return null;
-    if (RegExp(r'^\d+$').hasMatch(v) && v.length < 8) {
-      return 'A numeric PIN must be 4 to 6 digits';
+    if (RegExp(r'^\d+$').hasMatch(v) && v.length < 4) {
+      return 'PIN must be at least 4 digits';
     }
-    if (v.length < 8) return 'Use a 4–6 digit PIN or at least 8 characters';
+    if (v.length < 6) return 'Use a PIN of at least 4 digits or a password of at least 6 characters';
     if (v.length > 128) return 'Password is too long';
     return null;
   }
