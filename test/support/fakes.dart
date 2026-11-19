@@ -1,9 +1,13 @@
+import 'dart:typed_data';
 import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:itsr_radiant/data/admin_repository.dart';
+import 'package:itsr_radiant/data/attachment_repository.dart';
+import 'package:itsr_radiant/models/attachment_model.dart';
+import 'package:itsr_radiant/providers/attachment_provider.dart';
 import 'package:itsr_radiant/data/auth_repository.dart';
 import 'package:itsr_radiant/data/ticket_repository.dart';
 import 'package:itsr_radiant/models/activity_model.dart';
@@ -341,6 +345,7 @@ Future<ProviderContainer> pumpApp(
   required FakeAuthRepository auth,
   FakeTicketRepository? tickets,
   FakeAdminRepository? admin,
+  FakeAttachmentRepository? attachments,
   Size size = const Size(1280, 900),
 }) async {
   tester.view.physicalSize = size;
@@ -353,6 +358,9 @@ Future<ProviderContainer> pumpApp(
         tickets ?? FakeTicketRepository(),
       ),
       adminRepositoryProvider.overrideWithValue(admin ?? FakeAdminRepository()),
+      attachmentRepositoryProvider.overrideWithValue(
+        attachments ?? FakeAttachmentRepository(),
+      ),
     ],
   );
   addTearDown(container.dispose);
@@ -364,4 +372,45 @@ Future<ProviderContainer> pumpApp(
   );
   await tester.pumpAndSettle();
   return container;
+}
+
+/// In-memory attachments; [bytes] maps attachment id -> file content.
+class FakeAttachmentRepository implements AttachmentRepository {
+  FakeAttachmentRepository({
+    List<AttachmentModel>? files,
+    Map<String, Uint8List>? bytes,
+  }) : files = files ?? [],
+       bytes = bytes ?? {};
+  final List<AttachmentModel> files;
+  final Map<String, Uint8List> bytes;
+
+  @override
+  Future<List<AttachmentModel>> listAttachments(String ticketId) async =>
+      files.where((f) => f.ticketId == ticketId).toList();
+
+  @override
+  Future<Uint8List> downloadAttachment(String attachmentId) async =>
+      bytes[attachmentId] ?? Uint8List(0);
+
+  @override
+  Future<AttachmentModel> uploadAttachment({
+    required String ticketId,
+    required String fileName,
+    required String mimeType,
+    required Uint8List bytes,
+    required String uploadedBy,
+  }) async {
+    final a = AttachmentModel(
+      id: 'att${files.length + 1}',
+      ticketId: ticketId,
+      fileName: fileName,
+      mimeType: mimeType,
+      fileSize: bytes.length,
+      uploadedBy: uploadedBy,
+      createdAt: DateTime.now().toUtc(),
+    );
+    files.add(a);
+    this.bytes[a.id] = bytes;
+    return a;
+  }
 }

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:itsr_radiant/constants/app_constants.dart';
+import 'package:itsr_radiant/models/attachment_model.dart';
 import 'package:itsr_radiant/models/comment_model.dart';
 import 'package:itsr_radiant/screens/admin/data_management_screen.dart';
 import 'package:itsr_radiant/screens/admin/users_screen.dart';
@@ -141,6 +142,64 @@ void main() {
       expect(itMsg.top, greaterThan(userMsg.top));
       expect(find.text('IT SUPPORT'), findsOneWidget);
       expect(find.text('Anda'), findsOneWidget);
+      expect(t.takeException(), isNull);
+    });
+
+    testWidgets('attachments appear in the chat (image thumbnail, file chip)', (
+      t,
+    ) async {
+      // 1x1 transparent PNG.
+      final png = base64Decode(
+        'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==',
+      );
+      final files = FakeAttachmentRepository(
+        files: [
+          AttachmentModel(
+            id: 'att1',
+            ticketId: '1',
+            fileName: 'tempel_1.png',
+            mimeType: 'image/png',
+            fileSize: png.length,
+            uploadedBy: 'emp1',
+            createdAt: DateTime.utc(2026, 11, 2, 8),
+            uploaderName: 'Emp Name',
+          ),
+          AttachmentModel(
+            id: 'att2',
+            ticketId: '1',
+            fileName: 'laporan.pdf',
+            mimeType: 'application/pdf',
+            fileSize: 2048,
+            uploadedBy: 'it1',
+            createdAt: DateTime.utc(2026, 11, 2, 9),
+            uploaderName: 'Tech Name',
+          ),
+        ],
+        bytes: {'att1': png},
+      );
+      await pumpApp(
+        t,
+        const TicketDetailScreen(ticketId: '1'),
+        auth: FakeAuthRepository(profile: user('emp1', 'employee')),
+        tickets: FakeTicketRepository(tickets: [ticket('1')]),
+        attachments: files,
+        size: phone,
+      );
+      await t.tap(find.text('Komentar'));
+      await t.pumpAndSettle();
+      final image = find.byKey(const Key('chat_image_att1'));
+      expect(image, findsOneWidget);
+      // Reporter's image on the right, IT's PDF on the left.
+      expect(t.getRect(image).center.dx, greaterThan(phone.width / 2));
+      final pdf = find.text('laporan.pdf');
+      expect(pdf, findsOneWidget);
+      expect(t.getRect(pdf).left, lessThan(phone.width / 2));
+      // Tapping the thumbnail opens the full-size viewer.
+      await t.ensureVisible(image);
+      await t.pumpAndSettle();
+      await t.tap(image);
+      await t.pumpAndSettle();
+      expect(find.byType(InteractiveViewer), findsOneWidget);
       expect(t.takeException(), isNull);
     });
   });
