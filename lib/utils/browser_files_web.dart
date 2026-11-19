@@ -119,7 +119,11 @@ void Function() listenForPastedFiles(
           : 'tempel_${DateTime.now().millisecondsSinceEpoch}.$ext';
       file.arrayBuffer().toDart.then(
         (buf) => onFile(
-          PickedFile(name: name, bytes: buf.toDart.asUint8List(), mimeType: type),
+          PickedFile(
+            name: name,
+            bytes: buf.toDart.asUint8List(),
+            mimeType: type,
+          ),
         ),
       );
     }

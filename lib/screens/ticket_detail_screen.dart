@@ -1147,8 +1147,20 @@ class _CommentsTabState extends ConsumerState<_CommentsTab> with _ActionRunner {
   Widget build(BuildContext context) {
     final staff = widget.user.isStaff;
     final reporterId = widget.detail.ticket.reporterId;
+    final attachments =
+        ref.watch(attachmentsProvider(widget.detail.ticket.id)).valueOrNull ??
+        const <AttachmentModel>[];
     final events = <(DateTime, Widget)>[
       for (final a in widget.detail.activities) (a.createdAt, _ActivityItem(a)),
+      for (final f in attachments)
+        (
+          f.createdAt,
+          _CommentItem.attachment(
+            f,
+            fromReporter: f.uploadedBy == reporterId,
+            mine: f.uploadedBy == widget.user.id,
+          ),
+        ),
       for (final c in widget.detail.comments)
         (
           c.createdAt,
@@ -1255,7 +1267,8 @@ class _CommentsTabState extends ConsumerState<_CommentsTab> with _ActionRunner {
                                 }
                               },
                         icon: const Icon(Icons.attach_file, size: 20),
-                        tooltip: 'Lampirkan file (atau tempel gambar dengan Ctrl+V)',
+                        tooltip:
+                            'Lampirkan file (atau tempel gambar dengan Ctrl+V)',
                       ),
                       const SizedBox(width: 4),
                       Material(
@@ -1517,9 +1530,21 @@ class _EmptyChat extends StatelessWidget {
 /// Chat bubble. The ticket reporter (user) sits on the RIGHT in a blue
 /// gradient bubble; IT Support / Admin replies sit on the LEFT in a white
 /// bubble with a role badge. Internal notes are amber and always on the left.
+/// A chat bubble: a comment, or a file attachment (image thumbnail / file
+/// chip) shown in the timeline at the time it was uploaded.
 class _CommentItem extends StatelessWidget {
-  const _CommentItem(this.c, {required this.fromReporter, required this.mine});
-  final CommentModel c;
+  const _CommentItem(
+    CommentModel this.c, {
+    required this.fromReporter,
+    required this.mine,
+  }) : file = null;
+  const _CommentItem.attachment(
+    AttachmentModel this.file, {
+    required this.fromReporter,
+    required this.mine,
+  }) : c = null;
+  final CommentModel? c;
+  final AttachmentModel? file;
   final bool fromReporter;
   final bool mine;
 
@@ -1534,8 +1559,11 @@ class _CommentItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final name = c.authorName ?? 'User';
-    final internal = c.isInternal;
+    final c = this.c;
+    final file = this.file;
+    final name = (c != null ? c.authorName : file!.uploaderName) ?? 'User';
+    final internal = c?.isInternal ?? false;
+    final createdAt = c?.createdAt ?? file!.createdAt;
     final right = fromReporter && !internal;
     const r = Radius.circular(18);
     const tail = Radius.circular(4);
@@ -1546,7 +1574,9 @@ class _CommentItem extends StatelessWidget {
         : EColors.muted;
 
     final bubble = Container(
-      padding: const EdgeInsets.fromLTRB(14, 10, 14, 8),
+      padding: file != null && file.isImage
+          ? const EdgeInsets.fromLTRB(4, 4, 4, 6)
+          : const EdgeInsets.fromLTRB(14, 10, 14, 8),
       decoration: BoxDecoration(
         gradient: right ? _userGradient : null,
         color: right
@@ -1611,18 +1641,22 @@ class _CommentItem extends StatelessWidget {
                 ),
               ),
             ),
-          SelectionArea(
-            child: Text(
-              c.content,
-              style: TextStyle(fontSize: 14, height: 1.45, color: textColor),
-            ),
-          ),
+          if (c != null)
+            SelectionArea(
+              child: Text(
+                c.content,
+                style: TextStyle(fontSize: 14, height: 1.45, color: textColor),
+              ),
+            )
+          else
+            _ChatAttachment(file!, onDark: right),
           const SizedBox(height: 4),
           Row(
             mainAxisSize: MainAxisSize.min,
             children: [
+              if (file != null && file.isImage) const SizedBox(width: 6),
               Text(
-                Fmt.time(c.createdAt),
+                Fmt.time(createdAt),
                 style: TextStyle(fontSize: 10.5, color: metaColor),
               ),
               if (mine) ...[
@@ -1733,6 +1767,168 @@ class _CommentItem extends StatelessWidget {
                 : [avatar, const SizedBox(width: 8), Flexible(child: column)],
           );
         },
+      ),
+    );
+  }
+}
+
+/// Attachment content inside a chat bubble: an image thumbnail (tap to view
+/// full size) or a file chip (tap to download).
+class _ChatAttachment extends ConsumerWidget {
+  const _ChatAttachment(this.file, {required this.onDark});
+  final AttachmentModel file;
+  final bool onDark;
+
+  Future<void> _download(BuildContext context, WidgetRef ref) async {
+    try {
+      final bytes = await ref.read(attachmentBytesProvider(file.id).future);
+      await downloadBytes(bytes, file.fileName, file.mimeType);
+    } catch (e) {
+      if (context.mounted) {
+        showSnack(
+          context,
+          'Gagal mengunduh lampiran: ${friendlyError(e)}',
+          error: true,
+        );
+      }
+    }
+  }
+
+  void _open(BuildContext context, WidgetRef ref, Uint8List bytes) {
+    showDialog<void>(
+      context: context,
+      builder: (ctx) => Dialog(
+        insetPadding: const EdgeInsets.all(16),
+        clipBehavior: Clip.antiAlias,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 8, 4, 8),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      file.fileName,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(fontWeight: FontWeight.w700),
+                    ),
+                  ),
+                  IconButton(
+                    tooltip: 'Unduh',
+                    icon: const Icon(Icons.download_rounded),
+                    onPressed: () => _download(context, ref),
+                  ),
+                  IconButton(
+                    tooltip: 'Tutup',
+                    icon: const Icon(Icons.close),
+                    onPressed: () => Navigator.pop(ctx),
+                  ),
+                ],
+              ),
+            ),
+            Flexible(
+              child: InteractiveViewer(
+                maxScale: 5,
+                child: Image.memory(bytes, fit: BoxFit.contain),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    if (file.isImage) {
+      final bytes = ref.watch(attachmentBytesProvider(file.id));
+      return ClipRRect(
+        borderRadius: BorderRadius.circular(14),
+        child: bytes.when(
+          data: (b) => MouseRegion(
+            cursor: SystemMouseCursors.click,
+            child: GestureDetector(
+              key: Key('chat_image_${file.id}'),
+              onTap: () => _open(context, ref, b),
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(
+                  minWidth: 96,
+                  minHeight: 96,
+                  maxWidth: 260,
+                  maxHeight: 260,
+                ),
+                child: Image.memory(
+                  b,
+                  fit: BoxFit.cover,
+                  errorBuilder: (_, _, _) => _fileChip(context, ref),
+                ),
+              ),
+            ),
+          ),
+          loading: () => Container(
+            width: 200,
+            height: 140,
+            color: const Color(0xFFF1F5F9),
+            alignment: Alignment.center,
+            child: const SizedBox(
+              width: 22,
+              height: 22,
+              child: CircularProgressIndicator(strokeWidth: 2),
+            ),
+          ),
+          error: (_, _) => _fileChip(context, ref),
+        ),
+      );
+    }
+    return _fileChip(context, ref);
+  }
+
+  Widget _fileChip(BuildContext context, WidgetRef ref) {
+    final fg = onDark ? Colors.white : EColors.ink;
+    final sub = onDark ? Colors.white.withValues(alpha: 0.8) : EColors.muted;
+    return InkWell(
+      borderRadius: BorderRadius.circular(10),
+      onTap: () => _download(context, ref),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 2),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              file.isImage
+                  ? Icons.image_outlined
+                  : Icons.insert_drive_file_outlined,
+              color: fg,
+              size: 22,
+            ),
+            const SizedBox(width: 8),
+            Flexible(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    file.fileName,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      fontWeight: FontWeight.w700,
+                      fontSize: 13,
+                      color: fg,
+                    ),
+                  ),
+                  Text(
+                    '${file.displaySize} · ketuk untuk unduh',
+                    style: TextStyle(fontSize: 11, color: sub),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

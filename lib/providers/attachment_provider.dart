@@ -53,6 +53,17 @@ class AttachmentActions {
       _ref.read(attachmentRepositoryProvider).downloadAttachment(attachmentId);
 }
 
+/// Bytes of one attachment (for inline image previews in the chat).
+/// Cached for the session so scrolling does not download an image again.
+final attachmentBytesProvider = FutureProvider.family<Uint8List, String>((
+  ref,
+  attachmentId,
+) {
+  return ref
+      .read(attachmentRepositoryProvider)
+      .downloadAttachment(attachmentId);
+});
+
 final attachmentActionsProvider = Provider<AttachmentActions>(
   (ref) => AttachmentActions(ref),
 );
