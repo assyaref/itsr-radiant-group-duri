@@ -487,6 +487,56 @@ begin
   perform test.ok(not limited, 'L04 successful login clears the account failure streak');
 end $$;
 
+-- -------------------------------------------- comment edit / delete ------
+-- Migration 20261119000100: edit (author only) and soft delete (author or admin).
+do $$
+declare c_emp uuid; c_it uuid; r public.ticket_comments; n int;
+begin
+  select id into c_emp from public.ticket_comments where content = 'It also beeps 3 times';
+  select id into c_it  from public.ticket_comments where content = 'Please bring the laptop to IT';
+
+  perform test.act_as('A');
+  perform test.expect_ok(format('select public.edit_comment(%L, %L)', c_emp, '  It beeps 3 times, then stops  '),
+    'C01 author can edit own comment');
+  select * into r from public.ticket_comments where id = c_emp;
+  perform test.ok(r.content = 'It beeps 3 times, then stops' and r.edited_at is not null,
+    'C02 edit trims text and sets edited_at', r.content);
+  perform test.expect_error(format('select public.edit_comment(%L, %L)', c_emp, '   '),
+    'C03 empty edit rejected');
+  perform test.expect_error(format('select public.edit_comment(%L, %L)', c_it, 'hijack'),
+    'C04 employee cannot edit IT''s comment');
+  perform test.expect_error(format('select public.delete_comment(%L)', c_it),
+    'C05 employee cannot delete IT''s comment');
+  perform test.expect_error(format('update public.ticket_comments set content = %L where id = %L', 'direct', c_emp),
+    'C06 clients cannot UPDATE comments directly');
+  perform test.expect_error(format('delete from public.ticket_comments where id = %L', c_emp),
+    'C07 clients cannot DELETE comment rows');
+
+  perform test.act_as('B');
+  perform test.expect_error(format('select public.edit_comment(%L, %L)', c_emp, 'not mine'),
+    'C08 other employee cannot edit');
+
+  perform test.act_as('IT1');
+  perform test.expect_error(format('select public.edit_comment(%L, %L)', c_emp, 'IT edit'),
+    'C09 IT support cannot edit someone else''s comment');
+  perform test.expect_error(format('select public.delete_comment(%L)', c_emp),
+    'C10 IT support cannot delete someone else''s comment');
+
+  perform test.act_as('A');
+  perform test.expect_ok(format('select public.delete_comment(%L)', c_emp), 'C11 author can delete own comment');
+  select * into r from public.ticket_comments where id = c_emp;
+  perform test.ok(r.deleted_at is not null and r.deleted_by = test.uid('A') and r.content = '[dihapus]',
+    'C12 delete erases the text and records who deleted', r.content);
+  perform test.expect_error(format('select public.edit_comment(%L, %L)', c_emp, 'revive'),
+    'C13 deleted comment cannot be edited');
+
+  perform test.act_as('ADM');
+  perform test.expect_ok(format('select public.delete_comment(%L)', c_it), 'C14 administrator can delete any comment');
+
+  perform test.act_as('anon');
+  perform test.expect_error(format('select public.delete_comment(%L)', c_it), 'C15 anon cannot call delete_comment');
+end $$;
+
 -- ------------------------------------------------------------- summary -----
 select count(*) filter (where passed) as passed,
        count(*) filter (where not passed) as failed,

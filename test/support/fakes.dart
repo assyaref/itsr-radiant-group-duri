@@ -233,6 +233,46 @@ class FakeTicketRepository implements TicketRepository {
   }) async => calls.add('comment:$ticketId:$content:$isInternal');
 
   @override
+  Future<void> editComment(String commentId, String content) async {
+    calls.add('edit:$commentId:$content');
+    comments = [
+      for (final c in comments)
+        c.id == commentId
+            ? CommentModel(
+                id: c.id,
+                ticketId: c.ticketId,
+                authorId: c.authorId,
+                content: content,
+                isInternal: c.isInternal,
+                createdAt: c.createdAt,
+                editedAt: DateTime.now().toUtc(),
+                authorName: c.authorName,
+              )
+            : c,
+    ];
+  }
+
+  @override
+  Future<void> deleteComment(String commentId) async {
+    calls.add('delete:$commentId');
+    comments = [
+      for (final c in comments)
+        c.id == commentId
+            ? CommentModel(
+                id: c.id,
+                ticketId: c.ticketId,
+                authorId: c.authorId,
+                content: '[dihapus]',
+                isInternal: c.isInternal,
+                createdAt: c.createdAt,
+                deletedAt: DateTime.now().toUtc(),
+                authorName: c.authorName,
+              )
+            : c,
+    ];
+  }
+
+  @override
   Future<void> updateTicket(
     String ticketId, {
     String? status,
@@ -391,6 +431,12 @@ class FakeAttachmentRepository implements AttachmentRepository {
   @override
   Future<Uint8List> downloadAttachment(String attachmentId) async =>
       bytes[attachmentId] ?? Uint8List(0);
+
+  @override
+  Future<void> deleteAttachment(String attachmentId) async {
+    files.removeWhere((f) => f.id == attachmentId);
+    bytes.remove(attachmentId);
+  }
 
   @override
   Future<AttachmentModel> uploadAttachment({

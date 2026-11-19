@@ -42,6 +42,10 @@ abstract class AttachmentRepository {
 
   /// Downloads the file bytes (proxied by the Edge Function).
   Future<Uint8List> downloadAttachment(String attachmentId);
+
+  /// Uploader or administrator (enforced by the Edge Function). Removes the
+  /// Google Drive file and the metadata row.
+  Future<void> deleteAttachment(String attachmentId);
 }
 
 class SupabaseAttachmentRepository implements AttachmentRepository {
@@ -105,5 +109,13 @@ class SupabaseAttachmentRepository implements AttachmentRepository {
     if (data is Uint8List) return data;
     if (data is List<int>) return Uint8List.fromList(data);
     throw StateError('Unexpected download response');
+  }
+
+  @override
+  Future<void> deleteAttachment(String attachmentId) async {
+    await _client.functions.invoke(
+      _function,
+      body: {'action': 'delete', 'attachment_id': attachmentId},
+    );
   }
 }

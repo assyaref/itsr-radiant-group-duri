@@ -1143,10 +1143,71 @@ class _CommentsTabState extends ConsumerState<_CommentsTab> with _ActionRunner {
     }, _internal ? 'Catatan internal ditambahkan' : 'Komentar terkirim');
   }
 
+  Future<void> _editComment(CommentModel c) async {
+    final text = await showTextInputDialog(
+      context,
+      title: 'Edit komentar',
+      label: 'Komentar',
+      confirmLabel: 'Simpan',
+      cancelLabel: 'Batal',
+      initialValue: c.content,
+      minLength: 1,
+      maxLength: 5000,
+    );
+    if (text == null || text == c.content.trim()) return;
+    await run(
+      () => ref
+          .read(ticketActionsProvider)
+          .editComment(widget.detail.ticket.id, c.id, text),
+      'Komentar diperbarui',
+    );
+  }
+
+  Future<void> _deleteComment(CommentModel c) async {
+    final ok = await showConfirmDialog(
+      context,
+      title: 'Hapus komentar?',
+      message:
+          'Isi komentar akan dihapus permanen dan diganti dengan '
+          '"Pesan ini telah dihapus".',
+      confirmLabel: 'Hapus',
+      destructive: true,
+    );
+    if (!ok) return;
+    await run(
+      () => ref
+          .read(ticketActionsProvider)
+          .deleteComment(widget.detail.ticket.id, c.id),
+      'Komentar dihapus',
+    );
+  }
+
+  Future<void> _deleteAttachment(AttachmentModel f) async {
+    final ok = await showConfirmDialog(
+      context,
+      title: 'Hapus lampiran?',
+      message:
+          '"${f.fileName}" akan dihapus permanen, termasuk dari '
+          'Google Drive.',
+      confirmLabel: 'Hapus',
+      destructive: true,
+    );
+    if (!ok) return;
+    await run(
+      () => ref
+          .read(attachmentActionsProvider)
+          .deleteAttachment(widget.detail.ticket.id, f.id),
+      'Lampiran dihapus',
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final staff = widget.user.isStaff;
     final reporterId = widget.detail.ticket.reporterId;
+    final me = widget.user;
+    final closedForMe =
+        !staff && widget.detail.ticket.status == AppConstants.statusClosed;
     final attachments =
         ref.watch(attachmentsProvider(widget.detail.ticket.id)).valueOrNull ??
         const <AttachmentModel>[];
@@ -1159,6 +1220,10 @@ class _CommentsTabState extends ConsumerState<_CommentsTab> with _ActionRunner {
             f,
             fromReporter: f.uploadedBy == reporterId,
             mine: f.uploadedBy == widget.user.id,
+            onDelete:
+                !busy && !closedForMe && (f.uploadedBy == me.id || me.isAdmin)
+                ? () => _deleteAttachment(f)
+                : null,
           ),
         ),
       for (final c in widget.detail.comments)
@@ -1168,6 +1233,13 @@ class _CommentsTabState extends ConsumerState<_CommentsTab> with _ActionRunner {
             c,
             fromReporter: c.authorId == reporterId,
             mine: c.authorId == widget.user.id,
+            onEdit: !busy && !c.isDeleted && c.authorId == me.id
+                ? () => _editComment(c)
+                : null,
+            onDelete:
+                !busy && !c.isDeleted && (c.authorId == me.id || me.isAdmin)
+                ? () => _deleteComment(c)
+                : null,
           ),
         ),
     ]..sort((x, y) => y.$1.compareTo(x.$1)); // newest first
@@ -1537,16 +1609,24 @@ class _CommentItem extends StatelessWidget {
     CommentModel this.c, {
     required this.fromReporter,
     required this.mine,
+    this.onEdit,
+    this.onDelete,
   }) : file = null;
   const _CommentItem.attachment(
     AttachmentModel this.file, {
     required this.fromReporter,
     required this.mine,
-  }) : c = null;
+    this.onDelete,
+  }) : c = null,
+       onEdit = null;
   final CommentModel? c;
   final AttachmentModel? file;
   final bool fromReporter;
   final bool mine;
+
+  /// Shown in the bubble's ⋯ menu when not null.
+  final VoidCallback? onEdit;
+  final VoidCallback? onDelete;
 
   static const _userGradient = LinearGradient(
     begin: Alignment.topLeft,
@@ -1641,7 +1721,25 @@ class _CommentItem extends StatelessWidget {
                 ),
               ),
             ),
-          if (c != null)
+          if (c != null && c.isDeleted)
+            Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(Icons.block_rounded, size: 15, color: metaColor),
+                const SizedBox(width: 6),
+                Flexible(
+                  child: Text(
+                    'Pesan ini telah dihapus',
+                    style: TextStyle(
+                      fontSize: 13.5,
+                      fontStyle: FontStyle.italic,
+                      color: metaColor,
+                    ),
+                  ),
+                ),
+              ],
+            )
+          else if (c != null)
             SelectionArea(
               child: Text(
                 c.content,
@@ -1655,6 +1753,17 @@ class _CommentItem extends StatelessWidget {
             mainAxisSize: MainAxisSize.min,
             children: [
               if (file != null && file.isImage) const SizedBox(width: 6),
+              if (c != null && c.isEdited && !c.isDeleted) ...[
+                Text(
+                  'diedit',
+                  style: TextStyle(
+                    fontSize: 10.5,
+                    fontStyle: FontStyle.italic,
+                    color: metaColor,
+                  ),
+                ),
+                const SizedBox(width: 4),
+              ],
               Text(
                 Fmt.time(createdAt),
                 style: TextStyle(fontSize: 10.5, color: metaColor),
@@ -1662,6 +1771,51 @@ class _CommentItem extends StatelessWidget {
               if (mine) ...[
                 const SizedBox(width: 4),
                 Icon(Icons.done_all_rounded, size: 13, color: metaColor),
+              ],
+              if (onEdit != null || onDelete != null) ...[
+                const SizedBox(width: 2),
+                SizedBox(
+                  width: 22,
+                  height: 18,
+                  child: PopupMenuButton<String>(
+                    key: Key('chat_menu_${c?.id ?? file!.id}'),
+                    tooltip: 'Opsi',
+                    padding: EdgeInsets.zero,
+                    iconSize: 16,
+                    icon: Icon(Icons.more_horiz_rounded, color: metaColor),
+                    onSelected: (v) =>
+                        v == 'edit' ? onEdit?.call() : onDelete?.call(),
+                    itemBuilder: (_) => [
+                      if (onEdit != null)
+                        const PopupMenuItem(
+                          value: 'edit',
+                          child: ListTile(
+                            dense: true,
+                            contentPadding: EdgeInsets.zero,
+                            leading: Icon(Icons.edit_outlined, size: 18),
+                            title: Text('Edit'),
+                          ),
+                        ),
+                      if (onDelete != null)
+                        const PopupMenuItem(
+                          value: 'delete',
+                          child: ListTile(
+                            dense: true,
+                            contentPadding: EdgeInsets.zero,
+                            leading: Icon(
+                              Icons.delete_outline,
+                              size: 18,
+                              color: Color(0xFFDC2626),
+                            ),
+                            title: Text(
+                              'Hapus',
+                              style: TextStyle(color: Color(0xFFDC2626)),
+                            ),
+                          ),
+                        ),
+                    ],
+                  ),
+                ),
               ],
             ],
           ),

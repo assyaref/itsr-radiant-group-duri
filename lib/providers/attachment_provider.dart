@@ -51,6 +51,12 @@ class AttachmentActions {
 
   Future<Uint8List> downloadAttachment(String attachmentId) =>
       _ref.read(attachmentRepositoryProvider).downloadAttachment(attachmentId);
+
+  Future<void> deleteAttachment(String ticketId, String attachmentId) async {
+    await _ref.read(attachmentRepositoryProvider).deleteAttachment(attachmentId);
+    _ref.invalidate(attachmentsProvider(ticketId));
+    _ref.invalidate(attachmentBytesProvider(attachmentId));
+  }
 }
 
 /// Bytes of one attachment (for inline image previews in the chat).

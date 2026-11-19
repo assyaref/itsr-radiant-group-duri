@@ -302,6 +302,8 @@ Future<String?> showTextInputDialog(
   String confirmLabel = 'Save',
   String? initialValue,
   int minLength = 3,
+  int maxLength = 2000,
+  String cancelLabel = 'Cancel',
 }) {
   final controller = TextEditingController(text: initialValue);
   final formKey = GlobalKey<FormState>();
@@ -317,7 +319,7 @@ Future<String?> showTextInputDialog(
             controller: controller,
             autofocus: true,
             maxLines: 4,
-            maxLength: 2000,
+            maxLength: maxLength,
             decoration: InputDecoration(
               labelText: label,
               alignLabelWithHint: true,
@@ -331,7 +333,7 @@ Future<String?> showTextInputDialog(
       actions: [
         TextButton(
           onPressed: () => Navigator.pop(ctx),
-          child: const Text('Cancel'),
+          child: Text(cancelLabel),
         ),
         FilledButton(
           onPressed: () {

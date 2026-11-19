@@ -277,6 +277,20 @@ class TicketActions {
     _refresh(ticketId: ticketId);
   }
 
+  Future<void> editComment(
+    String ticketId,
+    String commentId,
+    String content,
+  ) async {
+    await _repo.editComment(commentId, content);
+    _refresh(ticketId: ticketId);
+  }
+
+  Future<void> deleteComment(String ticketId, String commentId) async {
+    await _repo.deleteComment(commentId);
+    _refresh(ticketId: ticketId);
+  }
+
   Future<void> acceptTicket(String ticketId) async {
     final user = await _ref.read(currentUserProvider.future);
     if (user == null) throw StateError('Not signed in');
