@@ -209,12 +209,12 @@ class SupabaseTicketRepository implements TicketRepository {
     final results = await Future.wait([
       _client
           .from('ticket_comments')
-          .select('*, author:profiles(full_name)')
+          .select('*, author:profiles!author_id(full_name)')
           .eq('ticket_id', ticketId)
           .order('created_at'),
       _client
           .from('ticket_activity_log')
-          .select('*, actor:profiles(full_name)')
+          .select('*, actor:profiles!actor_id(full_name)')
           .eq('ticket_id', ticketId)
           .order('created_at'),
     ]);
@@ -239,7 +239,7 @@ class SupabaseTicketRepository implements TicketRepository {
     final rows = await _client
         .from('ticket_activity_log')
         .select(
-          '*, actor:profiles(full_name), ticket:tickets(ticket_number,subject)',
+          '*, actor:profiles!actor_id(full_name), ticket:tickets(ticket_number,subject)',
         )
         .order('created_at', ascending: false)
         .limit(limit);
@@ -273,14 +273,14 @@ class SupabaseTicketRepository implements TicketRepository {
       _client
           .from('ticket_activity_log')
           .select(
-            '*, actor:profiles(full_name), ticket:tickets(ticket_number,subject)',
+            '*, actor:profiles!actor_id(full_name), ticket:tickets(ticket_number,subject)',
           )
           .order('created_at', ascending: false)
           .limit(limit),
       _client
           .from('ticket_comments')
           .select(
-            'id, ticket_id, author_id, created_at, author:profiles(full_name), '
+            'id, ticket_id, author_id, created_at, author:profiles!author_id(full_name), '
             'ticket:tickets(ticket_number,subject)',
           )
           .neq('author_id', userId)
