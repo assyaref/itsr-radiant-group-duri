@@ -204,6 +204,129 @@ void main() {
     });
   });
 
+  group('chat edit and delete', () {
+    List<CommentModel> chat() => [
+      CommentModel(
+        id: 'c1',
+        ticketId: '1',
+        authorId: 'emp1',
+        content: 'Printer masih error',
+        isInternal: false,
+        createdAt: DateTime.utc(2026, 11, 2, 8),
+        authorName: 'Emp Name',
+      ),
+      CommentModel(
+        id: 'c2',
+        ticketId: '1',
+        authorId: 'it1',
+        content: 'Sedang kami cek',
+        isInternal: false,
+        createdAt: DateTime.utc(2026, 11, 2, 9),
+        authorName: 'Tech Name',
+      ),
+    ];
+
+    Future<FakeTicketRepository> open(
+      WidgetTester t,
+      String role,
+      String id,
+    ) async {
+      final repo = FakeTicketRepository(tickets: [ticket('1')])
+        ..comments = chat();
+      await pumpApp(
+        t,
+        const TicketDetailScreen(ticketId: '1'),
+        auth: FakeAuthRepository(profile: user(id, role)),
+        tickets: repo,
+        size: const Size(1280, 900),
+      );
+      await t.tap(find.text('Komentar'));
+      await t.pumpAndSettle();
+      return repo;
+    }
+
+    testWidgets('author edits own comment; no menu on others', (t) async {
+      final repo = await open(t, 'employee', 'emp1');
+      expect(find.byKey(const Key('chat_menu_c1')), findsOneWidget);
+      expect(find.byKey(const Key('chat_menu_c2')), findsNothing);
+
+      await t.tap(find.byKey(const Key('chat_menu_c1')));
+      await t.pumpAndSettle();
+      await t.tap(find.text('Edit'));
+      await t.pumpAndSettle();
+      await t.enterText(find.byType(TextFormField), 'Printer error lagi');
+      await t.tap(find.text('Simpan'));
+      await t.pumpAndSettle();
+      expect(repo.calls, contains('edit:c1:Printer error lagi'));
+      expect(find.text('Printer error lagi'), findsOneWidget);
+      expect(find.text('diedit'), findsOneWidget);
+    });
+
+    testWidgets('author deletes own comment -> placeholder', (t) async {
+      final repo = await open(t, 'employee', 'emp1');
+      await t.tap(find.byKey(const Key('chat_menu_c1')));
+      await t.pumpAndSettle();
+      await t.tap(find.text('Hapus'));
+      await t.pumpAndSettle();
+      await t.tap(find.widgetWithText(FilledButton, 'Hapus'));
+      await t.pumpAndSettle();
+      expect(repo.calls, contains('delete:c1'));
+      expect(find.text('Printer masih error'), findsNothing);
+      expect(find.text('Pesan ini telah dihapus'), findsOneWidget);
+      // A deleted comment has no menu any more.
+      expect(find.byKey(const Key('chat_menu_c1')), findsNothing);
+    });
+
+    testWidgets('administrator may delete but not edit others', (t) async {
+      await open(t, 'administrator', 'adm1');
+      await t.tap(find.byKey(const Key('chat_menu_c2')));
+      await t.pumpAndSettle();
+      expect(find.text('Hapus'), findsOneWidget);
+      expect(find.text('Edit'), findsNothing);
+    });
+
+    testWidgets('IT support cannot touch the reporter\'s comment', (t) async {
+      await open(t, 'it_support', 'it1');
+      expect(find.byKey(const Key('chat_menu_c1')), findsNothing);
+      expect(find.byKey(const Key('chat_menu_c2')), findsOneWidget);
+    });
+
+    testWidgets('uploader deletes an image from the chat', (t) async {
+      final files = FakeAttachmentRepository(
+        files: [
+          AttachmentModel(
+            id: 'att1',
+            ticketId: '1',
+            fileName: 'laporan.pdf',
+            mimeType: 'application/pdf',
+            fileSize: 2048,
+            uploadedBy: 'emp1',
+            createdAt: DateTime.utc(2026, 11, 2, 10),
+            uploaderName: 'Emp Name',
+          ),
+        ],
+      );
+      await pumpApp(
+        t,
+        const TicketDetailScreen(ticketId: '1'),
+        auth: FakeAuthRepository(profile: user('emp1', 'employee')),
+        tickets: FakeTicketRepository(tickets: [ticket('1')]),
+        attachments: files,
+      );
+      await t.tap(find.text('Komentar'));
+      await t.pumpAndSettle();
+      expect(find.text('laporan.pdf'), findsOneWidget);
+      await t.tap(find.byKey(const Key('chat_menu_att1')));
+      await t.pumpAndSettle();
+      await t.tap(find.text('Hapus'));
+      await t.pumpAndSettle();
+      await t.tap(find.widgetWithText(FilledButton, 'Hapus'));
+      await t.pumpAndSettle();
+      expect(files.files, isEmpty);
+      expect(find.text('laporan.pdf'), findsNothing);
+    });
+  });
+
   group('superadmin is hidden and locked', () {
     final people = [
       user('ad1', 'administrator', name: 'Admin One'),

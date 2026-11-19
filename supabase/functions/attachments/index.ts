@@ -3,11 +3,14 @@
 // Actions (POST JSON, caller = signed-in active user):
 //   { action: "upload", ticket_id, file_name, data_base64 }  -> attachment row
 //   { action: "download", attachment_id }                     -> file bytes
+//   { action: "delete", attachment_id }                       -> { ok: true }
 //
 // Who may upload / download: IT Support and administrators for any ticket;
 // employees only for tickets they reported. Upload is refused on closed
 // tickets for employees. Files are checked by their real content (JPG, PNG,
 // PDF only, max 10 MB, max 10 per ticket).
+// Who may delete: the uploader, or an administrator / superadmin. Employees
+// cannot delete on closed tickets. The Drive file is removed with the row.
 //
 // Drive access uses OAuth with the folder owner's refresh token (a service
 // account cannot store files in a personal "My Drive" folder: it has no
@@ -54,6 +57,7 @@ async function driveToken(cfg: DriveConfig): Promise<string> {
 
 const isStaff = (c: CallerProfile) =>
   c.role === "it_support" || c.role === "administrator" || c.role === "superadmin";
+const isAdmin = (c: CallerProfile) => c.role === "administrator" || c.role === "superadmin";
 
 Deno.serve(withErrorBoundary("attachments", async (req) => {
   const headers = corsHeaders(req.headers.get("origin"), Deno.env.get("ALLOWED_ORIGINS"));
@@ -160,6 +164,38 @@ Deno.serve(withErrorBoundary("attachments", async (req) => {
     out.set("Content-Disposition", `attachment; filename="${String(att.file_name).replace(/"/g, "")}"`);
     out.set("Cache-Control", "no-store");
     return new Response(res.body, { status: 200, headers: out });
+  }
+
+  if (body.action === "delete") {
+    const id = body.attachment_id;
+    if (typeof id !== "string" || !UUID_RE.test(id)) return json({ error: "Invalid attachment id" }, 400, headers);
+    const { data: att } = await admin.from("ticket_attachments")
+      .select("id, ticket_id, uploaded_by, drive_file_id").eq("id", id).maybeSingle();
+    const ticket = att ? await loadTicket(att.ticket_id) : null;
+    // Same answer for "missing" and "not yours".
+    if (!att || !ticket || (att.uploaded_by !== caller.id && !isAdmin(caller))) {
+      return json({ error: "Attachment not found" }, 404, headers);
+    }
+    if (!isStaff(caller) && ticket.status === "closed") {
+      return json({ error: "Tiket sudah ditutup" }, 400, headers);
+    }
+
+    const token = await driveToken(cfg);
+    const del = await fetch(
+      `https://www.googleapis.com/drive/v3/files/${encodeURIComponent(att.drive_file_id)}?supportsAllDrives=true`,
+      { method: "DELETE", headers: { Authorization: `Bearer ${token}` }, signal: AbortSignal.timeout(30_000) },
+    );
+    // 404: already gone from Drive; still remove the row.
+    if (!del.ok && del.status !== 404) {
+      console.error("drive delete failed", del.status);
+      return json({ error: "Gagal menghapus file di Google Drive. Coba lagi nanti." }, 502, headers);
+    }
+    const { error: delErr } = await admin.from("ticket_attachments").delete().eq("id", att.id);
+    if (delErr) {
+      console.error("attachment row delete failed", delErr.message);
+      return json({ error: "Could not delete the attachment" }, 500, headers);
+    }
+    return json({ ok: true }, 200, headers);
   }
 
   return json({ error: "Unknown action" }, 400, headers);

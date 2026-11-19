@@ -117,6 +117,12 @@ abstract class TicketRepository {
     required bool isInternal,
   });
 
+  /// Author only (enforced by the `edit_comment` database function).
+  Future<void> editComment(String commentId, String content);
+
+  /// Author or administrator (enforced by `delete_comment`). Soft delete.
+  Future<void> deleteComment(String commentId);
+
   /// Staff-only workflow update. Only non-null fields are sent.
   Future<void> updateTicket(
     String ticketId, {
@@ -344,6 +350,19 @@ class SupabaseTicketRepository implements TicketRepository {
       'content': content.trim(),
       'is_internal': isInternal,
     });
+  }
+
+  @override
+  Future<void> editComment(String commentId, String content) async {
+    await _client.rpc(
+      'edit_comment',
+      params: {'p_comment_id': commentId, 'p_content': content.trim()},
+    );
+  }
+
+  @override
+  Future<void> deleteComment(String commentId) async {
+    await _client.rpc('delete_comment', params: {'p_comment_id': commentId});
   }
 
   @override
