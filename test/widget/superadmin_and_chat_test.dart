@@ -145,6 +145,30 @@ void main() {
       expect(t.takeException(), isNull);
     });
 
+    testWidgets('floating chat opens, closes, and keeps the draft', (t) async {
+      await pumpApp(
+        t,
+        const TicketDetailScreen(ticketId: '1'),
+        auth: FakeAuthRepository(profile: user('emp1', 'employee')),
+        tickets: FakeTicketRepository(tickets: [ticket('1')]),
+      );
+      expect(find.byKey(const Key('comment_field')), findsNothing);
+      await t.tap(find.text('Komentar'));
+      await t.pumpAndSettle();
+      await t.enterText(find.byKey(const Key('comment_field')), 'draft');
+      await t.tap(find.byTooltip('Tutup komentar'));
+      await t.pumpAndSettle();
+      expect(find.byKey(const Key('comment_field')), findsNothing);
+      await t.tap(find.text('Komentar'));
+      await t.pumpAndSettle();
+      expect(find.text('draft'), findsOneWidget);
+      // Switching tabs tucks the chat away again.
+      await t.tap(find.text('Lampiran'));
+      await t.pumpAndSettle();
+      expect(find.byKey(const Key('comment_field')), findsNothing);
+      expect(t.takeException(), isNull);
+    });
+
     testWidgets('attachments appear in the chat (image thumbnail, file chip)', (
       t,
     ) async {

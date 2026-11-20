@@ -20,6 +20,7 @@ import '../utils/formatters.dart';
 import '../utils/file_picker.dart';
 import '../widgets/common.dart';
 import '../widgets/employee_ui.dart';
+import '../widgets/floating_chat.dart';
 
 const int kMaxAttachmentDisplaySize = 10 * 1024 * 1024; // 10 MiB
 
@@ -35,7 +36,8 @@ class TicketDetailScreen extends ConsumerStatefulWidget {
 }
 
 class _TicketDetailScreenState extends ConsumerState<TicketDetailScreen> {
-  int _tab = 0; // 0 Detail, 1 Komentar, 2 Lampiran
+  int _tab = 0; // 0 Detail, 1 Lampiran
+  bool _chatOpen = false; // floating Komentar panel
 
   @override
   Widget build(BuildContext context) {
@@ -74,38 +76,46 @@ class _TicketDetailScreenState extends ConsumerState<TicketDetailScreen> {
           child: Scaffold(
             backgroundColor: EColors.page,
             appBar: const EHeader(title: 'Detail Tiket'),
-            body: Column(
-              children: [
-                _DetailTabs(
-                  tab: _tab,
-                  commentCount: d.comments.length,
-                  attachmentCount: attachments?.length,
-                  onChanged: (i) => setState(() => _tab = i),
-                ),
-                Expanded(
-                  child: IndexedStack(
-                    index: _tab,
-                    children: [
-                      _DetailTab(
-                        key: const ValueKey('tab_detail'),
-                        ticket: d.ticket,
-                        user: user,
-                        activities: d.activities,
-                      ),
-                      _CommentsTab(
-                        key: const ValueKey('tab_comments'),
-                        detail: d,
-                        user: user,
-                      ),
-                      _AttachmentsTab(
-                        key: const ValueKey('tab_attachments'),
-                        ticket: d.ticket,
-                        user: user,
-                      ),
-                    ],
+            body: FloatingChatLayer(
+              open: _chatOpen,
+              commentCount: d.comments.length,
+              ticketNumber: d.ticket.ticketNumber,
+              onToggle: () => setState(() => _chatOpen = !_chatOpen),
+              chat: _CommentsTab(
+                key: const ValueKey('tab_comments'),
+                detail: d,
+                user: user,
+              ),
+              child: Column(
+                children: [
+                  _DetailTabs(
+                    tab: _tab,
+                    attachmentCount: attachments?.length,
+                    onChanged: (i) => setState(() {
+                      _tab = i;
+                      _chatOpen = false;
+                    }),
                   ),
-                ),
-              ],
+                  Expanded(
+                    child: IndexedStack(
+                      index: _tab,
+                      children: [
+                        _DetailTab(
+                          key: const ValueKey('tab_detail'),
+                          ticket: d.ticket,
+                          user: user,
+                          activities: d.activities,
+                        ),
+                        _AttachmentsTab(
+                          key: const ValueKey('tab_attachments'),
+                          ticket: d.ticket,
+                          user: user,
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
         );
@@ -115,18 +125,16 @@ class _TicketDetailScreenState extends ConsumerState<TicketDetailScreen> {
 }
 
 // ---------------------------------------------------------------------------
-// Pill tab switcher (Detail · Komentar n · Lampiran n)
+// Pill tab switcher (Detail · Lampiran n). Komentar floats (see below).
 // ---------------------------------------------------------------------------
 class _DetailTabs extends StatelessWidget {
   const _DetailTabs({
     required this.tab,
-    required this.commentCount,
     required this.attachmentCount,
     required this.onChanged,
   });
 
   final int tab;
-  final int commentCount;
   final int? attachmentCount;
   final ValueChanged<int> onChanged;
 
@@ -139,8 +147,7 @@ class _DetailTabs extends StatelessWidget {
         children: [
           for (final (i, label, count) in [
             (0, 'Detail', null),
-            (1, 'Komentar', commentCount),
-            (2, 'Lampiran', attachmentCount),
+            (1, 'Lampiran', attachmentCount),
           ]) ...[
             Expanded(
               child: _DetailTabPill(
@@ -150,7 +157,7 @@ class _DetailTabs extends StatelessWidget {
                 onTap: () => onChanged(i),
               ),
             ),
-            if (i < 2) const SizedBox(width: 8),
+            if (i < 1) const SizedBox(width: 8),
           ],
         ],
       ),
@@ -234,7 +241,7 @@ class _DetailTab extends StatelessWidget {
   Widget build(BuildContext context) {
     final t = ticket;
     return SingleChildScrollView(
-      padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
+      padding: const EdgeInsets.fromLTRB(16, 16, 16, 100),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
@@ -2146,7 +2153,7 @@ class _AttachmentsTabState extends ConsumerState<_AttachmentsTab> {
     final attachments = ref.watch(attachmentsProvider(widget.ticket.id));
 
     return SingleChildScrollView(
-      padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
+      padding: const EdgeInsets.fromLTRB(16, 12, 16, 100),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
