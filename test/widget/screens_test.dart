@@ -425,6 +425,38 @@ void main() {
       expect(find.byTooltip('Open navigation menu'), findsOneWidget);
     });
 
+    testWidgets('desktop sidebar groups items and collapses to an icon rail', (
+      t,
+    ) async {
+      final handle = t.ensureSemantics();
+      final auth = FakeAuthRepository(profile: user('adm', 'administrator'));
+      await pumpApp(
+        t,
+        const AppShell(location: '/admin/users', child: Text('body')),
+        auth: auth,
+        size: desktop,
+      );
+      expect(find.text('MANAGEMENT'), findsWidgets);
+      expect(find.text('SYSTEM'), findsOneWidget);
+
+      await t.tap(find.byTooltip('Collapse sidebar'));
+      await t.pumpAndSettle();
+      expect(find.text('Sign out'), findsNothing);
+      expect(find.text('Categories'), findsNothing);
+      for (final s in ['Categories', 'Sign out']) {
+        expect(
+          find.bySemanticsLabel(RegExp(RegExp.escape(s))),
+          findsWidgets,
+          reason: 'collapsed: "$s" must stay reachable by assistive tech',
+        );
+      }
+
+      await t.tap(find.byTooltip('Expand sidebar'));
+      await t.pumpAndSettle();
+      expect(find.text('Sign out'), findsOneWidget);
+      handle.dispose();
+    });
+
     testWidgets(
       'navigation and sign-out are exposed to screen readers (desktop and phone)',
       (t) async {
