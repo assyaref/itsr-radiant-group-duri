@@ -14,12 +14,26 @@
 //
 // No hard-coded smtp.gmail.com. No GMAIL_USER / GMAIL_APP_PASSWORD dependency.
 import nodemailer from "npm:nodemailer@6.9.16";
+import { Buffer } from "node:buffer";
 import { bearerToken, corsHeaders, json } from "../_shared/http.ts";
 import { adminClient, verifyCaller } from "../_shared/supabase.ts";
-import { buildEmail, type EventContext, type Person, type Settings } from "../_shared/notification_rules.ts";
+import { buildEmail, type EmailFile, type EventContext, type Person, type Settings } from "../_shared/notification_rules.ts";
+import { driveConfig, driveDownload, driveToken } from "../_shared/drive.ts";
 import { classifySendError, describeSendError, PermanentError } from "../_shared/smtp_errors.ts";
 
 const PERSON = "id, full_name, email, is_active";
+
+// Images sent in the chat or with a new report are embedded in the email.
+// Gmail accepts 25 MB per message (base64 adds ~33%), so stay well below it.
+const MAX_EMAIL_IMAGES = 5;
+const MAX_EMAIL_IMAGE_BYTES = 12 * 1024 * 1024;
+// Files sent together with a chat message are uploaded just before the
+// comment row is inserted; a new report's files just after the ticket row.
+const COMMENT_FILE_WINDOW_MS = 5 * 60 * 1000;
+const REPORT_FILE_WINDOW_MS = 15 * 60 * 1000;
+
+interface AttachmentRow { id: string; file_name: string; mime_type: string; drive_file_id: string; created_at: string }
+const ATTACHMENT = "id, file_name, mime_type, drive_file_id, created_at";
 
 function smtpTransport(host: string | null, port: number | null, secure: boolean | null,
   username: string | null, password: string | null) {
@@ -96,6 +110,90 @@ Deno.serve(async (req) => {
     .eq("is_active", true).eq("role", "it_support");
   const activeItStaff = (staffRows ?? []) as Person[];
 
+  // Drive access token, fetched once and only when an email has files.
+  const drive = driveConfig();
+  let tokenPromise: Promise<string | null> | null = null;
+  const getDriveToken = () => {
+    if (!drive) return Promise.resolve(null);
+    tokenPromise ??= driveToken(drive).catch((e) => {
+      console.error("drive token failed", e instanceof Error ? e.message : String(e));
+      return null;
+    });
+    return tokenPromise;
+  };
+
+  /** Files that belong to this notification (empty when none or on error). */
+  async function filesFor(
+    row: { ticket_id: string; event_type: string; payload: Record<string, unknown> },
+    ticketCreatedAt: string | null,
+    actorId: string | null,
+    comment: { created_at: string } | null,
+  ): Promise<AttachmentRow[]> {
+    const ids = Array.isArray(row.payload?.attachment_ids)
+      ? (row.payload.attachment_ids as unknown[]).filter((x): x is string => typeof x === "string")
+      : [];
+    if (ids.length) {
+      const { data } = await admin.from("ticket_attachments").select(ATTACHMENT)
+        .eq("ticket_id", row.ticket_id).in("id", ids).order("created_at");
+      return (data ?? []) as AttachmentRow[];
+    }
+    if (!actorId) return [];
+
+    if (row.event_type === "ticket_created" && ticketCreatedAt) {
+      const until = new Date(Date.parse(ticketCreatedAt) + REPORT_FILE_WINDOW_MS).toISOString();
+      const { data } = await admin.from("ticket_attachments").select(ATTACHMENT)
+        .eq("ticket_id", row.ticket_id).eq("uploaded_by", actorId).lte("created_at", until)
+        .order("created_at");
+      return (data ?? []) as AttachmentRow[];
+    }
+
+    if (row.event_type === "comment_added" && comment) {
+      // Files the author uploaded right before this message, and after their
+      // previous message (those belong to that one).
+      let from = new Date(Date.parse(comment.created_at) - COMMENT_FILE_WINDOW_MS).toISOString();
+      const { data: prev } = await admin.from("ticket_comments").select("created_at")
+        .eq("ticket_id", row.ticket_id).eq("author_id", actorId).lt("created_at", comment.created_at)
+        .order("created_at", { ascending: false }).limit(1).maybeSingle();
+      if (prev?.created_at && Date.parse(prev.created_at) > Date.parse(from)) from = prev.created_at;
+      const { data } = await admin.from("ticket_attachments").select(ATTACHMENT)
+        .eq("ticket_id", row.ticket_id).eq("uploaded_by", actorId)
+        .gt("created_at", from).lte("created_at", comment.created_at).order("created_at");
+      const found = (data ?? []) as AttachmentRow[];
+      if (!found.length) return found;
+      // Skip files that were already emailed on their own (sent without text).
+      const { data: own } = await admin.from("notification_outbox").select("payload")
+        .eq("ticket_id", row.ticket_id).eq("event_type", "comment_added")
+        .not("payload->attachment_ids", "is", null);
+      const done = new Set<string>();
+      for (const o of own ?? []) {
+        const list = (o as { payload?: { attachment_ids?: unknown } }).payload?.attachment_ids;
+        if (Array.isArray(list)) list.forEach((x) => typeof x === "string" && done.add(x));
+      }
+      return found.filter((f) => !done.has(f.id));
+    }
+    return [];
+  }
+
+  /** Downloads images for inline display; others are only listed by name. */
+  async function prepareFiles(rows: AttachmentRow[]) {
+    const files: EmailFile[] = [];
+    const attachments: Array<{ filename: string; content: Buffer; contentType: string; cid: string }> = [];
+    let budget = MAX_EMAIL_IMAGE_BYTES;
+    for (const f of rows) {
+      const entry: EmailFile = { file_name: f.file_name, mime_type: f.mime_type, cid: null };
+      files.push(entry);
+      if (!f.mime_type.startsWith("image/") || attachments.length >= MAX_EMAIL_IMAGES) continue;
+      const token = await getDriveToken();
+      if (!token) continue;
+      const bytes = await driveDownload(token, f.drive_file_id);
+      if (!bytes || bytes.length > budget) continue;
+      budget -= bytes.length;
+      entry.cid = `att-${f.id}@itsr`;
+      attachments.push({ filename: f.file_name, content: Buffer.from(bytes), contentType: f.mime_type, cid: entry.cid });
+    }
+    return { files, attachments };
+  }
+
   const { data: batch, error: claimErr } = await admin.rpc("claim_notifications", { p_limit: 20 });
   if (claimErr) return json({ error: "Could not claim notifications" }, 500, headers);
 
@@ -103,7 +201,7 @@ Deno.serve(async (req) => {
   for (const row of (batch ?? []) as Array<{ id: string; ticket_id: string; event_type: EventContext["event"]; payload: Record<string, unknown> }>) {
     try {
       const { data: t, error: ticketErr } = await admin.from("tickets")
-        .select(`id, ticket_number, subject, description, category, priority, status, resolution,
+        .select(`id, ticket_number, subject, description, category, priority, status, resolution, created_at,
                  reporter:profiles!tickets_reporter_id_fkey(${PERSON}),
                  assignee:profiles!tickets_assigned_to_id_fkey(${PERSON})`)
         .eq("id", row.ticket_id).maybeSingle();
@@ -116,12 +214,28 @@ Deno.serve(async (req) => {
         : { data: null };
       const commentId = typeof row.payload?.comment_id === "string" ? row.payload.comment_id : null;
       const { data: comment } = commentId
-        ? await admin.from("ticket_comments").select("content").eq("id", commentId).maybeSingle()
+        ? await admin.from("ticket_comments").select("content, created_at").eq("id", commentId).maybeSingle()
         : { data: null };
 
-      const email = settingsRow?.notifications_enabled === false ? null : buildEmail({
+      const enabled = settingsRow?.notifications_enabled !== false;
+      const fileRows = enabled
+        ? await filesFor(row, (t as { created_at?: string }).created_at ?? null, actorId, comment)
+          .catch((e) => {
+            console.error("attachment lookup failed", row.id, e instanceof Error ? e.message : String(e));
+            return [] as AttachmentRow[];
+          })
+        : [];
+      // A file-only chat message whose file is gone: nothing left to say.
+      if (enabled && row.event_type === "comment_added" && !comment && fileRows.length === 0) {
+        await rpcWithRetry("complete_notification", { p_id: row.id, p_status: "skipped", p_error: "attachment deleted" });
+        results.skipped++;
+        continue;
+      }
+      const { files, attachments } = await prepareFiles(fileRows);
+
+      const email = !enabled ? null : buildEmail({
         event: row.event_type, payload: row.payload ?? {}, ticket: t as unknown as EventContext["ticket"],
-        actor: actor as Person | null, comment, activeItStaff,
+        actor: actor as Person | null, comment, activeItStaff, files,
       }, settings);
 
       if (!email) {
@@ -130,9 +244,9 @@ Deno.serve(async (req) => {
         continue;
       }
 
-      const info = await transport.sendMail({ from, to: email.to, cc: email.cc, subject: email.subject, text: email.text, html: email.html });
+      const info = await transport.sendMail({ from, to: email.to, cc: email.cc, subject: email.subject, text: email.text, html: email.html, attachments });
       console.log("notification sent", row.id, row.event_type, "messageId", info.messageId,
-        "accepted", (info.accepted ?? []).length, "rejected", (info.rejected ?? []).length);
+        "accepted", (info.accepted ?? []).length, "rejected", (info.rejected ?? []).length, "images", attachments.length);
       await rpcWithRetry("complete_notification", {
         p_id: row.id, p_status: "sent", p_error: null, p_recipients: email.to, p_cc: email.cc,
       });

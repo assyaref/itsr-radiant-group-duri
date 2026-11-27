@@ -1,7 +1,10 @@
 // Ticket attachments stored in a Google Drive folder.
 //
 // Actions (POST JSON, caller = signed-in active user):
-//   { action: "upload", ticket_id, file_name, data_base64 }  -> attachment row
+//   { action: "upload", ticket_id, file_name, data_base64, notify? } -> attachment row
+//       notify: true (an image sent alone in the chat, without text) also
+//       queues a "comment_added" email that shows the image. A file sent
+//       together with a text comment is picked up by that comment's email.
 //   { action: "download", attachment_id }                     -> file bytes
 //   { action: "delete", attachment_id }                       -> { ok: true }
 //
@@ -21,39 +24,10 @@
 import { bearerToken, corsHeaders, json, readJsonObject, withErrorBoundary } from "../_shared/http.ts";
 import { adminClient, type CallerProfile, verifyCaller } from "../_shared/supabase.ts";
 import { checkUpload, driveMultipart, MAX_ATTACHMENTS_PER_TICKET } from "../_shared/attachments.ts";
+import { driveConfig, driveToken } from "../_shared/drive.ts";
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const MAX_REQUEST = 15 * 1024 * 1024; // base64 of 10 MB + JSON
-
-interface DriveConfig { clientId: string; clientSecret: string; refreshToken: string; folderId: string }
-
-function driveConfig(): DriveConfig | null {
-  const clientId = Deno.env.get("GOOGLE_OAUTH_CLIENT_ID");
-  const clientSecret = Deno.env.get("GOOGLE_OAUTH_CLIENT_SECRET");
-  const refreshToken = Deno.env.get("GOOGLE_OAUTH_REFRESH_TOKEN");
-  const folderId = Deno.env.get("GOOGLE_DRIVE_FOLDER_ID");
-  if (!clientId || !clientSecret || !refreshToken || !folderId) return null;
-  return { clientId, clientSecret, refreshToken, folderId };
-}
-
-async function driveToken(cfg: DriveConfig): Promise<string> {
-  const res = await fetch("https://oauth2.googleapis.com/token", {
-    method: "POST",
-    headers: { "Content-Type": "application/x-www-form-urlencoded" },
-    body: new URLSearchParams({
-      client_id: cfg.clientId,
-      client_secret: cfg.clientSecret,
-      refresh_token: cfg.refreshToken,
-      grant_type: "refresh_token",
-    }),
-    signal: AbortSignal.timeout(15_000),
-  });
-  const data = await res.json().catch(() => ({}));
-  if (!res.ok || typeof data.access_token !== "string") {
-    throw new Error(`google token refresh failed (${res.status} ${data.error ?? ""})`);
-  }
-  return data.access_token;
-}
 
 const isStaff = (c: CallerProfile) =>
   c.role === "it_support" || c.role === "administrator" || c.role === "superadmin";
@@ -139,6 +113,13 @@ Deno.serve(withErrorBoundary("attachments", async (req) => {
       ).catch(() => {});
       console.error("attachment insert failed", insErr.message);
       return json({ error: "Could not save the attachment" }, 500, headers);
+    }
+    if (body.notify === true) {
+      const { error: qErr } = await admin.rpc("enqueue_attachment_notification", {
+        p_ticket_id: ticket.id, p_actor_id: caller.id, p_attachment_id: row.id,
+      });
+      // The file is saved; a missing email must not fail the upload.
+      if (qErr) console.error("attachment notification enqueue failed", qErr.message);
     }
     return json(row, 201, headers);
   }

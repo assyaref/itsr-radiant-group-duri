@@ -445,6 +445,7 @@ class FakeAttachmentRepository implements AttachmentRepository {
     required String mimeType,
     required Uint8List bytes,
     required String uploadedBy,
+    bool notify = false,
   }) async {
     final a = AttachmentModel(
       id: 'att${files.length + 1}',

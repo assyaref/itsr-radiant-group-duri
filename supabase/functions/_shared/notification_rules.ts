@@ -23,7 +23,11 @@ export interface EventContext {
   actor: Person | null;
   comment: { content: string } | null;
   activeItStaff: Person[];
+  /** Files sent with this event (chat message or new report). Images with a
+   *  `cid` are shown inline in the HTML body; the rest are listed by name. */
+  files?: EmailFile[];
 }
+export interface EmailFile { file_name: string; mime_type: string; cid: string | null }
 export interface Email { to: string[]; cc: string[]; subject: string; text: string; html: string }
 
 const STATUS_LABEL: Record<string, string> = {
@@ -72,7 +76,13 @@ export function buildEmail(ctx: EventContext, settings: Settings): Email | null 
     case "comment_added": {
       const byReporter = actor?.id === t.reporter.id;
       to = byReporter ? clean([t.assignee?.email ?? group]) : clean([t.reporter.email]);
-      headline = `New comment from ${actor?.full_name ?? "a user"}`;
+      const who = actor?.full_name ?? "a user";
+      const files = ctx.files ?? [];
+      headline = ctx.comment || files.length === 0
+        ? `New comment from ${who}`
+        : files.every((f) => f.mime_type.startsWith("image/"))
+        ? `New image from ${who}`
+        : `New attachment from ${who}`;
       break;
     }
   }
@@ -103,13 +113,24 @@ export function buildEmail(ctx: EventContext, settings: Settings): Email | null 
   ];
   if (ctx.event === "ticket_created") lines.push("", "Description:", t.description);
   if (ctx.comment) lines.push("", "Comment:", ctx.comment.content);
+  const files = ctx.files ?? [];
+  if (files.length) {
+    lines.push("", "Attachments:", ...files.map((f) => `- ${f.file_name}`));
+  }
   if (t.status === "resolved" && t.resolution) lines.push("", "Resolution:", t.resolution);
   if (link) lines.push("", `Open ticket: ${link}`);
   lines.push("", "— ITSR Radiant Group Duri (automated message, please do not reply)");
   const text = lines.join("\n");
 
+  const images = files.filter((f) => f.cid && f.mime_type.startsWith("image/"));
+  const imageHtml = images.map((f) =>
+    `<div style="margin:12px 0">` +
+    `<img src="cid:${escapeHtml(f.cid!)}" alt="${escapeHtml(f.file_name)}" ` +
+    `style="max-width:100%;width:560px;height:auto;border:1px solid #e5e7eb;border-radius:8px">` +
+    `<div style="font-size:12px;color:#6b7280">${escapeHtml(f.file_name)}</div></div>`
+  ).join("");
   const html = `<div style="font-family:Arial,sans-serif;font-size:14px;color:#1f2937">` +
-    `<pre style="font-family:inherit;white-space:pre-wrap">${escapeHtml(text)}</pre></div>`;
+    `<pre style="font-family:inherit;white-space:pre-wrap">${escapeHtml(text)}</pre>${imageHtml}</div>`;
 
   return { to, cc, subject, text, html };
 }
