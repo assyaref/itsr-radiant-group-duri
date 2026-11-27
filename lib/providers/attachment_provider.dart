@@ -35,6 +35,7 @@ class AttachmentActions {
     required String mimeType,
     required Uint8List bytes,
     required String uploadedBy,
+    bool notify = false,
   }) async {
     final result = await _ref
         .read(attachmentRepositoryProvider)
@@ -44,8 +45,12 @@ class AttachmentActions {
           mimeType: mimeType,
           bytes: bytes,
           uploadedBy: uploadedBy,
+          notify: notify,
         );
     _ref.invalidate(attachmentsProvider(ticketId));
+    // Send the queued email now (chat file without text); otherwise the
+    // scheduler picks it up.
+    if (notify) _ref.read(ticketRepositoryProvider).kickNotifications();
     return result;
   }
 

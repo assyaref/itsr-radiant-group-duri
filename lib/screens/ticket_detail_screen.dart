@@ -1129,6 +1129,9 @@ class _CommentsTabState extends ConsumerState<_CommentsTab> with _ActionRunner {
               mimeType: _pickedMimeType!,
               bytes: _pickedBytes!,
               uploadedBy: widget.user.id,
+              // A file sent alone gets its own email; with text, the
+              // comment's email includes it. Internal notes are not emailed.
+              notify: content.isEmpty && !_internal,
             );
         setState(() {
           _pickedFileName = null;

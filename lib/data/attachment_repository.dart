@@ -28,13 +28,15 @@ extension StringMimeValidation on String {
 
 abstract class AttachmentRepository {
   /// Uploads a file through the `attachments` Edge Function (stored in
-  /// Google Drive) and returns the created metadata row.
+  /// Google Drive) and returns the created metadata row. [notify] queues an
+  /// email showing the file (a file sent alone in the chat, without text).
   Future<AttachmentModel> uploadAttachment({
     required String ticketId,
     required String fileName,
     required String mimeType,
     required Uint8List bytes,
     required String uploadedBy,
+    bool notify = false,
   });
 
   /// Lists attachments for a ticket (metadata only, RLS-scoped).
@@ -64,6 +66,7 @@ class SupabaseAttachmentRepository implements AttachmentRepository {
     required String mimeType,
     required Uint8List bytes,
     required String uploadedBy,
+    bool notify = false,
   }) async {
     if (bytes.length > kMaxAttachmentSize) {
       throw const AppFailure('File terlalu besar (maks 10 MB).');
@@ -80,6 +83,7 @@ class SupabaseAttachmentRepository implements AttachmentRepository {
         'ticket_id': ticketId,
         'file_name': fileName,
         'data_base64': base64Encode(bytes),
+        if (notify) 'notify': true,
       },
     );
     final data = res.data;

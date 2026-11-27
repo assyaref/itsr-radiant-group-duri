@@ -231,7 +231,7 @@ class TicketActions {
 
   TicketRepository get _repo => _ref.read(ticketRepositoryProvider);
 
-  void _refresh({String? ticketId}) {
+  void _refresh({String? ticketId, bool kick = true}) {
     _ref.invalidate(ticketListProvider);
     _ref.invalidate(ticketStatsProvider);
     _ref.invalidate(recentActivityProvider);
@@ -239,14 +239,18 @@ class TicketActions {
     _ref.invalidate(ticketSummaryProvider);
     _ref.invalidate(notificationsProvider);
     if (ticketId != null) _ref.invalidate(ticketDetailProvider(ticketId));
-    _repo.kickNotifications();
+    if (kick) _repo.kickNotifications();
   }
+
+  /// Sends queued emails now (best effort; the scheduler retries).
+  void kickNotifications() => _repo.kickNotifications();
 
   Future<String> createTicket({
     required String subject,
     required String description,
     required String category,
     required String priority,
+    bool notifyNow = true,
   }) async {
     final user = await _ref.read(currentUserProvider.future);
     if (user == null) throw StateError('Not signed in');
@@ -257,7 +261,9 @@ class TicketActions {
       category: category,
       priority: priority,
     );
-    _refresh(ticketId: id);
+    // With attachments to upload, the caller kicks the email after the
+    // uploads so the "new ticket" email can show the images.
+    _refresh(ticketId: id, kick: notifyNow);
     return id;
   }
 

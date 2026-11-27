@@ -100,18 +100,26 @@ class _CreateTicketScreenState extends ConsumerState<CreateTicketScreen> {
             description: _description.text,
             category: _category!,
             priority: _priority,
+            notifyNow: _picked.isEmpty,
           );
-      // Upload attachments (optional) after the ticket exists.
-      for (final f in _picked) {
-        await ref
-            .read(attachmentActionsProvider)
-            .uploadAttachment(
-              ticketId: id,
-              fileName: f.name,
-              mimeType: f.mimeType,
-              bytes: f.bytes,
-              uploadedBy: user.id,
-            );
+      // Upload attachments (optional) after the ticket exists, then send
+      // the email so it can show the images.
+      try {
+        for (final f in _picked) {
+          await ref
+              .read(attachmentActionsProvider)
+              .uploadAttachment(
+                ticketId: id,
+                fileName: f.name,
+                mimeType: f.mimeType,
+                bytes: f.bytes,
+                uploadedBy: user.id,
+              );
+        }
+      } finally {
+        if (_picked.isNotEmpty) {
+          ref.read(ticketActionsProvider).kickNotifications();
+        }
       }
       if (!mounted) return;
       if (!user.isStaff) {

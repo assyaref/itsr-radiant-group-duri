@@ -85,6 +85,36 @@ Deno.test("user-supplied content is escaped in HTML body", () => {
   assert(!e.html.includes("<img"));
 });
 
+Deno.test("chat images are embedded inline by cid and listed in text", () => {
+  const t2 = { ...ticket, assignee: tech };
+  const e = buildEmail(ctx({
+    event: "comment_added", actor: reporter, ticket: t2, comment: { content: "see screenshot" },
+    files: [
+      { file_name: "error<1>.png", mime_type: "image/png", cid: "att-1@itsr" },
+      { file_name: "log.pdf", mime_type: "application/pdf", cid: null },
+    ],
+  }), settings)!;
+  assert(e.html.includes('<img src="cid:att-1@itsr"'));
+  assert(e.html.includes("error&lt;1&gt;.png"));
+  assert(!e.html.includes("cid:null"));
+  assert(e.text.includes("- error<1>.png") && e.text.includes("- log.pdf"));
+});
+
+Deno.test("image sent without text -> 'New image' email to the other side", () => {
+  const t2 = { ...ticket, assignee: tech };
+  const e = buildEmail(ctx({
+    event: "comment_added", actor: tech, ticket: t2, comment: null,
+    files: [{ file_name: "fix.jpg", mime_type: "image/jpeg", cid: "att-2@itsr" }],
+  }), settings)!;
+  assertEquals(e.to, ["rina@example.test"]);
+  assert(e.subject.includes("New image from"));
+});
+
+Deno.test("new report shows its images", () => {
+  const e = buildEmail(ctx({ files: [{ file_name: "a.png", mime_type: "image/png", cid: "att-3@itsr" }] }), settings)!;
+  assert(e.html.includes('src="cid:att-3@itsr"'));
+});
+
 Deno.test("admin create validation", () => {
   const ok = validateCreate({ employee_number: "emp010", full_name: "New Person", email: "New@Example.test", role: "employee", password: "longenough" });
   assert(ok.ok && ok.value.employee_number === "EMP010" && ok.value.email === "new@example.test");
